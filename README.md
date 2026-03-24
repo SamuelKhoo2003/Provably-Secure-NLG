@@ -47,6 +47,12 @@ python src/build_splits.py --config configs/baseline.yaml
 bash scripts/train_dpo.sh
 ```
 
+5. Run one-command clean vs random vs ILP comparison:
+
+```bash
+bash scripts/run_all_baselines.sh --rate 0.01
+```
+
 ## Running Comparisons
 
 To compare clean vs random vs ILP poisoning, change `data.train_jsonl` in `configs/dpo.yaml` to one of:

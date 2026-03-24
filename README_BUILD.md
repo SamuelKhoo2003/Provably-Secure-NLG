@@ -58,3 +58,31 @@ bash scripts/train_dpo.sh
 ```
 
 Model outputs are saved under `training.output_dir` with `train_metrics.json` for each run.
+
+## 6) One-command clean vs random vs ILP run
+
+Run all three arms sequentially and generate one summary CSV:
+
+```bash
+bash scripts/run_all_baselines.sh --rate 0.01
+```
+
+This uses:
+
+- `configs/dpo.yaml` as the base training config
+- `data/processed/manifest.json` to resolve split file paths
+
+Output summary:
+
+- `results/baseline_comparison.csv`
+
+Optional arguments:
+
+```bash
+bash scripts/run_all_baselines.sh \
+	--base-config configs/dpo.yaml \
+	--manifest data/processed/manifest.json \
+	--rate 0.03 \
+	--summary-csv results/baseline_comparison_003.csv \
+	--run-prefix qwen3b
+```
