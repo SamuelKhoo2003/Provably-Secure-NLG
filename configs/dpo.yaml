@@ -1,0 +1,32 @@
+seed: 42
+
+model:
+  name: Qwen/Qwen2.5-3B-Instruct
+  use_lora: true
+  lora_r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+
+data:
+  train_jsonl: data/processed/clean.jsonl
+  prompt_col: prompt
+  chosen_col: chosen
+  rejected_col: rejected
+
+training:
+  output_dir: results/dpo_clean_qwen3b
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 16
+  learning_rate: 5.0e-6
+  num_train_epochs: 1
+  logging_steps: 10
+  save_steps: 200
+  warmup_ratio: 0.03
+  lr_scheduler_type: cosine
+  max_length: 1024
+  max_prompt_length: 512
+  fp16: false
+  bf16: false
+
+dpo:
+  beta: 0.1
