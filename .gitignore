@@ -1,18 +1,1 @@
-ref_documents/
-
-# macOS
-.DS_Store
-
-# Python environment and caches
-.venv/
-__pycache__/
-*.pyc
-.ipynb_checkpoints/
-
-# Local data and results artifacts
-data/raw/
-data/processed/
-results/
-
-# Logs
-*.log
+./PHD_example
