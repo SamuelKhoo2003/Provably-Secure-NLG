@@ -34,10 +34,12 @@ class CertificateResult:
         }
 
 
-def solve_row_stability(votes: np.ndarray, clean_counts: np.ndarray, clean_pred: np.ndarray, runner_up: np.ndarray) -> CertificateResult:
+def solve_row_stability(
+    votes: np.ndarray, clean_counts: np.ndarray, clean_pred: np.ndarray, runner_up: np.ndarray, influence: np.ndarray | None = None
+) -> CertificateResult:
     K, N, L = votes.shape
     model, a = _make_model(K, "row_stability")
-    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up)
+    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up, influence)
     y = model.addVars(N, vtype=GRB.BINARY, name="y_row")
     for i in range(N):
         model.addConstr(y[i] <= gp.quicksum(z[i, j] for j in range(L)), name=f"row_upper_{i}")
@@ -47,10 +49,12 @@ def solve_row_stability(votes: np.ndarray, clean_counts: np.ndarray, clean_pred:
     return _optimize_and_extract("row_stability", model, a, z, y_row=y)
 
 
-def solve_col_stability(votes: np.ndarray, clean_counts: np.ndarray, clean_pred: np.ndarray, runner_up: np.ndarray) -> CertificateResult:
+def solve_col_stability(
+    votes: np.ndarray, clean_counts: np.ndarray, clean_pred: np.ndarray, runner_up: np.ndarray, influence: np.ndarray | None = None
+) -> CertificateResult:
     K, N, L = votes.shape
     model, a = _make_model(K, "column_stability")
-    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up)
+    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up, influence)
     y = model.addVars(L, vtype=GRB.BINARY, name="y_col")
     for j in range(L):
         model.addConstr(y[j] <= gp.quicksum(z[i, j] for i in range(N)), name=f"col_upper_{j}")
@@ -65,11 +69,12 @@ def solve_row_col_stability(
     clean_counts: np.ndarray,
     clean_pred: np.ndarray,
     runner_up: np.ndarray,
+    influence: np.ndarray | None = None,
     definition: str = "any_cell",
 ) -> CertificateResult:
     K, N, L = votes.shape
     model, a = _make_model(K, f"row_col_stability_{definition}")
-    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up)
+    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up, influence)
     y_row = None
     y_col = None
 
@@ -89,19 +94,21 @@ def solve_row_col_stability(
     return _optimize_and_extract(f"row_col_stability_{definition}", model, a, z, y_row=y_row, y_col=y_col)
 
 
-def solve_row_validity(votes: np.ndarray, clean_counts: np.ndarray, target: np.ndarray, T: int) -> CertificateResult:
+def solve_row_validity(votes: np.ndarray, clean_counts: np.ndarray, target: np.ndarray, T: int, influence: np.ndarray | None = None) -> CertificateResult:
     K, N, L = votes.shape
     model, a = _make_model(K, "row_validity")
-    z = _add_validity_cell_constraints(model, a, votes, clean_counts, target, T)
+    z = _add_validity_cell_constraints(model, a, votes, clean_counts, target, T, influence)
     y = model.addVars(N, vtype=GRB.BINARY, name="y_row")
     _add_full_row_constraints(model, z, y, N, L, q_rows=1)
     return _optimize_and_extract("row_validity", model, a, z, y_row=y)
 
 
-def solve_col_validity(votes: np.ndarray, clean_counts: np.ndarray, target: np.ndarray, T: int, definition: str = "full_column") -> CertificateResult:
+def solve_col_validity(
+    votes: np.ndarray, clean_counts: np.ndarray, target: np.ndarray, T: int, influence: np.ndarray | None = None, definition: str = "full_column"
+) -> CertificateResult:
     K, N, L = votes.shape
     model, a = _make_model(K, f"column_validity_{definition}")
-    z = _add_validity_cell_constraints(model, a, votes, clean_counts, target, T)
+    z = _add_validity_cell_constraints(model, a, votes, clean_counts, target, T, influence)
     y_col = None
 
     if definition == "full_column":
@@ -120,6 +127,7 @@ def solve_row_col_validity(
     clean_counts: np.ndarray,
     target: np.ndarray,
     T: int,
+    influence: np.ndarray | None = None,
     q_rows: int = 1,
     definition: str = "at_least_q_rows",
 ) -> CertificateResult:
@@ -127,7 +135,7 @@ def solve_row_col_validity(
     if q_rows < 1 or q_rows > N:
         raise ValueError(f"q_rows must be in [1, {N}]")
     model, a = _make_model(K, f"row_col_validity_{definition}")
-    z = _add_validity_cell_constraints(model, a, votes, clean_counts, target, T)
+    z = _add_validity_cell_constraints(model, a, votes, clean_counts, target, T, influence)
     y_row = None
 
     if definition == "at_least_q_rows":
@@ -161,8 +169,10 @@ def _add_stability_cell_constraints(
     clean_counts: np.ndarray,
     clean_pred: np.ndarray,
     runner_up: np.ndarray,
+    influence: np.ndarray | None = None,
 ) -> gp.tupledict:
     K, N, L = votes.shape
+    influence = _dense_influence_if_none(influence, K, N, L)
     M = 2 * K + 10
     z = model.addVars(N, L, vtype=GRB.BINARY, name="z_stab")
 
@@ -170,8 +180,12 @@ def _add_stability_cell_constraints(
         for j in range(L):
             w = int(clean_pred[i, j])
             c = int(runner_up[i, j])
-            lhs = int(clean_counts[i, j, c]) + gp.quicksum(a[k] * int(votes[k, i, j] != c) for k in range(K))
-            rhs = int(clean_counts[i, j, w]) - gp.quicksum(a[k] * int(votes[k, i, j] == w) for k in range(K))
+            lhs = int(clean_counts[i, j, c]) + gp.quicksum(
+                a[k] * int(influence[k, i, j]) * int(votes[k, i, j] != c) for k in range(K)
+            )
+            rhs = int(clean_counts[i, j, w]) - gp.quicksum(
+                a[k] * int(influence[k, i, j]) * int(votes[k, i, j] == w) for k in range(K)
+            )
             model.addConstr(lhs >= rhs - M * (1 - z[i, j]), name=f"stability_cell_{i}_{j}")
     return z
 
@@ -183,21 +197,35 @@ def _add_validity_cell_constraints(
     clean_counts: np.ndarray,
     target: np.ndarray,
     T: int,
+    influence: np.ndarray | None = None,
 ) -> gp.tupledict:
     K, N, L = votes.shape
+    influence = _dense_influence_if_none(influence, K, N, L)
     M = 2 * K + 10
     z = model.addVars(N, L, vtype=GRB.BINARY, name="z_val")
 
     for i in range(N):
         for j in range(L):
             h = int(target[i, j])
-            target_count = int(clean_counts[i, j, h]) + gp.quicksum(a[k] * int(votes[k, i, j] != h) for k in range(K))
+            target_count = int(clean_counts[i, j, h]) + gp.quicksum(
+                a[k] * int(influence[k, i, j]) * int(votes[k, i, j] != h) for k in range(K)
+            )
             for c in range(T):
                 if c == h:
                     continue
-                competitor_count = int(clean_counts[i, j, c]) - gp.quicksum(a[k] * int(votes[k, i, j] == c) for k in range(K))
+                competitor_count = int(clean_counts[i, j, c]) - gp.quicksum(
+                    a[k] * int(influence[k, i, j]) * int(votes[k, i, j] == c) for k in range(K)
+                )
                 model.addConstr(target_count >= competitor_count - M * (1 - z[i, j]), name=f"validity_cell_{i}_{j}_{c}")
     return z
+
+
+def _dense_influence_if_none(influence: np.ndarray | None, K: int, N: int, L: int) -> np.ndarray:
+    if influence is None:
+        return np.ones((K, N, L), dtype=np.int64)
+    if influence.shape != (K, N, L):
+        raise ValueError(f"influence must have shape {(K, N, L)}, got {influence.shape}")
+    return influence
 
 
 def _add_full_row_constraints(model: gp.Model, z: gp.tupledict, y_row: gp.tupledict, N: int, L: int, q_rows: int) -> None:

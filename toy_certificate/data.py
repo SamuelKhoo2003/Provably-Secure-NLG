@@ -7,48 +7,89 @@ import numpy as np
 
 @dataclass(frozen=True)
 class ToyData:
-    votes: np.ndarray
-    clean_counts: np.ndarray
+    stab_votes: np.ndarray
+    val_votes: np.ndarray
+    stab_counts: np.ndarray
+    val_counts: np.ndarray
     clean_pred: np.ndarray
     runner_up: np.ndarray
     target: np.ndarray
     base_token: np.ndarray
+    val_base: np.ndarray
+    influence: np.ndarray
+
+    @property
+    def votes(self) -> np.ndarray:
+        return self.stab_votes
+
+    @property
+    def clean_counts(self) -> np.ndarray:
+        return self.stab_counts
 
 
-def generate_toy_votes(K: int, N: int, L: int, T: int, delta: float = 0.2, seed: int = 0) -> ToyData:
+def generate_toy_votes(
+    K: int,
+    N: int,
+    L: int,
+    T: int,
+    delta_stab: float = 0.2,
+    delta_val: float = 0.2,
+    target_bias: float = 0.2,
+    seed: int = 0,
+    influence_mode: str = "dense",
+) -> ToyData:
     """Generate toy shard votes and derived clean prediction metadata.
 
-    Returns votes with shape ``[K, N, L]`` and all cell-level quantities needed
-    by the MILP solvers.
+    Stability votes use the clean autoregressive prefix. Validity votes use the
+    harmful target prefix and give the target token controllable support.
     """
     _validate_dimensions(K, N, L, T)
-    if not 0.0 <= delta <= 1.0:
-        raise ValueError("delta must be in [0, 1]")
+    for name, value in {"delta_stab": delta_stab, "delta_val": delta_val, "target_bias": target_bias}.items():
+        if not 0.0 <= value <= 1.0:
+            raise ValueError(f"{name} must be in [0, 1]")
 
     rng = np.random.default_rng(seed)
     base_token = rng.integers(0, T, size=(N, L), dtype=np.int64)
-    votes = np.empty((K, N, L), dtype=np.int64)
+    stab_votes = np.empty((K, N, L), dtype=np.int64)
 
     for k in range(K):
-        disagreement = rng.random((N, L)) < delta
-        votes[k] = base_token
+        disagreement = rng.random((N, L)) < delta_stab
+        stab_votes[k] = base_token
         if np.any(disagreement):
             alternatives = rng.integers(0, T - 1, size=(N, L), dtype=np.int64)
             alternatives = alternatives + (alternatives >= base_token)
-            votes[k, disagreement] = alternatives[disagreement]
+            stab_votes[k, disagreement] = alternatives[disagreement]
 
-    clean_counts = compute_counts(votes, T)
-    clean_pred = majority_predictions(clean_counts)
-    runner_up = runner_up_tokens(clean_counts, clean_pred)
+    stab_counts = compute_counts(stab_votes, T)
+    clean_pred = majority_predictions(stab_counts)
+    runner_up = runner_up_tokens(stab_counts, clean_pred)
     target = generate_targets(clean_pred, T, seed=seed + 1)
 
+    val_base = _generate_non_target_base(target, T, rng)
+    val_votes = np.empty((K, N, L), dtype=np.int64)
+    for k in range(K):
+        follows_target = rng.random((N, L)) < target_bias
+        disagreement = rng.random((N, L)) < delta_val
+        val_votes[k] = val_base
+        noisy_alternatives = rng.integers(0, T - 1, size=(N, L), dtype=np.int64)
+        noisy_alternatives = noisy_alternatives + (noisy_alternatives >= val_base)
+        val_votes[k, disagreement] = noisy_alternatives[disagreement]
+        val_votes[k, follows_target] = target[follows_target]
+
+    val_counts = compute_counts(val_votes, T)
+    influence = generate_influence(K, N, L, mode=influence_mode, seed=seed + 2)
+
     return ToyData(
-        votes=votes,
-        clean_counts=clean_counts,
+        stab_votes=stab_votes,
+        val_votes=val_votes,
+        stab_counts=stab_counts,
+        val_counts=val_counts,
         clean_pred=clean_pred,
         runner_up=runner_up,
         target=target,
         base_token=base_token,
+        val_base=val_base,
+        influence=influence,
     )
 
 
@@ -100,6 +141,20 @@ def generate_targets(clean_pred: np.ndarray, T: int, seed: int = 0) -> np.ndarra
     return (raw + (raw >= clean_pred)).astype(np.int64)
 
 
+def generate_influence(K: int, N: int, L: int, mode: str = "dense", seed: int = 0) -> np.ndarray:
+    """Return influence mask with shape ``[K, N, L]``."""
+    rng = np.random.default_rng(seed)
+    if mode == "dense":
+        return np.ones((K, N, L), dtype=np.int64)
+    if mode == "row-local":
+        row_mask = rng.integers(0, 2, size=(K, N, 1), dtype=np.int64)
+        return np.repeat(row_mask, L, axis=2)
+    if mode == "column-local":
+        col_mask = rng.integers(0, 2, size=(K, 1, L), dtype=np.int64)
+        return np.repeat(col_mask, N, axis=1)
+    raise ValueError(f"Unknown influence mode: {mode}")
+
+
 def stability_margins(clean_counts: np.ndarray, clean_pred: np.ndarray, runner_up: np.ndarray) -> np.ndarray:
     """Return clean winner-vs-runner-up vote margins per cell."""
     N, L = clean_pred.shape
@@ -110,6 +165,11 @@ def stability_margins(clean_counts: np.ndarray, clean_pred: np.ndarray, runner_u
             r = int(runner_up[i, j])
             margins[i, j] = int(clean_counts[i, j, w] - clean_counts[i, j, r])
     return margins
+
+
+def _generate_non_target_base(target: np.ndarray, T: int, rng: np.random.Generator) -> np.ndarray:
+    raw = rng.integers(0, T - 1, size=target.shape, dtype=np.int64)
+    return (raw + (raw >= target)).astype(np.int64)
 
 
 def _validate_dimensions(K: int, N: int, L: int, T: int) -> None:

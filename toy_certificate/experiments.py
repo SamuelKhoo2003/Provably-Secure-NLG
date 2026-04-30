@@ -24,47 +24,49 @@ def run_sanity(
     N: int = 3,
     L: int = 4,
     T: int = 5,
-    delta: float = 0.2,
+    delta_stab: float = 0.2,
+    delta_val: float = 0.2,
+    target_bias: float = 0.2,
     seed: int = 0,
     show_grid: bool = False,
     save_dir: str | None = None,
 ) -> list[CertificateResult]:
-    data = generate_toy_votes(K=K, N=N, L=L, T=T, delta=delta, seed=seed)
-    _print_instance_summary(data, K, N, L, T, delta, seed)
+    data = generate_toy_votes(K=K, N=N, L=L, T=T, delta_stab=delta_stab, delta_val=delta_val, target_bias=target_bias, seed=seed)
+    _print_instance_summary(data, K, N, L, T, delta_stab, delta_val, target_bias, seed)
     if show_grid:
         print_console_grid(data)
     if save_dir is not None:
-        save_instance_plots(data, Path(save_dir), K=K, N=N, L=L, T=T, delta=delta, seed=seed)
+        save_instance_plots(data, Path(save_dir), K=K, N=N, L=L, T=T, delta_stab=delta_stab, delta_val=delta_val, target_bias=target_bias, seed=seed)
     results = solve_default_certificates(data, T)
     print_certificate_table(results)
     return results
 
 
 def solve_default_certificates(data: ToyData, T: int) -> list[CertificateResult]:
-    q_all_rows = data.votes.shape[1]
+    q_all_rows = data.stab_votes.shape[1]
     return [
-        solve_row_stability(data.votes, data.clean_counts, data.clean_pred, data.runner_up),
-        solve_col_stability(data.votes, data.clean_counts, data.clean_pred, data.runner_up),
-        solve_row_col_stability(data.votes, data.clean_counts, data.clean_pred, data.runner_up, definition="any_cell"),
-        solve_row_col_stability(data.votes, data.clean_counts, data.clean_pred, data.runner_up, definition="full_row"),
-        solve_row_validity(data.votes, data.clean_counts, data.target, T),
-        solve_col_validity(data.votes, data.clean_counts, data.target, T, definition="full_column"),
-        solve_row_col_validity(data.votes, data.clean_counts, data.target, T, q_rows=1),
-        solve_row_col_validity(data.votes, data.clean_counts, data.target, T, q_rows=q_all_rows),
+        solve_row_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence),
+        solve_col_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence),
+        solve_row_col_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, definition="any_cell"),
+        solve_row_col_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, definition="full_row"),
+        solve_row_validity(data.val_votes, data.val_counts, data.target, T, data.influence),
+        solve_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, definition="full_column"),
+        solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1),
+        solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=q_all_rows),
     ]
 
 
 def sweep_delta(K: int, N: int, L: int, T: int, deltas: Iterable[float], seed: int) -> None:
     rows = []
     for delta in deltas:
-        data = generate_toy_votes(K=K, N=N, L=L, T=T, delta=delta, seed=seed)
+        data = generate_toy_votes(K=K, N=N, L=L, T=T, delta_stab=delta, delta_val=delta, seed=seed)
         rows.append(
             [
                 delta,
-                solve_row_stability(data.votes, data.clean_counts, data.clean_pred, data.runner_up).B_star,
-                solve_row_validity(data.votes, data.clean_counts, data.target, T).B_star,
-                solve_row_col_validity(data.votes, data.clean_counts, data.target, T, q_rows=1).B_star,
-                solve_row_col_validity(data.votes, data.clean_counts, data.target, T, q_rows=N).B_star,
+                solve_row_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence).B_star,
+                solve_row_validity(data.val_votes, data.val_counts, data.target, T, data.influence).B_star,
+                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1).B_star,
+                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=N).B_star,
             ]
         )
     _print_sweep_table(["delta", "row_stab", "row_val", "row_col_val_q1", "row_col_val_qN"], rows)
@@ -73,14 +75,14 @@ def sweep_delta(K: int, N: int, L: int, T: int, deltas: Iterable[float], seed: i
 def sweep_length(K: int, N: int, lengths: Iterable[int], T: int, delta: float, seed: int) -> None:
     rows = []
     for L in lengths:
-        data = generate_toy_votes(K=K, N=N, L=L, T=T, delta=delta, seed=seed)
+        data = generate_toy_votes(K=K, N=N, L=L, T=T, delta_stab=delta, delta_val=delta, seed=seed)
         rows.append(
             [
                 L,
-                solve_row_stability(data.votes, data.clean_counts, data.clean_pred, data.runner_up).B_star,
-                solve_row_validity(data.votes, data.clean_counts, data.target, T).B_star,
-                solve_row_col_validity(data.votes, data.clean_counts, data.target, T, q_rows=1).B_star,
-                solve_row_col_validity(data.votes, data.clean_counts, data.target, T, q_rows=N).B_star,
+                solve_row_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence).B_star,
+                solve_row_validity(data.val_votes, data.val_counts, data.target, T, data.influence).B_star,
+                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1).B_star,
+                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=N).B_star,
             ]
         )
     _print_sweep_table(["L", "row_stab", "row_val", "row_col_val_q1", "row_col_val_qN"], rows)
@@ -89,24 +91,24 @@ def sweep_length(K: int, N: int, lengths: Iterable[int], T: int, delta: float, s
 def sweep_prompts(K: int, prompts: Iterable[int], L: int, T: int, delta: float, seed: int) -> None:
     rows = []
     for N in prompts:
-        data = generate_toy_votes(K=K, N=N, L=L, T=T, delta=delta, seed=seed)
+        data = generate_toy_votes(K=K, N=N, L=L, T=T, delta_stab=delta, delta_val=delta, seed=seed)
         rows.append(
             [
                 N,
-                solve_row_stability(data.votes, data.clean_counts, data.clean_pred, data.runner_up).B_star,
-                solve_row_validity(data.votes, data.clean_counts, data.target, T).B_star,
-                solve_row_col_validity(data.votes, data.clean_counts, data.target, T, q_rows=1).B_star,
-                solve_row_col_validity(data.votes, data.clean_counts, data.target, T, q_rows=N).B_star,
+                solve_row_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence).B_star,
+                solve_row_validity(data.val_votes, data.val_counts, data.target, T, data.influence).B_star,
+                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1).B_star,
+                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=N).B_star,
             ]
         )
     _print_sweep_table(["N", "row_stab", "row_val", "row_col_val_q1", "row_col_val_qN"], rows)
 
 
-def visualize_instance(K: int, N: int, L: int, T: int, delta: float, seed: int, save_dir: str) -> None:
-    data = generate_toy_votes(K=K, N=N, L=L, T=T, delta=delta, seed=seed)
-    _print_instance_summary(data, K, N, L, T, delta, seed)
+def visualize_instance(K: int, N: int, L: int, T: int, delta_stab: float, delta_val: float, target_bias: float, seed: int, save_dir: str) -> None:
+    data = generate_toy_votes(K=K, N=N, L=L, T=T, delta_stab=delta_stab, delta_val=delta_val, target_bias=target_bias, seed=seed)
+    _print_instance_summary(data, K, N, L, T, delta_stab, delta_val, target_bias, seed)
     print_console_grid(data)
-    save_instance_plots(data, Path(save_dir), K=K, N=N, L=L, T=T, delta=delta, seed=seed)
+    save_instance_plots(data, Path(save_dir), K=K, N=N, L=L, T=T, delta_stab=delta_stab, delta_val=delta_val, target_bias=target_bias, seed=seed)
 
 
 def benchmark_scale(
@@ -115,6 +117,7 @@ def benchmark_scale(
     Ls: Iterable[int],
     Ts: Iterable[int],
     deltas: Iterable[float],
+    target_bias: float,
     seed: int,
     save_dir: str,
 ) -> list[dict[str, object]]:
@@ -127,7 +130,7 @@ def benchmark_scale(
             for L in Ls:
                 for T in Ts:
                     for delta in deltas:
-                        data = generate_toy_votes(K=K, N=N, L=L, T=T, delta=delta, seed=seed)
+                        data = generate_toy_votes(K=K, N=N, L=L, T=T, delta_stab=delta, delta_val=delta, target_bias=target_bias, seed=seed)
                         results = _solve_benchmark_certificates(data, T)
                         row = {
                             "K": K,
@@ -135,6 +138,9 @@ def benchmark_scale(
                             "L": L,
                             "T": T,
                             "delta": delta,
+                            "delta_stab": delta,
+                            "delta_val": delta,
+                            "target_bias": target_bias,
                             "seed": seed,
                         }
                         for result in results:
@@ -169,12 +175,12 @@ def plot_benchmark_csv(csv_path: str, save_dir: str | None = None) -> list[dict[
 
 def print_console_grid(data: ToyData) -> None:
     """Print a compact per-cell grid and shard vote layers."""
-    margins = stability_margins(data.clean_counts, data.clean_pred, data.runner_up)
-    winner_counts = np.take_along_axis(data.clean_counts, data.clean_pred[:, :, None], axis=2)[:, :, 0]
-    target_counts = np.take_along_axis(data.clean_counts, data.target[:, :, None], axis=2)[:, :, 0]
+    margins = stability_margins(data.stab_counts, data.clean_pred, data.runner_up)
+    winner_counts = np.take_along_axis(data.stab_counts, data.clean_pred[:, :, None], axis=2)[:, :, 0]
+    target_counts = np.take_along_axis(data.val_counts, data.target[:, :, None], axis=2)[:, :, 0]
 
     print()
-    print("cell grid: pred->target | runner | margin | winner_count | target_count")
+    print("cell grid: pred->target | runner | stab_margin | stab_winner_count | val_target_count")
     for i in range(data.clean_pred.shape[0]):
         cells = []
         for j in range(data.clean_pred.shape[1]):
@@ -189,28 +195,38 @@ def print_console_grid(data: ToyData) -> None:
 
     max_layers_to_print = 20
     print()
-    print("shard vote layers votes[k, row, col]:")
+    print("stability shard vote layers stab_votes[k, row, col]:")
     for k in range(min(data.votes.shape[0], max_layers_to_print)):
         print(f"k={k:02d}")
-        print(data.votes[k])
+        print(data.stab_votes[k])
     if data.votes.shape[0] > max_layers_to_print:
         print(f"... omitted {data.votes.shape[0] - max_layers_to_print} shard layers")
 
+    print()
+    print("validity shard vote layers val_votes[k, row, col]:")
+    for k in range(min(data.val_votes.shape[0], max_layers_to_print)):
+        print(f"k={k:02d}")
+        print(data.val_votes[k])
+    if data.val_votes.shape[0] > max_layers_to_print:
+        print(f"... omitted {data.val_votes.shape[0] - max_layers_to_print} shard layers")
 
-def save_instance_plots(data: ToyData, output_dir: Path, K: int, N: int, L: int, T: int, delta: float, seed: int) -> None:
+
+def save_instance_plots(
+    data: ToyData, output_dir: Path, K: int, N: int, L: int, T: int, delta_stab: float, delta_val: float, target_bias: float, seed: int
+) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
-    margins = stability_margins(data.clean_counts, data.clean_pred, data.runner_up)
-    winner_counts = np.take_along_axis(data.clean_counts, data.clean_pred[:, :, None], axis=2)[:, :, 0]
-    target_counts = np.take_along_axis(data.clean_counts, data.target[:, :, None], axis=2)[:, :, 0]
+    margins = stability_margins(data.stab_counts, data.clean_pred, data.runner_up)
+    winner_counts = np.take_along_axis(data.stab_counts, data.clean_pred[:, :, None], axis=2)[:, :, 0]
+    target_counts = np.take_along_axis(data.val_counts, data.target[:, :, None], axis=2)[:, :, 0]
     disagreement = 1.0 - (winner_counts / K)
 
-    title_suffix = f"K={K}, N={N}, L={L}, T={T}, delta={delta}, seed={seed}"
+    title_suffix = f"K={K}, N={N}, L={L}, T={T}, delta_stab={delta_stab}, delta_val={delta_val}, target_bias={target_bias}, seed={seed}"
     _save_heatmap_svg(data.clean_pred, output_dir / "clean_predictions.svg", "Clean predictions | " + title_suffix)
     _save_heatmap_svg(data.target, output_dir / "harmful_targets.svg", "Harmful targets | " + title_suffix)
     _save_heatmap_svg(margins, output_dir / "stability_margins.svg", "Winner vs runner-up margins | " + title_suffix)
     _save_heatmap_svg(winner_counts, output_dir / "winner_counts.svg", "Winner vote counts | " + title_suffix)
-    _save_heatmap_svg(target_counts, output_dir / "target_counts.svg", "Target clean vote counts | " + title_suffix)
-    _save_heatmap_svg(disagreement, output_dir / "disagreement_rate.svg", "Cell disagreement rate | " + title_suffix, fmt=".2f")
+    _save_heatmap_svg(target_counts, output_dir / "validity_target_counts.svg", "Target validity vote counts | " + title_suffix)
+    _save_heatmap_svg(disagreement, output_dir / "stability_disagreement_rate.svg", "Stability cell disagreement rate | " + title_suffix, fmt=".2f")
 
     print()
     print(f"Wrote instance plots under: {output_dir}")
@@ -265,9 +281,9 @@ def print_certificate_table(results: list[CertificateResult]) -> None:
         print(f"{result.name:34} {b_star:>2}   {result.status_name}")
 
 
-def _print_instance_summary(data: ToyData, K: int, N: int, L: int, T: int, delta: float, seed: int) -> None:
-    margins = stability_margins(data.clean_counts, data.clean_pred, data.runner_up)
-    print(f"K={K}, N={N}, L={L}, T={T}, delta={delta}, seed={seed}")
+def _print_instance_summary(data: ToyData, K: int, N: int, L: int, T: int, delta_stab: float, delta_val: float, target_bias: float, seed: int) -> None:
+    margins = stability_margins(data.stab_counts, data.clean_pred, data.runner_up)
+    print(f"K={K}, N={N}, L={L}, T={T}, delta_stab={delta_stab}, delta_val={delta_val}, target_bias={target_bias}, seed={seed}")
     print()
     print("clean predictions:")
     print(data.clean_pred)
@@ -289,16 +305,16 @@ def _print_sweep_table(headers: list[str], rows: list[list[object]]) -> None:
 
 
 def _solve_benchmark_certificates(data: ToyData, T: int) -> list[CertificateResult]:
-    N = data.votes.shape[1]
+    N = data.stab_votes.shape[1]
     return [
-        solve_row_stability(data.votes, data.clean_counts, data.clean_pred, data.runner_up),
-        solve_col_stability(data.votes, data.clean_counts, data.clean_pred, data.runner_up),
-        solve_row_col_stability(data.votes, data.clean_counts, data.clean_pred, data.runner_up, definition="any_cell"),
-        solve_row_col_stability(data.votes, data.clean_counts, data.clean_pred, data.runner_up, definition="full_row"),
-        solve_row_validity(data.votes, data.clean_counts, data.target, T),
-        solve_col_validity(data.votes, data.clean_counts, data.target, T, definition="full_column"),
-        solve_row_col_validity(data.votes, data.clean_counts, data.target, T, q_rows=1),
-        solve_row_col_validity(data.votes, data.clean_counts, data.target, T, q_rows=N),
+        solve_row_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence),
+        solve_col_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence),
+        solve_row_col_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, definition="any_cell"),
+        solve_row_col_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, definition="full_row"),
+        solve_row_validity(data.val_votes, data.val_counts, data.target, T, data.influence),
+        solve_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, definition="full_column"),
+        solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1),
+        solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=N),
     ]
 
 
@@ -318,35 +334,43 @@ def compute_reference_baselines(data: ToyData) -> dict[str, int]:
 
 
 def _cell_stability_budgets(data: ToyData) -> np.ndarray:
-    K, N, L = data.votes.shape
+    K, N, L = data.stab_votes.shape
     budgets = np.zeros((N, L), dtype=np.int64)
     for i in range(N):
         for j in range(L):
             w = int(data.clean_pred[i, j])
             c = int(data.runner_up[i, j])
-            deficit = int(data.clean_counts[i, j, w] - data.clean_counts[i, j, c])
-            contributions = [int(data.votes[k, i, j] != c) + int(data.votes[k, i, j] == w) for k in range(K)]
+            deficit = int(data.stab_counts[i, j, w] - data.stab_counts[i, j, c])
+            contributions = [
+                int(data.influence[k, i, j]) * (int(data.stab_votes[k, i, j] != c) + int(data.stab_votes[k, i, j] == w)) for k in range(K)
+            ]
             budgets[i, j] = _min_budget_from_contributions(deficit, contributions)
     return budgets
 
 
 def _cell_validity_budgets(data: ToyData) -> np.ndarray:
-    _, N, L = data.votes.shape
-    T = data.clean_counts.shape[2]
+    K, N, L = data.val_votes.shape
+    T = data.val_counts.shape[2]
     budgets = np.zeros((N, L), dtype=np.int64)
     for i in range(N):
         for j in range(L):
             h = int(data.target[i, j])
-            target_count = int(data.clean_counts[i, j, h])
-            worst_deficit = max(int(data.clean_counts[i, j, c]) - target_count for c in range(T) if c != h)
-            # Standard DPA margin model: one poisoned shard can add one target vote
-            # and remove one competitor vote, so it can close at most two votes.
-            budgets[i, j] = max(0, (worst_deficit + 1) // 2)
+            target_count = int(data.val_counts[i, j, h])
+            budget_candidates = []
+            for c in range(T):
+                if c == h:
+                    continue
+                deficit = int(data.val_counts[i, j, c]) - target_count
+                contributions = [
+                    int(data.influence[k, i, j]) * (int(data.val_votes[k, i, j] != h) + int(data.val_votes[k, i, j] == c)) for k in range(K)
+                ]
+                budget_candidates.append(_min_budget_from_contributions(deficit, contributions))
+            budgets[i, j] = max(budget_candidates)
     return budgets
 
 
 def _phd_margin_stability_budgets(data: ToyData) -> np.ndarray:
-    margins = stability_margins(data.clean_counts, data.clean_pred, data.runner_up)
+    margins = stability_margins(data.stab_counts, data.clean_pred, data.runner_up)
     return ((margins + 1) // 2).astype(np.int64)
 
 
@@ -563,6 +587,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--L", type=int, default=4)
     parser.add_argument("--T", type=int, default=5)
     parser.add_argument("--delta", type=float, default=0.2)
+    parser.add_argument("--delta-stab", type=float, default=None)
+    parser.add_argument("--delta-val", type=float, default=None)
+    parser.add_argument("--target-bias", type=float, default=0.2)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--deltas", type=_parse_float_list, default=[0.0, 0.2, 0.4])
     parser.add_argument("--Ks", type=_parse_int_list, default=[5, 7, 9])
@@ -578,21 +605,35 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     args = build_parser().parse_args()
+    delta_stab = args.delta if args.delta_stab is None else args.delta_stab
+    delta_val = args.delta if args.delta_val is None else args.delta_val
     if args.command == "sanity":
         run_sanity(
             K=args.K,
             N=args.N,
             L=args.L,
             T=args.T,
-            delta=args.delta,
+            delta_stab=delta_stab,
+            delta_val=delta_val,
+            target_bias=args.target_bias,
             seed=args.seed,
             show_grid=args.show_grid,
             save_dir=args.save_dir if args.show_grid else None,
         )
     elif args.command == "visualize":
-        visualize_instance(K=args.K, N=args.N, L=args.L, T=args.T, delta=args.delta, seed=args.seed, save_dir=args.save_dir)
+        visualize_instance(
+            K=args.K,
+            N=args.N,
+            L=args.L,
+            T=args.T,
+            delta_stab=delta_stab,
+            delta_val=delta_val,
+            target_bias=args.target_bias,
+            seed=args.seed,
+            save_dir=args.save_dir,
+        )
     elif args.command == "benchmark":
-        benchmark_scale(Ks=args.Ks, Ns=args.Ns, Ls=args.lengths, Ts=args.Ts, deltas=args.deltas, seed=args.seed, save_dir=args.save_dir)
+        benchmark_scale(Ks=args.Ks, Ns=args.Ns, Ls=args.lengths, Ts=args.Ts, deltas=args.deltas, target_bias=args.target_bias, seed=args.seed, save_dir=args.save_dir)
     elif args.command == "plot-csv":
         plot_benchmark_csv(args.csv, save_dir=args.save_dir)
     elif args.command == "sweep-delta":

@@ -35,8 +35,13 @@ python -m toy_certificate.experiments sweep-prompts
 Default sanity configuration:
 
 ```text
-K=7, N=3, L=4, T=5, delta=0.2, seed=0
+K=7, N=3, L=4, T=5, delta_stab=0.2, delta_val=0.2, target_bias=0.2, seed=0
 ```
+
+`delta_stab` controls disagreement for stability votes under the clean prefix.
+`delta_val` controls disagreement for validity votes under the harmful prefix.
+`target_bias` controls how much natural support the harmful target receives under the harmful prefix.
+The shorthand `--delta 0.2` sets both `delta_stab` and `delta_val` unless the explicit flags are provided.
 
 ## Console visualization and plots
 
@@ -44,7 +49,8 @@ Print the generated prompt/token grid, shard vote layers, and save heatmap plots
 
 ```bash
 python -m toy_certificate.experiments visualize \
-  --K 7 --N 3 --L 4 --T 5 --delta 0.2 --seed 0 \
+  --K 7 --N 3 --L 4 --T 5 \
+  --delta-stab 0.2 --delta-val 0.2 --target-bias 0.2 --seed 0 \
   --save-dir toy_results/default_instance
 ```
 
@@ -105,6 +111,7 @@ python -m toy_certificate.experiments benchmark \
   --lengths 2,4,8 \
   --Ts 3,5,8,12 \
   --deltas 0.0,0.1,0.2,0.3,0.4 \
+  --target-bias 0.2 \
   --seed 0 \
   --save-dir toy_results/benchmark_large
 ```
@@ -147,7 +154,7 @@ Run the default visualization and large benchmark:
 Override ranges with environment variables:
 
 ```bash
-KS=5,7,9 NS=2,4 LENGTHS=2,4 TS=3,5 DELTAS=0.0,0.2 OUT_DIR=toy_results/custom ./run_toy_benchmark.sh
+KS=5,7,9 NS=2,4 LENGTHS=2,4 TS=3,5 DELTAS=0.0,0.2 TARGET_BIAS=0.3 OUT_DIR=toy_results/custom ./run_toy_benchmark.sh
 ```
 
 ## Files

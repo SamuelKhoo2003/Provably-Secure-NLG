@@ -20,7 +20,9 @@ echo "Writing outputs to: $OUT_DIR"
   --N "${VIS_N:-3}" \
   --L "${VIS_L:-4}" \
   --T "${VIS_T:-5}" \
-  --delta "${VIS_DELTA:-0.2}" \
+  --delta-stab "${VIS_DELTA_STAB:-${VIS_DELTA:-0.2}}" \
+  --delta-val "${VIS_DELTA_VAL:-${VIS_DELTA:-0.2}}" \
+  --target-bias "${TARGET_BIAS:-0.2}" \
   --seed "${SEED:-0}" \
   --save-dir "${VIS_OUT_DIR:-toy_results/default_instance}"
 
@@ -30,6 +32,7 @@ echo "Writing outputs to: $OUT_DIR"
   --lengths "${LENGTHS:-2,4,8}" \
   --Ts "${TS:-3,5,8,12}" \
   --deltas "${DELTAS:-0.0,0.1,0.2,0.3,0.4}" \
+  --target-bias "${TARGET_BIAS:-0.2}" \
   --seed "${SEED:-0}" \
   --save-dir "$OUT_DIR"
 
