@@ -1,5 +1,6 @@
-./PHD_example
 .venv/
+phd_reference/
 __pycache__/
 *.py[cod]
 .DS_Store
+toy_results/

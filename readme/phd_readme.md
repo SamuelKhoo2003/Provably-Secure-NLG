@@ -1,11 +1,11 @@
-# PHD_example Structure and Gurobi Programs
+# phd_reference Structure and Gurobi Programs
 
-This document maps the `PHD_example` package structure, the core functions/classes, the notebook purposes, and the Gurobi optimization programs used for worst-case poisoning certification.
+This document maps the `phd_reference` package structure, the core functions/classes, the notebook purposes, and the Gurobi optimization programs used for worst-case poisoning certification.
 
 ## Directory structure
 
 ```text
-PHD_example/
+phd_reference/
   setup.py
   data_sets/
     binary_mnist.py
@@ -58,7 +58,7 @@ PHD_example/
 
 ## Package role
 
-`PHD_example` is an experimental package for certifying learning stability under poisoning attacks. It combines:
+`phd_reference` is an experimental package for certifying learning stability under poisoning attacks. It combines:
 
 - standard and perturbed datasets;
 - neural network models for tabular/toy/image tasks;
