@@ -42,6 +42,7 @@ K=7, N=3, L=4, T=5, delta_stab=0.2, delta_val=0.2, target_bias=0.2, seed=0
 `delta_val` controls disagreement for validity votes under the harmful prefix.
 `target_bias` controls how much natural support the harmful target receives under the harmful prefix.
 The shorthand `--delta 0.2` sets both `delta_stab` and `delta_val` unless the explicit flags are provided.
+`--influence-mode` can be `dense`, `row-local`, or `column-local`; it controls which cells a poisoned shard can affect.
 
 ## Console visualization and plots
 
@@ -51,6 +52,7 @@ Print the generated prompt/token grid, shard vote layers, and save heatmap plots
 python -m toy_certificate.experiments visualize \
   --K 7 --N 3 --L 4 --T 5 \
   --delta-stab 0.2 --delta-val 0.2 --target-bias 0.2 --seed 0 \
+  --influence-mode dense \
   --save-dir toy_results/default_instance
 ```
 
@@ -71,9 +73,9 @@ Saved SVG plots include:
 - `clean_predictions.svg`
 - `harmful_targets.svg`
 - `stability_margins.svg`
-- `winner_counts.svg`
-- `target_counts.svg`
-- `disagreement_rate.svg`
+- `validity_target_counts.svg`
+- `structured_stability_heatmap.svg`
+- `validity_q_curve.svg`
 
 You can also attach the grid view to the sanity run:
 
@@ -92,15 +94,17 @@ python -m toy_certificate.experiments benchmark --save-dir toy_results/benchmark
 This writes a focused set of comparison plots:
 
 - `benchmark_results.csv`
-- `focused_stability_by_K.svg`, `focused_stability_by_N.svg`, etc.
-- `focused_validity_q1_by_K.svg`, `focused_validity_q1_by_N.svg`, etc.
-- `focused_validity_qN_by_K.svg`, `focused_validity_qN_by_N.svg`, etc.
+- `validity_scaling_by_L.svg`
+- `stability_structured_by_L.svg`
+- `validity_bias_sweep.svg`
 
 The focused plots compare:
 
 - shared-allocation MILP certificate;
 - naive DPA per-cell baseline, where token costs are computed independently and then added;
 - PHD-style single-cell majority-margin reference, where applicable.
+
+See `readme/naive_dpa_readme.md` for the exact baseline formulas and CSV column meanings.
 
 Run a larger benchmark by passing comma-separated ranges:
 
@@ -112,6 +116,7 @@ python -m toy_certificate.experiments benchmark \
   --Ts 3,5,8,12 \
   --deltas 0.0,0.1,0.2,0.3,0.4 \
   --target-bias 0.2 \
+  --influence-mode dense \
   --seed 0 \
   --save-dir toy_results/benchmark_large
 ```
@@ -132,7 +137,15 @@ python -m toy_certificate.experiments plot-csv \
   --save-dir toy_results/benchmark_large
 ```
 
-If the CSV was produced before the baseline columns were added, replotting can only show the shared MILP series. Rerun `benchmark` or `./run_toy_benchmark.sh` to generate the baseline comparison columns.
+If the CSV was produced before the renamed spec columns were added, replotting can only show the columns present in that file. Rerun `benchmark` or `./scripts/run_toy_benchmark.sh` to generate the current comparison columns.
+
+Current benchmark CSV columns include:
+
+- `row_col_stab_q1_r1`, `row_col_stab_q1_rL`, `row_col_stab_qN_r1`, `row_col_stab_qN_rL`
+- `row_col_val_q1`, `row_col_val_qN`
+- `raw_dpa_stab_min_cell`, `raw_dpa_val_min_cell`
+- `independent_stab_full_row_q1`, `independent_stab_qN_rL`, `independent_val_q1`, `independent_val_qN`
+- `phrase_dpa_val_q1`, `phrase_dpa_val_qN`
 
 ## `q1` vs `qN`
 
@@ -148,18 +161,41 @@ If the CSV was produced before the baseline columns were added, replotting can o
 Run the default visualization and large benchmark:
 
 ```bash
-./run_toy_benchmark.sh
+./scripts/run_toy_benchmark.sh
 ```
+
+Run the full pipeline, including compile check, tests, visualization, benchmark, and plot refresh:
+
+```bash
+./scripts/full_run_toy_example.sh
+```
+
+Default full-run outputs:
+
+- `toy_results/full_run/instance/*.svg`
+- `toy_results/full_run/benchmark/benchmark_results.csv`
+- `toy_results/full_run/benchmark/*.svg`
 
 Override ranges with environment variables:
 
 ```bash
-KS=5,7,9 NS=2,4 LENGTHS=2,4 TS=3,5 DELTAS=0.0,0.2 TARGET_BIAS=0.3 OUT_DIR=toy_results/custom ./run_toy_benchmark.sh
+KS=5,7,9 NS=2,4 LENGTHS=2,4 TS=3,5 DELTAS=0.0,0.2 TARGET_BIAS=0.3 INFLUENCE_MODE=row-local OUT_DIR=toy_results/custom ./scripts/full_run_toy_example.sh
 ```
+
+## Tests
+
+Run the lightweight test bench:
+
+```bash
+python -m unittest discover
+```
+
+Tests that require Gurobi skip if a local license is not available.
 
 ## Files
 
 - `toy_certificate/data.py`: vote generation, counts, predictions, targets, and margins.
 - `toy_certificate/milp.py`: Gurobi MILP builders and certificate solvers.
 - `toy_certificate/experiments.py`: command-line experiments and table printing.
-- `run_toy_benchmark.sh`: bash wrapper for visualization plus benchmark runs.
+- `scripts/run_toy_benchmark.sh`: bash wrapper for visualization plus benchmark runs.
+- `scripts/full_run_toy_example.sh`: full compile, test, visualization, benchmark, and replot pipeline.

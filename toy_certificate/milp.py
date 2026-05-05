@@ -94,6 +94,29 @@ def solve_row_col_stability(
     return _optimize_and_extract(f"row_col_stability_{definition}", model, a, z, y_row=y_row, y_col=y_col)
 
 
+def solve_structured_stability(
+    votes: np.ndarray,
+    clean_counts: np.ndarray,
+    clean_pred: np.ndarray,
+    runner_up: np.ndarray,
+    influence: np.ndarray | None = None,
+    q_rows: int = 1,
+    r_cols: int = 1,
+) -> CertificateResult:
+    """Require at least q rows, each with at least r destabilised token cells."""
+    K, N, L = votes.shape
+    if q_rows < 1 or q_rows > N:
+        raise ValueError(f"q_rows must be in [1, {N}]")
+    if r_cols < 1 or r_cols > L:
+        raise ValueError(f"r_cols must be in [1, {L}]")
+
+    model, a = _make_model(K, f"row_col_stability_q{q_rows}_r{r_cols}")
+    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up, influence)
+    y_row = model.addVars(N, vtype=GRB.BINARY, name="y_row")
+    _add_at_least_r_row_constraints(model, z, y_row, N, L, q_rows=q_rows, r_cols=r_cols)
+    return _optimize_and_extract(f"row_col_stability_q{q_rows}_r{r_cols}", model, a, z, y_row=y_row)
+
+
 def solve_row_validity(votes: np.ndarray, clean_counts: np.ndarray, target: np.ndarray, T: int, influence: np.ndarray | None = None) -> CertificateResult:
     K, N, L = votes.shape
     model, a = _make_model(K, "row_validity")
@@ -233,6 +256,16 @@ def _add_full_row_constraints(model: gp.Model, z: gp.tupledict, y_row: gp.tupled
         model.addConstr(gp.quicksum(z[i, j] for j in range(L)) >= L * y_row[i], name=f"full_row_sum_{i}")
         for j in range(L):
             model.addConstr(z[i, j] >= y_row[i], name=f"full_row_cell_{i}_{j}")
+    model.addConstr(gp.quicksum(y_row[i] for i in range(N)) >= q_rows, name=f"at_least_{q_rows}_rows")
+
+
+def _add_at_least_r_row_constraints(
+    model: gp.Model, z: gp.tupledict, y_row: gp.tupledict, N: int, L: int, q_rows: int, r_cols: int
+) -> None:
+    for i in range(N):
+        changed_in_row = gp.quicksum(z[i, j] for j in range(L))
+        model.addConstr(changed_in_row >= r_cols * y_row[i], name=f"row_{i}_at_least_{r_cols}_lower")
+        model.addConstr(changed_in_row <= (r_cols - 1) + (L - r_cols + 1) * y_row[i], name=f"row_{i}_at_least_{r_cols}_upper")
     model.addConstr(gp.quicksum(y_row[i] for i in range(N)) >= q_rows, name=f"at_least_{q_rows}_rows")
 
 

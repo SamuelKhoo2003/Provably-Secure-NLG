@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 PYTHON_BIN="${PYTHON_BIN:-.venv/bin/python}"
@@ -23,6 +23,7 @@ echo "Writing outputs to: $OUT_DIR"
   --delta-stab "${VIS_DELTA_STAB:-${VIS_DELTA:-0.2}}" \
   --delta-val "${VIS_DELTA_VAL:-${VIS_DELTA:-0.2}}" \
   --target-bias "${TARGET_BIAS:-0.2}" \
+  --influence-mode "${INFLUENCE_MODE:-dense}" \
   --seed "${SEED:-0}" \
   --save-dir "${VIS_OUT_DIR:-toy_results/default_instance}"
 
@@ -33,9 +34,10 @@ echo "Writing outputs to: $OUT_DIR"
   --Ts "${TS:-3,5,8,12}" \
   --deltas "${DELTAS:-0.0,0.1,0.2,0.3,0.4}" \
   --target-bias "${TARGET_BIAS:-0.2}" \
+  --influence-mode "${INFLUENCE_MODE:-dense}" \
   --seed "${SEED:-0}" \
   --save-dir "$OUT_DIR"
 
 echo
 echo "CSV:   $OUT_DIR/benchmark_results.csv"
-echo "Plots: $OUT_DIR/focused_*.svg"
+echo "Plots: $OUT_DIR/*.svg"

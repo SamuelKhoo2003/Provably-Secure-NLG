@@ -4,6 +4,7 @@ import argparse
 import csv
 from collections.abc import Iterable
 from pathlib import Path
+from time import perf_counter
 
 import numpy as np
 
@@ -16,6 +17,7 @@ from .milp import (
     solve_row_col_validity,
     solve_row_stability,
     solve_row_validity,
+    solve_structured_stability,
 )
 
 
@@ -28,15 +30,30 @@ def run_sanity(
     delta_val: float = 0.2,
     target_bias: float = 0.2,
     seed: int = 0,
+    influence_mode: str = "dense",
     show_grid: bool = False,
     save_dir: str | None = None,
 ) -> list[CertificateResult]:
-    data = generate_toy_votes(K=K, N=N, L=L, T=T, delta_stab=delta_stab, delta_val=delta_val, target_bias=target_bias, seed=seed)
-    _print_instance_summary(data, K, N, L, T, delta_stab, delta_val, target_bias, seed)
+    data = generate_toy_votes(
+        K=K, N=N, L=L, T=T, delta_stab=delta_stab, delta_val=delta_val, target_bias=target_bias, seed=seed, influence_mode=influence_mode
+    )
+    _print_instance_summary(data, K, N, L, T, delta_stab, delta_val, target_bias, seed, influence_mode)
     if show_grid:
         print_console_grid(data)
     if save_dir is not None:
-        save_instance_plots(data, Path(save_dir), K=K, N=N, L=L, T=T, delta_stab=delta_stab, delta_val=delta_val, target_bias=target_bias, seed=seed)
+        save_instance_plots(
+            data,
+            Path(save_dir),
+            K=K,
+            N=N,
+            L=L,
+            T=T,
+            delta_stab=delta_stab,
+            delta_val=delta_val,
+            target_bias=target_bias,
+            seed=seed,
+            influence_mode=influence_mode,
+        )
     results = solve_default_certificates(data, T)
     print_certificate_table(results)
     return results
@@ -104,11 +121,27 @@ def sweep_prompts(K: int, prompts: Iterable[int], L: int, T: int, delta: float, 
     _print_sweep_table(["N", "row_stab", "row_val", "row_col_val_q1", "row_col_val_qN"], rows)
 
 
-def visualize_instance(K: int, N: int, L: int, T: int, delta_stab: float, delta_val: float, target_bias: float, seed: int, save_dir: str) -> None:
-    data = generate_toy_votes(K=K, N=N, L=L, T=T, delta_stab=delta_stab, delta_val=delta_val, target_bias=target_bias, seed=seed)
-    _print_instance_summary(data, K, N, L, T, delta_stab, delta_val, target_bias, seed)
+def visualize_instance(
+    K: int, N: int, L: int, T: int, delta_stab: float, delta_val: float, target_bias: float, seed: int, influence_mode: str, save_dir: str
+) -> None:
+    data = generate_toy_votes(
+        K=K, N=N, L=L, T=T, delta_stab=delta_stab, delta_val=delta_val, target_bias=target_bias, seed=seed, influence_mode=influence_mode
+    )
+    _print_instance_summary(data, K, N, L, T, delta_stab, delta_val, target_bias, seed, influence_mode)
     print_console_grid(data)
-    save_instance_plots(data, Path(save_dir), K=K, N=N, L=L, T=T, delta_stab=delta_stab, delta_val=delta_val, target_bias=target_bias, seed=seed)
+    save_instance_plots(
+        data,
+        Path(save_dir),
+        K=K,
+        N=N,
+        L=L,
+        T=T,
+        delta_stab=delta_stab,
+        delta_val=delta_val,
+        target_bias=target_bias,
+        seed=seed,
+        influence_mode=influence_mode,
+    )
 
 
 def benchmark_scale(
@@ -118,6 +151,7 @@ def benchmark_scale(
     Ts: Iterable[int],
     deltas: Iterable[float],
     target_bias: float,
+    influence_mode: str,
     seed: int,
     save_dir: str,
 ) -> list[dict[str, object]]:
@@ -130,22 +164,36 @@ def benchmark_scale(
             for L in Ls:
                 for T in Ts:
                     for delta in deltas:
-                        data = generate_toy_votes(K=K, N=N, L=L, T=T, delta_stab=delta, delta_val=delta, target_bias=target_bias, seed=seed)
+                        data = generate_toy_votes(
+                            K=K,
+                            N=N,
+                            L=L,
+                            T=T,
+                            delta_stab=delta,
+                            delta_val=delta,
+                            target_bias=target_bias,
+                            seed=seed,
+                            influence_mode=influence_mode,
+                        )
+                        start = perf_counter()
                         results = _solve_benchmark_certificates(data, T)
+                        runtime_total = perf_counter() - start
                         row = {
                             "K": K,
                             "N": N,
                             "L": L,
                             "T": T,
-                            "delta": delta,
                             "delta_stab": delta,
                             "delta_val": delta,
                             "target_bias": target_bias,
                             "seed": seed,
+                            "influence_mode": influence_mode,
+                            "runtime_gurobi_total": f"{runtime_total:.6f}",
                         }
                         for result in results:
-                            metric_name = "row_col_validity_qN" if result.name == f"row_col_validity_q{N}" else result.name
+                            metric_name = _csv_metric_name(result.name, N, L)
                             row[metric_name] = result.B_star
+                        _fill_degenerate_corner_columns(row)
                         row.update(compute_reference_baselines(data))
                         rows.append(row)
                         print(
@@ -161,6 +209,36 @@ def benchmark_scale(
     print(f"Wrote benchmark CSV: {csv_path}")
     print(f"Wrote benchmark plots under: {output_dir}")
     return rows
+
+
+def _csv_metric_name(result_name: str, N: int, L: int) -> str:
+    if result_name.startswith("row_col_stability_q"):
+        q_part, r_part = result_name.removeprefix("row_col_stability_q").split("_r", maxsplit=1)
+        q_rows = int(q_part)
+        r_cols = int(r_part)
+        q_label = "q1" if q_rows == 1 else ("qN" if q_rows == N else f"q{q_rows}")
+        r_label = "r1" if r_cols == 1 else ("rL" if r_cols == L else f"r{r_cols}")
+        return f"row_col_stab_{q_label}_{r_label}"
+    if result_name == "row_col_validity_q1":
+        return "row_col_val_q1"
+    if result_name == f"row_col_validity_q{N}":
+        return "row_col_val_qN"
+    return result_name
+
+
+def _fill_degenerate_corner_columns(row: dict[str, object]) -> None:
+    if int(row["L"]) == 1:
+        if "row_col_stab_q1_r1" in row:
+            row.setdefault("row_col_stab_q1_rL", row["row_col_stab_q1_r1"])
+        if "row_col_stab_qN_r1" in row:
+            row.setdefault("row_col_stab_qN_rL", row["row_col_stab_qN_r1"])
+    if int(row["N"]) == 1:
+        if "row_col_stab_q1_r1" in row:
+            row.setdefault("row_col_stab_qN_r1", row["row_col_stab_q1_r1"])
+        if "row_col_stab_q1_rL" in row:
+            row.setdefault("row_col_stab_qN_rL", row["row_col_stab_q1_rL"])
+        if "row_col_val_q1" in row:
+            row.setdefault("row_col_val_qN", row["row_col_val_q1"])
 
 
 def plot_benchmark_csv(csv_path: str, save_dir: str | None = None) -> list[dict[str, object]]:
@@ -212,21 +290,44 @@ def print_console_grid(data: ToyData) -> None:
 
 
 def save_instance_plots(
-    data: ToyData, output_dir: Path, K: int, N: int, L: int, T: int, delta_stab: float, delta_val: float, target_bias: float, seed: int
+    data: ToyData,
+    output_dir: Path,
+    K: int,
+    N: int,
+    L: int,
+    T: int,
+    delta_stab: float,
+    delta_val: float,
+    target_bias: float,
+    seed: int,
+    influence_mode: str,
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     margins = stability_margins(data.stab_counts, data.clean_pred, data.runner_up)
-    winner_counts = np.take_along_axis(data.stab_counts, data.clean_pred[:, :, None], axis=2)[:, :, 0]
     target_counts = np.take_along_axis(data.val_counts, data.target[:, :, None], axis=2)[:, :, 0]
-    disagreement = 1.0 - (winner_counts / K)
+    stability_grid = compute_structured_stability_grid(data)
+    q_curve = compute_validity_q_curve(data, T)
 
-    title_suffix = f"K={K}, N={N}, L={L}, T={T}, delta_stab={delta_stab}, delta_val={delta_val}, target_bias={target_bias}, seed={seed}"
+    title_suffix = (
+        f"K={K}, N={N}, L={L}, T={T}, delta_stab={delta_stab}, delta_val={delta_val}, "
+        f"target_bias={target_bias}, influence={influence_mode}, seed={seed}"
+    )
     _save_heatmap_svg(data.clean_pred, output_dir / "clean_predictions.svg", "Clean predictions | " + title_suffix)
     _save_heatmap_svg(data.target, output_dir / "harmful_targets.svg", "Harmful targets | " + title_suffix)
     _save_heatmap_svg(margins, output_dir / "stability_margins.svg", "Winner vs runner-up margins | " + title_suffix)
-    _save_heatmap_svg(winner_counts, output_dir / "winner_counts.svg", "Winner vote counts | " + title_suffix)
     _save_heatmap_svg(target_counts, output_dir / "validity_target_counts.svg", "Target validity vote counts | " + title_suffix)
-    _save_heatmap_svg(disagreement, output_dir / "stability_disagreement_rate.svg", "Stability cell disagreement rate | " + title_suffix, fmt=".2f")
+    _save_heatmap_svg(
+        stability_grid,
+        output_dir / "structured_stability_heatmap.svg",
+        "Structured stability B*(q rows, r changed tokens) | " + title_suffix,
+    )
+    _save_line_plot_svg(
+        output_dir / "validity_q_curve.svg",
+        "Row-column validity B*(q) | " + title_suffix,
+        "q rows compromised",
+        "Poison budget B*",
+        {"shared MILP": ([float(q) for q in range(1, N + 1)], [float(v) for v in q_curve])},
+    )
 
     print()
     print(f"Wrote instance plots under: {output_dir}")
@@ -236,40 +337,43 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
     if not rows:
         return
 
-    axis_names = ["K", "N", "L", "T", "delta"]
-    for axis_name in axis_names:
-        _save_focused_plot(
-            rows,
-            output_dir / f"focused_stability_by_{axis_name}.svg",
-            title=f"Row-column stability comparison by {axis_name}",
-            axis_name=axis_name,
-            metrics={
-                "shared MILP: full row": "row_col_stability_full_row",
-                "naive DPA: independent full row": "naive_dpa_stability_full_row",
-                "PHD ref: any cell margin": "phd_ref_stability_any_cell",
-            },
-        )
-        _save_focused_plot(
-            rows,
-            output_dir / f"focused_validity_q1_by_{axis_name}.svg",
-            title=f"Row-column validity q1 comparison by {axis_name}",
-            axis_name=axis_name,
-            metrics={
-                "shared MILP: full target row": "row_col_validity_q1",
-                "naive DPA: independent target row": "naive_dpa_validity_q1",
-                "PHD ref: any target cell": "phd_ref_validity_any_cell",
-            },
-        )
-        _save_focused_plot(
-            rows,
-            output_dir / f"focused_validity_qN_by_{axis_name}.svg",
-            title=f"Row-column validity qN comparison by {axis_name}",
-            axis_name=axis_name,
-            metrics={
-                "shared MILP: all rows": "row_col_validity_qN",
-                "naive DPA: independent all rows": "naive_dpa_validity_qN",
-            },
-        )
+    _save_focused_plot(
+        rows,
+        output_dir / "validity_scaling_by_L.svg",
+        title="Validity scaling with sequence length",
+        axis_name="L",
+        metrics={
+            "raw DPA: weakest target cell": "raw_dpa_val_min_cell",
+            "independent-sum row validity": "independent_val_q1",
+            "phrase-DPA validity": "phrase_dpa_val_q1",
+            "shared row-column q1": "row_col_val_q1",
+            "shared row-column qN": "row_col_val_qN",
+        },
+    )
+    _save_focused_plot(
+        rows,
+        output_dir / "stability_structured_by_L.svg",
+        title="Structured stability scaling with sequence length",
+        axis_name="L",
+        metrics={
+            "q1 r1: weakest cell": "row_col_stab_q1_r1",
+            "q1 rL: full response": "row_col_stab_q1_rL",
+            "qN r1: all prompts one token": "row_col_stab_qN_r1",
+            "qN rL: full matrix": "row_col_stab_qN_rL",
+            "independent qN rL": "independent_stab_qN_rL",
+        },
+    )
+    _save_focused_plot(
+        rows,
+        output_dir / "validity_bias_sweep.svg",
+        title="Validity sensitivity to harmful-prefix target bias",
+        axis_name="target_bias",
+        metrics={
+            "shared row-column q1": "row_col_val_q1",
+            "shared row-column qN": "row_col_val_qN",
+            "phrase-DPA q1": "phrase_dpa_val_q1",
+        },
+    )
 
 
 def print_certificate_table(results: list[CertificateResult]) -> None:
@@ -281,9 +385,14 @@ def print_certificate_table(results: list[CertificateResult]) -> None:
         print(f"{result.name:34} {b_star:>2}   {result.status_name}")
 
 
-def _print_instance_summary(data: ToyData, K: int, N: int, L: int, T: int, delta_stab: float, delta_val: float, target_bias: float, seed: int) -> None:
+def _print_instance_summary(
+    data: ToyData, K: int, N: int, L: int, T: int, delta_stab: float, delta_val: float, target_bias: float, seed: int, influence_mode: str
+) -> None:
     margins = stability_margins(data.stab_counts, data.clean_pred, data.runner_up)
-    print(f"K={K}, N={N}, L={L}, T={T}, delta_stab={delta_stab}, delta_val={delta_val}, target_bias={target_bias}, seed={seed}")
+    print(
+        f"K={K}, N={N}, L={L}, T={T}, delta_stab={delta_stab}, delta_val={delta_val}, "
+        f"target_bias={target_bias}, influence_mode={influence_mode}, seed={seed}"
+    )
     print()
     print("clean predictions:")
     print(data.clean_pred)
@@ -306,11 +415,14 @@ def _print_sweep_table(headers: list[str], rows: list[list[object]]) -> None:
 
 def _solve_benchmark_certificates(data: ToyData, T: int) -> list[CertificateResult]:
     N = data.stab_votes.shape[1]
+    L = data.stab_votes.shape[2]
     return [
         solve_row_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence),
         solve_col_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence),
-        solve_row_col_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, definition="any_cell"),
-        solve_row_col_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, definition="full_row"),
+        solve_structured_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=1),
+        solve_structured_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=L),
+        solve_structured_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=N, r_cols=1),
+        solve_structured_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=N, r_cols=L),
         solve_row_validity(data.val_votes, data.val_counts, data.target, T, data.influence),
         solve_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, definition="full_column"),
         solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1),
@@ -321,16 +433,39 @@ def _solve_benchmark_certificates(data: ToyData, T: int) -> list[CertificateResu
 def compute_reference_baselines(data: ToyData) -> dict[str, int]:
     stability_cell_budgets = _cell_stability_budgets(data)
     validity_cell_budgets = _cell_validity_budgets(data)
+    phrase_row_budgets = _phrase_dpa_validity_row_budgets(data)
     return {
-        # Naive DPA: solve each token independently, then add independent token costs.
-        "naive_dpa_stability_full_row": int(np.min(stability_cell_budgets.sum(axis=1))),
-        "naive_dpa_validity_q1": int(np.min(validity_cell_budgets.sum(axis=1))),
-        "naive_dpa_validity_qN": int(validity_cell_budgets.sum()),
-        # PHD-style reference: single-cell majority-margin baselines.
-        # These are intentionally weaker/easier objectives than full sequence certificates.
-        "phd_ref_stability_any_cell": int(np.min(_phd_margin_stability_budgets(data))),
-        "phd_ref_validity_any_cell": int(np.min(validity_cell_budgets)),
+        "raw_dpa_stab_min_cell": int(np.min(_phd_margin_stability_budgets(data))),
+        "raw_dpa_val_min_cell": int(np.min(validity_cell_budgets)),
+        "independent_stab_full_row_q1": int(np.min(stability_cell_budgets.sum(axis=1))),
+        "independent_stab_qN_rL": int(stability_cell_budgets.sum()),
+        "independent_val_q1": int(np.min(validity_cell_budgets.sum(axis=1))),
+        "independent_val_qN": int(validity_cell_budgets.sum()),
+        "phrase_dpa_val_q1": int(np.min(phrase_row_budgets)),
+        "phrase_dpa_val_qN": int(phrase_row_budgets.sum()),
     }
+
+
+def compute_structured_stability_grid(data: ToyData) -> np.ndarray:
+    N = data.stab_votes.shape[1]
+    L = data.stab_votes.shape[2]
+    grid = np.zeros((N, L), dtype=np.int64)
+    for q_rows in range(1, N + 1):
+        for r_cols in range(1, L + 1):
+            result = solve_structured_stability(
+                data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=q_rows, r_cols=r_cols
+            )
+            grid[q_rows - 1, r_cols - 1] = -1 if result.B_star is None else result.B_star
+    return grid
+
+
+def compute_validity_q_curve(data: ToyData, T: int) -> list[int]:
+    N = data.val_votes.shape[1]
+    values = []
+    for q_rows in range(1, N + 1):
+        result = solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=q_rows)
+        values.append(-1 if result.B_star is None else result.B_star)
+    return values
 
 
 def _cell_stability_budgets(data: ToyData) -> np.ndarray:
@@ -374,6 +509,28 @@ def _phd_margin_stability_budgets(data: ToyData) -> np.ndarray:
     return ((margins + 1) // 2).astype(np.int64)
 
 
+def _phrase_dpa_validity_row_budgets(data: ToyData) -> np.ndarray:
+    K, N, L = data.val_votes.shape
+    budgets = np.zeros(N, dtype=np.int64)
+    for i in range(N):
+        target_phrase = tuple(int(x) for x in data.target[i])
+        phrases = [tuple(int(x) for x in data.val_votes[k, i]) for k in range(K)]
+        target_count = sum(phrase == target_phrase for phrase in phrases)
+        competitor_counts: dict[tuple[int, ...], int] = {}
+        for phrase in phrases:
+            if phrase == target_phrase:
+                continue
+            competitor_counts[phrase] = competitor_counts.get(phrase, 0) + 1
+        if not competitor_counts:
+            budgets[i] = 0
+            continue
+        competitor_phrase, competitor_count = max(competitor_counts.items(), key=lambda item: (item[1], tuple(-part for part in item[0])))
+        deficit = competitor_count - target_count
+        contributions = [int(phrase != target_phrase) + int(phrase == competitor_phrase) for phrase in phrases]
+        budgets[i] = _min_budget_from_contributions(deficit, contributions)
+    return budgets
+
+
 def _min_budget_from_contributions(deficit: int, contributions: list[int]) -> int:
     if deficit <= 0:
         return 0
@@ -405,6 +562,8 @@ def _save_focused_plot(rows: list[dict[str, object]], path: Path, title: str, ax
         xs, ys = [], []
         grouped: dict[float, list[float]] = {}
         for row in rows:
+            if axis_name not in row:
+                continue
             value = row.get(metric)
             if value in {None, ""}:
                 continue
@@ -430,8 +589,26 @@ def _read_rows_csv(path: Path) -> list[dict[str, object]]:
                     parsed[key] = float(value) if "." in value else int(value)
                 else:
                     parsed[key] = value
+            _copy_legacy_csv_columns(parsed)
             rows.append(parsed)
     return rows
+
+
+def _copy_legacy_csv_columns(row: dict[str, object]) -> None:
+    legacy_map = {
+        "row_col_stability_any_cell": "row_col_stab_q1_r1",
+        "row_col_stability_full_row": "row_col_stab_q1_rL",
+        "row_col_validity_q1": "row_col_val_q1",
+        "row_col_validity_qN": "row_col_val_qN",
+        "naive_dpa_stability_full_row": "independent_stab_full_row_q1",
+        "naive_dpa_validity_q1": "independent_val_q1",
+        "naive_dpa_validity_qN": "independent_val_qN",
+        "phd_ref_stability_any_cell": "raw_dpa_stab_min_cell",
+        "phd_ref_validity_any_cell": "raw_dpa_val_min_cell",
+    }
+    for old_key, new_key in legacy_map.items():
+        if old_key in row and new_key not in row:
+            row[new_key] = row[old_key]
 
 
 def _certificate_metric_names(rows: list[dict[str, object]]) -> list[str]:
@@ -590,6 +767,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--delta-stab", type=float, default=None)
     parser.add_argument("--delta-val", type=float, default=None)
     parser.add_argument("--target-bias", type=float, default=0.2)
+    parser.add_argument("--influence-mode", choices=["dense", "row-local", "column-local"], default="dense")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--deltas", type=_parse_float_list, default=[0.0, 0.2, 0.4])
     parser.add_argument("--Ks", type=_parse_int_list, default=[5, 7, 9])
@@ -617,6 +795,7 @@ def main() -> None:
             delta_val=delta_val,
             target_bias=args.target_bias,
             seed=args.seed,
+            influence_mode=args.influence_mode,
             show_grid=args.show_grid,
             save_dir=args.save_dir if args.show_grid else None,
         )
@@ -630,10 +809,21 @@ def main() -> None:
             delta_val=delta_val,
             target_bias=args.target_bias,
             seed=args.seed,
+            influence_mode=args.influence_mode,
             save_dir=args.save_dir,
         )
     elif args.command == "benchmark":
-        benchmark_scale(Ks=args.Ks, Ns=args.Ns, Ls=args.lengths, Ts=args.Ts, deltas=args.deltas, target_bias=args.target_bias, seed=args.seed, save_dir=args.save_dir)
+        benchmark_scale(
+            Ks=args.Ks,
+            Ns=args.Ns,
+            Ls=args.lengths,
+            Ts=args.Ts,
+            deltas=args.deltas,
+            target_bias=args.target_bias,
+            influence_mode=args.influence_mode,
+            seed=args.seed,
+            save_dir=args.save_dir,
+        )
     elif args.command == "plot-csv":
         plot_benchmark_csv(args.csv, save_dir=args.save_dir)
     elif args.command == "sweep-delta":
