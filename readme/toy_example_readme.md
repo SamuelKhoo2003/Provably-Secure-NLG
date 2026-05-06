@@ -10,6 +10,8 @@ a[k] in {0, 1}
 
 The same corrupted shard allocation is used across every prompt row and token column.
 
+For a closer explanation of the prompt/token vote tensor and how it relates to `phd_reference`, see `readme/token_voting_readme.md`.
+
 ## Setup
 
 ```bash
@@ -91,9 +93,22 @@ Run the default scale benchmark:
 python -m toy_certificate.experiments benchmark --save-dir toy_results/benchmark_default
 ```
 
-This writes a focused set of comparison plots:
+This writes reusable benchmark data:
 
 - `benchmark_results.csv`
+
+By default this does not render plots, so changing graph style does not require rerunning Gurobi. To benchmark and plot in one command, pass `--make-plots`.
+
+Render or refresh plots from an existing CSV:
+
+```bash
+python -m toy_certificate.experiments plot-csv \
+  --csv toy_results/benchmark_default/benchmark_results.csv \
+  --save-dir toy_results/benchmark_default
+```
+
+This writes a focused set of comparison plots:
+
 - `validity_scaling_by_L.svg`
 - `stability_structured_by_L.svg`
 - `validity_bias_sweep.svg`
@@ -101,10 +116,12 @@ This writes a focused set of comparison plots:
 The focused plots compare:
 
 - shared-allocation MILP certificate;
-- naive DPA per-cell baseline, where token costs are computed independently and then added;
-- PHD-style single-cell majority-margin reference, where applicable.
+- confirmed DPA matrix baseline, where each prompt row is represented by its weakest token certificate;
+- independent-composition baseline, where token costs are summed separately;
+- phrase-DPA baseline, where a full generated row is treated as one class.
 
 See `readme/naive_dpa_readme.md` for the exact baseline formulas and CSV column meanings.
+See `readme/toy_benchmark_plots_readme.md` for a full explanation of every benchmark graph and plotted column.
 
 Run a larger benchmark by passing comma-separated ranges:
 
@@ -129,7 +146,7 @@ len(Ks) * len(Ns) * len(lengths) * len(Ts) * len(deltas)
 
 Each batch solves several certificates, so start modest before scaling up.
 
-You can replot an existing CSV without rerunning Gurobi:
+You can replot any existing benchmark CSV without rerunning Gurobi:
 
 ```bash
 python -m toy_certificate.experiments plot-csv \
@@ -143,9 +160,11 @@ Current benchmark CSV columns include:
 
 - `row_col_stab_q1_r1`, `row_col_stab_q1_rL`, `row_col_stab_qN_r1`, `row_col_stab_qN_rL`
 - `row_col_val_q1`, `row_col_val_qN`
-- `raw_dpa_stab_min_cell`, `raw_dpa_val_min_cell`
-- `independent_stab_full_row_q1`, `independent_stab_qN_rL`, `independent_val_q1`, `independent_val_qN`
-- `phrase_dpa_val_q1`, `phrase_dpa_val_qN`
+- `dpa_stab_cell_min`, `dpa_stab_row_radius_q1`, `dpa_stab_row_radius_qN`
+- `dpa_val_cell_min`, `dpa_val_row_weak_q1`, `dpa_val_row_weak_qN`
+- `independent_stab_full_row_q1`, `independent_stab_full_row_qN`
+- `independent_val_sequence_q1`, `independent_val_sequence_qN`
+- `phrase_dpa_val_q1`, `phrase_dpa_val_qN`, `phrase_independent_val_qN`
 
 ## `q1` vs `qN`
 
@@ -158,7 +177,19 @@ Current benchmark CSV columns include:
 
 ## Bash runner
 
-Run the default visualization and large benchmark:
+Run only the large benchmark data generation:
+
+```bash
+./scripts/run_toy_benchmark_data.sh
+```
+
+Refresh plots from an existing benchmark CSV:
+
+```bash
+./scripts/plot_toy_benchmark.sh
+```
+
+Run the default visualization, large benchmark, and plot refresh:
 
 ```bash
 ./scripts/run_toy_benchmark.sh

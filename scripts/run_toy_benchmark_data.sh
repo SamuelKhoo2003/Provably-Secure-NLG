@@ -13,19 +13,7 @@ if [[ ! -x "$PYTHON_BIN" ]]; then
   exit 1
 fi
 
-echo "Writing outputs to: $OUT_DIR"
-
-"$PYTHON_BIN" -m toy_certificate.experiments visualize \
-  --K "${VIS_K:-7}" \
-  --N "${VIS_N:-3}" \
-  --L "${VIS_L:-4}" \
-  --T "${VIS_T:-5}" \
-  --delta-stab "${VIS_DELTA_STAB:-${VIS_DELTA:-0.2}}" \
-  --delta-val "${VIS_DELTA_VAL:-${VIS_DELTA:-0.2}}" \
-  --target-bias "${TARGET_BIAS:-0.2}" \
-  --influence-mode "${INFLUENCE_MODE:-dense}" \
-  --seed "${SEED:-0}" \
-  --save-dir "${VIS_OUT_DIR:-toy_results/default_instance}"
+echo "Writing benchmark data to: $OUT_DIR"
 
 "$PYTHON_BIN" -m toy_certificate.experiments benchmark \
   --Ks "${KS:-5,7,9,11,15}" \
@@ -38,10 +26,5 @@ echo "Writing outputs to: $OUT_DIR"
   --seed "${SEED:-0}" \
   --save-dir "$OUT_DIR"
 
-"$PYTHON_BIN" -m toy_certificate.experiments plot-csv \
-  --csv "$OUT_DIR/benchmark_results.csv" \
-  --save-dir "$OUT_DIR"
-
 echo
-echo "CSV:   $OUT_DIR/benchmark_results.csv"
-echo "Plots: $OUT_DIR/*.svg"
+echo "CSV: $OUT_DIR/benchmark_results.csv"

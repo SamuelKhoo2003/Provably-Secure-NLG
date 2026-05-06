@@ -20,15 +20,30 @@ class ToyGenerationTests(unittest.TestCase):
 
         expected = {
             "raw_dpa_stab_min_cell",
+            "dpa_stab_cell_min",
+            "dpa_stab_row_radius_q1",
+            "dpa_stab_row_radius_qN",
+            "dpa_val_cell_min",
+            "dpa_val_row_weak_q1",
+            "dpa_val_row_weak_qN",
             "raw_dpa_val_min_cell",
             "independent_stab_full_row_q1",
+            "independent_stab_full_row_qN",
             "independent_stab_qN_rL",
+            "independent_val_sequence_q1",
+            "independent_val_sequence_qN",
             "independent_val_q1",
             "independent_val_qN",
             "phrase_dpa_val_q1",
             "phrase_dpa_val_qN",
+            "phrase_independent_val_q1",
+            "phrase_independent_val_qN",
         }
         self.assertTrue(expected.issubset(baselines))
+        self.assertGreaterEqual(baselines["dpa_stab_row_radius_qN"], baselines["dpa_stab_row_radius_q1"])
+        self.assertGreaterEqual(baselines["dpa_val_row_weak_qN"], baselines["dpa_val_row_weak_q1"])
+        self.assertGreaterEqual(baselines["phrase_dpa_val_qN"], baselines["phrase_dpa_val_q1"])
+        self.assertGreaterEqual(baselines["phrase_independent_val_qN"], baselines["phrase_dpa_val_qN"])
 
 
 class GurobiBackedTests(unittest.TestCase):

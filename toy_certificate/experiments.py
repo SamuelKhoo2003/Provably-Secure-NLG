@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 from collections.abc import Iterable
+from itertools import combinations
 from pathlib import Path
 from time import perf_counter
 
@@ -154,6 +155,7 @@ def benchmark_scale(
     influence_mode: str,
     seed: int,
     save_dir: str,
+    make_plots: bool = False,
 ) -> list[dict[str, object]]:
     output_dir = Path(save_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -204,10 +206,13 @@ def benchmark_scale(
 
     csv_path = output_dir / "benchmark_results.csv"
     _write_rows_csv(csv_path, rows)
-    save_benchmark_plots(rows, output_dir)
     print()
     print(f"Wrote benchmark CSV: {csv_path}")
-    print(f"Wrote benchmark plots under: {output_dir}")
+    if make_plots:
+        save_benchmark_plots(rows, output_dir)
+        print(f"Wrote benchmark plots under: {output_dir}")
+    else:
+        print(f"Skipped plots. Replot later with: python -m toy_certificate.experiments plot-csv --csv {csv_path}")
     return rows
 
 
@@ -343,8 +348,8 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
         title="Validity scaling with sequence length",
         axis_name="L",
         metrics={
-            "raw DPA: weakest target cell": "raw_dpa_val_min_cell",
-            "independent-sum row validity": "independent_val_q1",
+            "DPA matrix: weakest row token": "dpa_val_row_weak_q1",
+            "independent sequence q1": "independent_val_sequence_q1",
             "phrase-DPA validity": "phrase_dpa_val_q1",
             "shared row-column q1": "row_col_val_q1",
             "shared row-column qN": "row_col_val_qN",
@@ -356,11 +361,13 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
         title="Structured stability scaling with sequence length",
         axis_name="L",
         metrics={
+            "DPA matrix q1": "dpa_stab_row_radius_q1",
+            "DPA matrix qN": "dpa_stab_row_radius_qN",
             "q1 r1: weakest cell": "row_col_stab_q1_r1",
             "q1 rL: full response": "row_col_stab_q1_rL",
             "qN r1: all prompts one token": "row_col_stab_qN_r1",
             "qN rL: full matrix": "row_col_stab_qN_rL",
-            "independent qN rL": "independent_stab_qN_rL",
+            "independent qN rL": "independent_stab_full_row_qN",
         },
     )
     _save_focused_plot(
@@ -369,6 +376,8 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
         title="Validity sensitivity to harmful-prefix target bias",
         axis_name="target_bias",
         metrics={
+            "DPA matrix q1": "dpa_val_row_weak_q1",
+            "DPA matrix qN": "dpa_val_row_weak_qN",
             "shared row-column q1": "row_col_val_q1",
             "shared row-column qN": "row_col_val_qN",
             "phrase-DPA q1": "phrase_dpa_val_q1",
@@ -434,15 +443,30 @@ def compute_reference_baselines(data: ToyData) -> dict[str, int]:
     stability_cell_budgets = _cell_stability_budgets(data)
     validity_cell_budgets = _cell_validity_budgets(data)
     phrase_row_budgets = _phrase_dpa_validity_row_budgets(data)
+    row_stability_radii = stability_cell_budgets.min(axis=1)
+    row_validity_weak_radii = validity_cell_budgets.min(axis=1)
+    independent_stability_row_costs = stability_cell_budgets.sum(axis=1)
+    independent_validity_row_costs = validity_cell_budgets.sum(axis=1)
     return {
         "raw_dpa_stab_min_cell": int(np.min(_phd_margin_stability_budgets(data))),
+        "dpa_stab_cell_min": int(np.min(stability_cell_budgets)),
+        "dpa_stab_row_radius_q1": int(np.min(row_stability_radii)),
+        "dpa_stab_row_radius_qN": int(np.max(row_stability_radii)),
+        "dpa_val_cell_min": int(np.min(validity_cell_budgets)),
+        "dpa_val_row_weak_q1": int(np.min(row_validity_weak_radii)),
+        "dpa_val_row_weak_qN": int(np.max(row_validity_weak_radii)),
         "raw_dpa_val_min_cell": int(np.min(validity_cell_budgets)),
-        "independent_stab_full_row_q1": int(np.min(stability_cell_budgets.sum(axis=1))),
-        "independent_stab_qN_rL": int(stability_cell_budgets.sum()),
-        "independent_val_q1": int(np.min(validity_cell_budgets.sum(axis=1))),
-        "independent_val_qN": int(validity_cell_budgets.sum()),
+        "independent_stab_full_row_q1": int(np.min(independent_stability_row_costs)),
+        "independent_stab_full_row_qN": int(independent_stability_row_costs.sum()),
+        "independent_stab_qN_rL": int(independent_stability_row_costs.sum()),
+        "independent_val_sequence_q1": int(np.min(independent_validity_row_costs)),
+        "independent_val_sequence_qN": int(independent_validity_row_costs.sum()),
+        "independent_val_q1": int(np.min(independent_validity_row_costs)),
+        "independent_val_qN": int(independent_validity_row_costs.sum()),
         "phrase_dpa_val_q1": int(np.min(phrase_row_budgets)),
-        "phrase_dpa_val_qN": int(phrase_row_budgets.sum()),
+        "phrase_dpa_val_qN": int(np.max(phrase_row_budgets)),
+        "phrase_independent_val_q1": int(np.min(phrase_row_budgets)),
+        "phrase_independent_val_qN": int(phrase_row_budgets.sum()),
     }
 
 
@@ -470,16 +494,22 @@ def compute_validity_q_curve(data: ToyData, T: int) -> list[int]:
 
 def _cell_stability_budgets(data: ToyData) -> np.ndarray:
     K, N, L = data.stab_votes.shape
+    T = data.stab_counts.shape[2]
     budgets = np.zeros((N, L), dtype=np.int64)
     for i in range(N):
         for j in range(L):
             w = int(data.clean_pred[i, j])
-            c = int(data.runner_up[i, j])
-            deficit = int(data.stab_counts[i, j, w] - data.stab_counts[i, j, c])
-            contributions = [
-                int(data.influence[k, i, j]) * (int(data.stab_votes[k, i, j] != c) + int(data.stab_votes[k, i, j] == w)) for k in range(K)
-            ]
-            budgets[i, j] = _min_budget_from_contributions(deficit, contributions)
+            competitor_budgets = []
+            for c in range(T):
+                if c == w:
+                    continue
+                deficit = int(data.stab_counts[i, j, w] - data.stab_counts[i, j, c])
+                contributions = [
+                    int(data.influence[k, i, j]) * (int(data.stab_votes[k, i, j] != c) + int(data.stab_votes[k, i, j] == w))
+                    for k in range(K)
+                ]
+                competitor_budgets.append(_min_budget_from_contributions(deficit, contributions))
+            budgets[i, j] = min(competitor_budgets)
     return budgets
 
 
@@ -491,16 +521,17 @@ def _cell_validity_budgets(data: ToyData) -> np.ndarray:
         for j in range(L):
             h = int(data.target[i, j])
             target_count = int(data.val_counts[i, j, h])
-            budget_candidates = []
-            for c in range(T):
-                if c == h:
+            deficits = np.array([int(data.val_counts[i, j, c]) - target_count if c != h else 0 for c in range(T)], dtype=np.int64)
+            contribs = np.zeros((K, T), dtype=np.int64)
+            for k in range(K):
+                if not int(data.influence[k, i, j]):
                     continue
-                deficit = int(data.val_counts[i, j, c]) - target_count
-                contributions = [
-                    int(data.influence[k, i, j]) * (int(data.val_votes[k, i, j] != h) + int(data.val_votes[k, i, j] == c)) for k in range(K)
-                ]
-                budget_candidates.append(_min_budget_from_contributions(deficit, contributions))
-            budgets[i, j] = max(budget_candidates)
+                vote = int(data.val_votes[k, i, j])
+                add_target = int(vote != h)
+                for c in range(T):
+                    if c != h:
+                        contribs[k, c] = add_target + int(vote == c)
+            budgets[i, j] = _min_budget_satisfying_all(deficits, contribs, ignored_class=h)
     return budgets
 
 
@@ -524,10 +555,14 @@ def _phrase_dpa_validity_row_budgets(data: ToyData) -> np.ndarray:
         if not competitor_counts:
             budgets[i] = 0
             continue
-        competitor_phrase, competitor_count = max(competitor_counts.items(), key=lambda item: (item[1], tuple(-part for part in item[0])))
-        deficit = competitor_count - target_count
-        contributions = [int(phrase != target_phrase) + int(phrase == competitor_phrase) for phrase in phrases]
-        budgets[i] = _min_budget_from_contributions(deficit, contributions)
+        competitor_phrases = list(competitor_counts)
+        deficits = np.array([competitor_counts[phrase] - target_count for phrase in competitor_phrases], dtype=np.int64)
+        contribs = np.zeros((K, len(competitor_phrases)), dtype=np.int64)
+        for k, phrase in enumerate(phrases):
+            add_target = int(phrase != target_phrase)
+            for c_idx, competitor_phrase in enumerate(competitor_phrases):
+                contribs[k, c_idx] = add_target + int(phrase == competitor_phrase)
+        budgets[i] = _min_budget_satisfying_all(deficits, contribs)
     return budgets
 
 
@@ -539,7 +574,25 @@ def _min_budget_from_contributions(deficit: int, contributions: list[int]) -> in
         running += contribution
         if running >= deficit:
             return budget
-    return len(contributions)
+    return len(contributions) + 1
+
+
+def _min_budget_satisfying_all(deficits: np.ndarray, contribs: np.ndarray, ignored_class: int | None = None) -> int:
+    active_deficits = deficits.copy()
+    if ignored_class is not None:
+        active_deficits[ignored_class] = 0
+    if np.all(active_deficits <= 0):
+        return 0
+
+    useful = np.flatnonzero(np.any(contribs > 0, axis=1))
+    if useful.size == 0:
+        return int(contribs.shape[0] + 1)
+
+    for budget in range(1, useful.size + 1):
+        for subset in combinations(useful.tolist(), budget):
+            if np.all(contribs[list(subset)].sum(axis=0) >= active_deficits):
+                return budget
+    return int(contribs.shape[0] + 1)
 
 
 def _write_rows_csv(path: Path, rows: list[dict[str, object]]) -> None:
@@ -605,10 +658,19 @@ def _copy_legacy_csv_columns(row: dict[str, object]) -> None:
         "naive_dpa_validity_qN": "independent_val_qN",
         "phd_ref_stability_any_cell": "raw_dpa_stab_min_cell",
         "phd_ref_validity_any_cell": "raw_dpa_val_min_cell",
+        "independent_stab_qN_rL": "independent_stab_full_row_qN",
+        "independent_val_q1": "independent_val_sequence_q1",
+        "independent_val_qN": "independent_val_sequence_qN",
     }
     for old_key, new_key in legacy_map.items():
         if old_key in row and new_key not in row:
             row[new_key] = row[old_key]
+    if "raw_dpa_stab_min_cell" in row:
+        row.setdefault("dpa_stab_cell_min", row["raw_dpa_stab_min_cell"])
+        row.setdefault("dpa_stab_row_radius_q1", row["raw_dpa_stab_min_cell"])
+    if "raw_dpa_val_min_cell" in row:
+        row.setdefault("dpa_val_cell_min", row["raw_dpa_val_min_cell"])
+        row.setdefault("dpa_val_row_weak_q1", row["raw_dpa_val_min_cell"])
 
 
 def _certificate_metric_names(rows: list[dict[str, object]]) -> list[str]:
@@ -775,9 +837,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--lengths", type=_parse_int_list, default=[2, 4])
     parser.add_argument("--prompts", type=_parse_int_list, default=[1, 2, 4, 8])
     parser.add_argument("--Ts", type=_parse_int_list, default=[3, 5])
-    parser.add_argument("--save-dir", default="toy_results")
+    parser.add_argument("--save-dir", default=None)
     parser.add_argument("--csv", default="toy_results/benchmark_large/benchmark_results.csv")
     parser.add_argument("--show-grid", action="store_true")
+    parser.add_argument("--make-plots", action="store_true", help="Also render benchmark plots after running Gurobi.")
     return parser
 
 
@@ -797,7 +860,7 @@ def main() -> None:
             seed=args.seed,
             influence_mode=args.influence_mode,
             show_grid=args.show_grid,
-            save_dir=args.save_dir if args.show_grid else None,
+            save_dir=(args.save_dir or "toy_results") if args.show_grid else None,
         )
     elif args.command == "visualize":
         visualize_instance(
@@ -810,7 +873,7 @@ def main() -> None:
             target_bias=args.target_bias,
             seed=args.seed,
             influence_mode=args.influence_mode,
-            save_dir=args.save_dir,
+            save_dir=args.save_dir or "toy_results",
         )
     elif args.command == "benchmark":
         benchmark_scale(
@@ -822,7 +885,8 @@ def main() -> None:
             target_bias=args.target_bias,
             influence_mode=args.influence_mode,
             seed=args.seed,
-            save_dir=args.save_dir,
+            save_dir=args.save_dir or "toy_results",
+            make_plots=args.make_plots,
         )
     elif args.command == "plot-csv":
         plot_benchmark_csv(args.csv, save_dir=args.save_dir)

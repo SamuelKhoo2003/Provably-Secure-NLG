@@ -1,8 +1,8 @@
-# Naive DPA Baselines
+# Confirmed DPA Baselines
 
-This note explains the DPA-style reference baselines currently implemented in `toy_certificate/experiments.py`.
+This note explains the DPA-style baselines currently implemented in `toy_certificate/experiments.py`.
 
-The important point is that these are not Gurobi MILPs. They are fast per-cell calculations used as comparison baselines against the shared row-column MILP certificates.
+The confirmed DPA matrix baseline is not the shared row-column MILP. It computes token-level certificates independently, reduces each prompt row to its weakest token, and then reports prompt-level `q` curves from those row radii.
 
 ## Where It Lives
 
@@ -11,204 +11,219 @@ The relevant functions are:
 - `compute_reference_baselines(data)`
 - `_cell_stability_budgets(data)`
 - `_cell_validity_budgets(data)`
-- `_phd_margin_stability_budgets(data)`
 - `_phrase_dpa_validity_row_budgets(data)`
+- `_min_budget_satisfying_all(deficits, contribs, ignored_class=None)`
 - `_min_budget_from_contributions(deficit, contributions)`
 
-These functions are called during:
+These are called by:
 
 ```bash
 python -m toy_certificate.experiments benchmark
 ```
 
-The results are written as extra columns in `benchmark_results.csv`.
+and written to `benchmark_results.csv`.
 
-## Poisoning Model
+## DPA Matrix Rule
 
-For each shard `k`, prompt row `i`, and token column `j`, the toy setup stores a vote:
-
-```text
-stab_votes[k, i, j]
-val_votes[k, i, j]
-```
-
-The DPA baseline asks how many shards must be poisoned to flip an independent majority vote.
-
-If shard `k` is poisoned and it influences cell `(i, j)`, the attacker is allowed to:
-
-- remove that shard's current vote from its clean class;
-- add that shard's vote to the desired attacker class.
-
-The helper code models this with a per-shard contribution of `0`, `1`, or `2`.
-
-## Per-Cell Stability
-
-For stability, each cell has:
+For every prompt row `i` and token column `j`, compute a per-cell DPA radius:
 
 ```text
-w = clean winner token
-c = runner-up token
+B_cell[i,j]
 ```
 
-The implementation compares only the clean winner against the runner-up:
+Then the confirmed prompt-level DPA radius is the weakest token in that prompt:
 
-```python
-deficit = stab_counts[i, j, w] - stab_counts[i, j, c]
+```text
+row_radius[i] = min_j B_cell[i,j]
 ```
 
-For each shard, the contribution is:
+The budget at which at least `q` prompts are individually vulnerable is the `q`-th smallest row radius.
+
+Special cases:
+
+```text
+q1 = min_i row_radius[i]
+qN = max_i row_radius[i]
+```
+
+This is different from independent composition, which sums token costs.
+
+## Stability
+
+For stability, a cell is vulnerable if some competitor token can beat or tie the clean winner.
+
+For cell `(i,j)`:
+
+```text
+w = clean_pred[i,j]
+c = competitor token
+```
+
+For each competitor `c != w`, the deficit is:
 
 ```python
-influence[k, i, j] * (
-    int(stab_votes[k, i, j] != c)
-    + int(stab_votes[k, i, j] == w)
+deficit = stab_counts[i,j,w] - stab_counts[i,j,c]
+```
+
+A poisoned shard contributes:
+
+```python
+influence[k,i,j] * (
+    int(stab_votes[k,i,j] != c)
+    + int(stab_votes[k,i,j] == w)
 )
 ```
 
-Interpretation:
-
-- `+1` if the poisoned shard can be changed into the runner-up token `c`;
-- `+1` if the poisoned shard currently votes for the winner `w`, so poisoning removes support from `w`;
-- `0` if the shard does not influence the cell.
-
-The contributions are sorted from largest to smallest. `_min_budget_from_contributions(...)` returns the smallest number of poisoned shards whose total contribution closes the winner-vs-runner-up deficit.
-
-The raw stability CSV column is:
+The implementation checks all competitors and takes:
 
 ```text
-raw_dpa_stab_min_cell = min over cells of ceil(margin / 2)
+B_cell_stab[i,j] = min_c budget_to_make_c_tie_or_beat_w
 ```
 
-That column uses `_phd_margin_stability_budgets(...)`, which is the simple majority-margin version:
-
-```python
-((margins + 1) // 2)
-```
-
-## Per-Cell Validity
-
-For validity, each cell has a harmful target token:
+The confirmed stability columns are:
 
 ```text
-h = target[i, j]
+dpa_stab_cell_min       = min_{i,j} B_cell_stab[i,j]
+dpa_stab_row_radius_q1  = min_i min_j B_cell_stab[i,j]
+dpa_stab_row_radius_qN  = max_i min_j B_cell_stab[i,j]
 ```
 
-The baseline computes the cost to make `h` beat every competitor token. For each competitor `c`, it computes:
+`raw_dpa_stab_min_cell` is still emitted as a simple winner-vs-runner-up margin reference.
 
-```python
-deficit = val_counts[i, j, c] - val_counts[i, j, h]
+## Validity
+
+For validity, a cell is vulnerable if the harmful target token can be made to beat or tie every competitor using one shard set for that cell.
+
+For cell `(i,j)`:
+
+```text
+h = target[i,j]
 ```
 
-For each shard, the contribution is:
+For every competitor `c != h`, the target condition is:
+
+```text
+target_count_after_poisoning >= competitor_count_after_poisoning
+```
+
+A poisoned shard contributes against competitor `c` as:
 
 ```python
-influence[k, i, j] * (
-    int(val_votes[k, i, j] != h)
-    + int(val_votes[k, i, j] == c)
+influence[k,i,j] * (
+    int(val_votes[k,i,j] != h)
+    + int(val_votes[k,i,j] == c)
 )
 ```
 
-Interpretation:
-
-- `+1` if the poisoned shard can be changed into the harmful target `h`;
-- `+1` if the poisoned shard currently votes for competitor `c`, so poisoning removes support from `c`;
-- `0` if the shard does not influence the cell.
-
-The cell budget is the maximum budget needed across all competitors:
+The implementation searches for the smallest shard subset whose contributions satisfy all competitors at once. This replaces the older approximation:
 
 ```text
-B_cell_validity[i, j] = max_c budget_to_make_h_beat_c
+max_c independently computed budget_to_beat_c
 ```
 
-The raw validity CSV column is:
+The confirmed validity columns are:
 
 ```text
-raw_dpa_val_min_cell = min over cells of B_cell_validity[i, j]
+dpa_val_cell_min      = min_{i,j} B_cell_val[i,j]
+dpa_val_row_weak_q1   = min_i min_j B_cell_val[i,j]
+dpa_val_row_weak_qN   = max_i min_j B_cell_val[i,j]
 ```
 
-This is a weakest-cell diagnostic. It does not certify that a full harmful sequence can be produced.
+`raw_dpa_val_min_cell` is kept as an alias for the weakest target-token diagnostic.
 
 ## Independent Composition
 
-The code also builds simple sequence-level baselines by adding independent per-cell costs.
+Independent composition is a separate conservative reference. It assumes token or prompt costs are paid separately and does not reuse poisoned shards across cells.
 
-For stability:
-
-```text
-independent_stab_full_row_q1 = min_i sum_j B_cell_stability[i, j]
-independent_stab_qN_rL      = sum_i sum_j B_cell_stability[i, j]
-```
-
-For validity:
+Stability:
 
 ```text
-independent_val_q1 = min_i sum_j B_cell_validity[i, j]
-independent_val_qN = sum_i sum_j B_cell_validity[i, j]
+independent_stab_full_row_q1 = min_i sum_j B_cell_stab[i,j]
+independent_stab_full_row_qN = sum_i sum_j B_cell_stab[i,j]
 ```
 
-These are intentionally naive. They assume each token position is attacked independently and do not reuse the same poisoned shard across multiple cells.
-
-Because of that, independent composition can overestimate the attack budget compared with the shared row-column MILP.
-
-## Phrase-DPA Baseline
-
-The current implementation also includes a phrase-level DPA reference for validity.
-
-For each row `i`, the length-`L` vote from shard `k` is collapsed into one phrase class:
+Validity:
 
 ```text
-phrase[k, i] = tuple(val_votes[k, i, 0:L])
+independent_val_sequence_q1 = min_i sum_j B_cell_val[i,j]
+independent_val_sequence_qN = sum_i sum_j B_cell_val[i,j]
 ```
 
-The harmful target phrase is:
+Compatibility aliases are still written:
 
 ```text
-target_phrase[i] = tuple(target[i, 0:L])
+independent_stab_qN_rL = independent_stab_full_row_qN
+independent_val_q1     = independent_val_sequence_q1
+independent_val_qN     = independent_val_sequence_qN
 ```
 
-The code counts phrase votes and computes how many poisoned shards are needed to make the target phrase beat the most frequent non-target phrase.
+## Phrase-DPA
 
-CSV columns:
+Phrase-DPA collapses a full generated row into one atomic class.
+
+For row `i`:
 
 ```text
-phrase_dpa_val_q1 = min_i phrase_row_budget[i]
-phrase_dpa_val_qN = sum_i phrase_row_budget[i]
+phrase_vote[k,i] = tuple(val_votes[k,i,0:L])
+target_phrase[i] = tuple(target[i,0:L])
 ```
 
-This mimics phrase-level DPA where the whole output sequence is treated as one large class. It avoids token-column modelling, but as `L` grows the number of possible phrases grows quickly and votes can diffuse across many phrase classes.
+The target phrase must beat or tie all observed phrase competitors using one poisoned-shard set. The implementation now checks all observed phrase competitors, not only the most frequent one.
+
+Confirmed phrase-DPA columns:
+
+```text
+phrase_dpa_val_q1 = min_i phrase_row_radius[i]
+phrase_dpa_val_qN = max_i phrase_row_radius[i]
+```
+
+Independent phrase composition is separate:
+
+```text
+phrase_independent_val_q1 = min_i phrase_row_radius[i]
+phrase_independent_val_qN = sum_i phrase_row_radius[i]
+```
 
 ## CSV Columns
 
-Current benchmark columns from `compute_reference_baselines(...)`:
+Current baseline columns:
 
 ```text
 raw_dpa_stab_min_cell
+dpa_stab_cell_min
+dpa_stab_row_radius_q1
+dpa_stab_row_radius_qN
+
+dpa_val_cell_min
+dpa_val_row_weak_q1
+dpa_val_row_weak_qN
 raw_dpa_val_min_cell
+
 independent_stab_full_row_q1
+independent_stab_full_row_qN
 independent_stab_qN_rL
+
+independent_val_sequence_q1
+independent_val_sequence_qN
 independent_val_q1
 independent_val_qN
+
 phrase_dpa_val_q1
 phrase_dpa_val_qN
+phrase_independent_val_q1
+phrase_independent_val_qN
 ```
 
-Legacy column names are still accepted when replotting older CSV files:
+## Interpretation
+
+Use this language in reports:
 
 ```text
-naive_dpa_stability_full_row -> independent_stab_full_row_q1
-naive_dpa_validity_q1        -> independent_val_q1
-naive_dpa_validity_qN        -> independent_val_qN
-phd_ref_stability_any_cell   -> raw_dpa_stab_min_cell
-phd_ref_validity_any_cell    -> raw_dpa_val_min_cell
+The naive DPA matrix baseline computes token-level certificates independently and aggregates a prompt by its weakest token. This mirrors standard per-sample DPA evaluation, but it does not model one shared adversarial allocation across multiple prompts or token positions.
+
+The independent-composition baseline sums token costs and is a conservative reference, not the confirmed DPA matrix baseline.
+
+The phrase-DPA baseline treats each generated sequence as one atomic label. This avoids explicit token-column modelling but suffers from vote diffusion over the exponentially large phrase space.
+
+The proposed shared row-column MILP explicitly enforces one poisoned-shard set across the prompt-token matrix and can evaluate structured stability and sequence-validity objectives more faithfully.
 ```
-
-## How To Interpret It
-
-Use the naive DPA baselines as references, not as the main certificate.
-
-- Raw per-cell DPA answers: "How easy is one token cell to flip?"
-- Independent composition answers: "What if we add token costs without shard reuse?"
-- Phrase-DPA answers: "What if the whole generated phrase is one class?"
-- The shared row-column MILP answers: "What is the minimum shared poisoned-shard set that satisfies the structured row/column attack objective?"
-
-The shared MILP can be lower than independent composition because one poisoned shard can help attack multiple cells at the same time. That is not a bug; it means the independent baseline was conservative for the joint objective.
