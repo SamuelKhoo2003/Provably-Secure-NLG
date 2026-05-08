@@ -1,4 +1,5 @@
 .venv/
+historical_csv
 phd_reference/
 __pycache__/
 *.py[cod]
