@@ -54,10 +54,10 @@ influence_mode  poisoning influence mask: dense, row-local, or column-local
 The default large benchmark sweeps:
 
 ```text
-K in {5, 7, 9, 11, 15}
-N in {2, 3, 5, 8, 12}
-L in {2, 4, 8}
-T in {3, 5, 8, 12}
+K in {3, 4, ..., 20}
+N in {2, 3, ..., 12}
+L in {2, 3, ..., 10}
+T in {3, 4, ..., 12}
 delta in {0.0, 0.1, 0.2, 0.3, 0.4}
 ```
 

@@ -5,8 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 PYTHON_BIN="${PYTHON_BIN:-.venv/bin/python}"
-OUT_DIR="${OUT_DIR:-toy_results/benchmark_large}"
-CSV_PATH="${CSV_PATH:-$OUT_DIR/benchmark_results.csv}"
+VIS_OUT_DIR="${VIS_OUT_DIR:-toy_results/check_run/instance}"
 
 if [[ ! -x "$PYTHON_BIN" ]]; then
   echo "Python executable not found at $PYTHON_BIN" >&2
@@ -14,8 +13,20 @@ if [[ ! -x "$PYTHON_BIN" ]]; then
   exit 1
 fi
 
-echo "Writing visualization outputs and refreshed plots to: $OUT_DIR"
+echo "== Toy certificate check run =="
+echo "Python:       $PYTHON_BIN"
+echo "Instance dir: $VIS_OUT_DIR"
+echo
 
+echo "== 1/3 Compile check =="
+"$PYTHON_BIN" -m compileall toy_certificate tests
+echo
+
+echo "== 2/3 Test bench =="
+"$PYTHON_BIN" -m unittest discover
+echo
+
+echo "== 3/3 Instance visualization =="
 "$PYTHON_BIN" -m toy_certificate.experiments visualize \
   --K "${VIS_K:-20}" \
   --N "${VIS_N:-12}" \
@@ -26,18 +37,8 @@ echo "Writing visualization outputs and refreshed plots to: $OUT_DIR"
   --target-bias "${TARGET_BIAS:-0.2}" \
   --influence-mode "${INFLUENCE_MODE:-dense}" \
   --seed "${SEED:-0}" \
-  --save-dir "${VIS_OUT_DIR:-toy_results/default_instance}"
-
-if [[ ! -f "$CSV_PATH" ]]; then
-  echo "Benchmark CSV not found at $CSV_PATH" >&2
-  echo "Run ./scripts/run_toy_benchmark_data.sh first, or set CSV_PATH to an existing CSV." >&2
-  exit 1
-fi
-
-"$PYTHON_BIN" -m toy_certificate.experiments plot-csv \
-  --csv "$CSV_PATH" \
-  --save-dir "$OUT_DIR"
-
+  --save-dir "$VIS_OUT_DIR"
 echo
-echo "CSV:   $CSV_PATH"
-echo "Plots: $OUT_DIR/*.svg"
+
+echo "Done."
+echo "Instance plots: $VIS_OUT_DIR/*.svg"

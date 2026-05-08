@@ -127,10 +127,10 @@ Run a larger benchmark by passing comma-separated ranges:
 
 ```bash
 python -m toy_certificate.experiments benchmark \
-  --Ks 5,7,9,11,15 \
-  --Ns 2,3,5,8,12 \
-  --lengths 2,4,8 \
-  --Ts 3,5,8,12 \
+  --Ks 3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20 \
+  --Ns 2,3,4,5,6,7,8,9,10,11,12 \
+  --lengths 2,3,4,5,6,7,8,9,10 \
+  --Ts 3,4,5,6,7,8,9,10,11,12 \
   --deltas 0.0,0.1,0.2,0.3,0.4 \
   --target-bias 0.2 \
   --influence-mode dense \
@@ -189,28 +189,26 @@ Refresh plots from an existing benchmark CSV:
 ./scripts/plot_toy_benchmark.sh
 ```
 
-Run the default visualization, large benchmark, and plot refresh:
+Run the default visualization and refresh plots from an existing benchmark CSV:
 
 ```bash
 ./scripts/run_toy_benchmark.sh
 ```
 
-Run the full pipeline, including compile check, tests, visualization, benchmark, and plot refresh:
+Run the lightweight check pipeline, including compile check, tests, and visualization:
 
 ```bash
-./scripts/full_run_toy_example.sh
+./scripts/run_toy_check.sh
 ```
 
-Default full-run outputs:
+Default check-run outputs:
 
-- `toy_results/full_run/instance/*.svg`
-- `toy_results/full_run/benchmark/benchmark_results.csv`
-- `toy_results/full_run/benchmark/*.svg`
+- `toy_results/check_run/instance/*.svg`
 
-Override ranges with environment variables:
+Override the visualization parameters with environment variables:
 
 ```bash
-KS=5,7,9 NS=2,4 LENGTHS=2,4 TS=3,5 DELTAS=0.0,0.2 TARGET_BIAS=0.3 INFLUENCE_MODE=row-local OUT_DIR=toy_results/custom ./scripts/full_run_toy_example.sh
+VIS_K=10 VIS_N=6 VIS_L=5 VIS_T=8 VIS_DELTA=0.2 TARGET_BIAS=0.3 INFLUENCE_MODE=row-local VIS_OUT_DIR=toy_results/custom_check ./scripts/run_toy_check.sh
 ```
 
 ## Tests
@@ -228,5 +226,5 @@ Tests that require Gurobi skip if a local license is not available.
 - `toy_certificate/data.py`: vote generation, counts, predictions, targets, and margins.
 - `toy_certificate/milp.py`: Gurobi MILP builders and certificate solvers.
 - `toy_certificate/experiments.py`: command-line experiments and table printing.
-- `scripts/run_toy_benchmark.sh`: bash wrapper for visualization plus benchmark runs.
-- `scripts/full_run_toy_example.sh`: full compile, test, visualization, benchmark, and replot pipeline.
+- `scripts/run_toy_benchmark.sh`: bash wrapper for visualization plus plot refresh from an existing CSV.
+- `scripts/run_toy_check.sh`: compile, test, and visualization check pipeline.

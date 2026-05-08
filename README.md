@@ -13,6 +13,6 @@ EIE Final Year Project 2026
 - `readme/phd_readme.md`: reference code structure and Gurobi notes.
 - `scripts/run_toy_benchmark_data.sh`: runs toy benchmark data generation and writes CSV results.
 - `scripts/plot_toy_benchmark.sh`: refreshes benchmark plots from an existing CSV.
-- `scripts/run_toy_benchmark.sh`: convenience script for toy visualization, benchmarks, and plot refresh.
-- `scripts/full_run_toy_example.sh`: full toy pipeline with tests, benchmark, and plots.
+- `scripts/run_toy_benchmark.sh`: convenience script for toy visualization and plot refresh from an existing CSV.
+- `scripts/run_toy_check.sh`: lightweight compile, test, and visualization check run.
 - `tests/`: lightweight toy certificate test bench.

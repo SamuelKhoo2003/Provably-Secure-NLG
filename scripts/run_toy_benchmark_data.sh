@@ -16,10 +16,10 @@ fi
 echo "Writing benchmark data to: $OUT_DIR"
 
 "$PYTHON_BIN" -m toy_certificate.experiments benchmark \
-  --Ks "${KS:-5,7,9,11,15}" \
-  --Ns "${NS:-2,3,5,8,12}" \
-  --lengths "${LENGTHS:-2,4,8}" \
-  --Ts "${TS:-3,5,8,12}" \
+  --Ks "${KS:-3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20}" \
+  --Ns "${NS:-2,3,4,5,6,7,8,9,10,11,12}" \
+  --lengths "${LENGTHS:-2,3,4,5,6,7,8,9,10}" \
+  --Ts "${TS:-3,4,5,6,7,8,9,10,11,12}" \
   --deltas "${DELTAS:-0.0,0.1,0.2,0.3,0.4}" \
   --target-bias "${TARGET_BIAS:-0.2}" \
   --influence-mode "${INFLUENCE_MODE:-dense}" \
