@@ -1,3 +1,13 @@
+"""Toy vote generation utilities.
+
+This module creates synthetic shard-level token votes for the row/column
+poisoning certificate experiments. It returns :class:`ToyData` objects containing
+stability votes, validity votes, token counts, clean predictions, harmful
+targets, and influence masks. All tensors use shard/prompt/token-position
+ordering: votes have shape ``(K, N, L)`` and count tensors have shape
+``(N, L, T)``.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -7,6 +17,15 @@ import numpy as np
 
 @dataclass(frozen=True)
 class ToyData:
+    """Container for one synthetic toy certificate instance.
+
+    ``stab_votes`` are clean-prefix votes used for stability objectives, where
+    the attacker changes output away from ``clean_pred``. ``val_votes`` are
+    harmful-prefix votes used for validity objectives, where the attacker forces
+    ``target``. ``influence`` has shape ``(K, N, L)`` and marks which shard votes
+    can affect each prompt row and token position.
+    """
+
     stab_votes: np.ndarray
     val_votes: np.ndarray
     stab_counts: np.ndarray
@@ -38,10 +57,12 @@ def generate_toy_votes(
     seed: int = 0,
     influence_mode: str = "dense",
 ) -> ToyData:
-    """Generate toy shard votes and derived clean prediction metadata.
+    """Generate shard votes, counts, targets, and influence masks.
 
-    Stability votes use the clean autoregressive prefix. Validity votes use the
-    harmful target prefix and give the target token controllable support.
+    ``K`` is the number of shards, ``N`` prompt rows, ``L`` token positions, and
+    ``T`` vocabulary tokens. Stability votes use the clean autoregressive prefix.
+    Validity votes use a harmful-target prefix and give target tokens
+    controllable support through ``target_bias``.
     """
     _validate_dimensions(K, N, L, T)
     for name, value in {"delta_stab": delta_stab, "delta_val": delta_val, "target_bias": target_bias}.items():
@@ -94,7 +115,15 @@ def generate_toy_votes(
 
 
 def compute_counts(votes: np.ndarray, T: int) -> np.ndarray:
-    """Return clean counts with shape ``[N, L, T]``."""
+    """Count token votes per prompt row and token position.
+
+    Args:
+        votes: Integer token ids with shape ``(K, N, L)``.
+        T: Vocabulary size.
+
+    Returns:
+        Count tensor with shape ``(N, L, T)``.
+    """
     if votes.ndim != 3:
         raise ValueError("votes must have shape [K, N, L]")
     K, N, L = votes.shape
@@ -111,14 +140,18 @@ def compute_counts(votes: np.ndarray, T: int) -> np.ndarray:
 
 
 def majority_predictions(clean_counts: np.ndarray) -> np.ndarray:
-    """Return majority predictions with deterministic smallest-token tie break."""
+    """Return majority token predictions with smallest-token tie breaking."""
     if clean_counts.ndim != 3:
         raise ValueError("clean_counts must have shape [N, L, T]")
     return np.argmax(clean_counts, axis=2).astype(np.int64)
 
 
 def runner_up_tokens(clean_counts: np.ndarray, clean_pred: np.ndarray) -> np.ndarray:
-    """Return the second-ranked token per cell with deterministic tie breaking."""
+    """Return second-ranked tokens for DPA weakest-token baselines.
+
+    The shared MILP can check all competitors, but runner-up tokens remain useful
+    for clean winner-vs-runner-up margins and the runner-up approximation mode.
+    """
     N, L, T = clean_counts.shape
     runner_up = np.empty((N, L), dtype=np.int64)
     token_ids = np.arange(T)
@@ -133,7 +166,7 @@ def runner_up_tokens(clean_counts: np.ndarray, clean_pred: np.ndarray) -> np.nda
 
 
 def generate_targets(clean_pred: np.ndarray, T: int, seed: int = 0) -> np.ndarray:
-    """Return harmful targets with ``target[i, j] != clean_pred[i, j]``."""
+    """Sample harmful targets with ``target[i, j] != clean_pred[i, j]``."""
     if T < 2:
         raise ValueError("T must be at least 2 to choose non-clean targets")
     rng = np.random.default_rng(seed)
@@ -142,7 +175,12 @@ def generate_targets(clean_pred: np.ndarray, T: int, seed: int = 0) -> np.ndarra
 
 
 def generate_influence(K: int, N: int, L: int, mode: str = "dense", seed: int = 0) -> np.ndarray:
-    """Return influence mask with shape ``[K, N, L]``."""
+    """Generate the poisoned-shard influence mask with shape ``(K, N, L)``.
+
+    ``dense`` allows every poisoned shard to affect every cell, while
+    ``row-local`` and ``column-local`` restrict influence by prompt row or token
+    position.
+    """
     rng = np.random.default_rng(seed)
     if mode == "dense":
         return np.ones((K, N, L), dtype=np.int64)
@@ -156,7 +194,7 @@ def generate_influence(K: int, N: int, L: int, mode: str = "dense", seed: int = 
 
 
 def stability_margins(clean_counts: np.ndarray, clean_pred: np.ndarray, runner_up: np.ndarray) -> np.ndarray:
-    """Return clean winner-vs-runner-up vote margins per cell."""
+    """Return clean winner-vs-runner-up vote margins for each cell."""
     N, L = clean_pred.shape
     margins = np.empty((N, L), dtype=np.int64)
     for i in range(N):

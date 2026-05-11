@@ -16,7 +16,7 @@ fi
 
 if [[ ! -f "$CSV_PATH" ]]; then
   echo "Benchmark CSV not found at $CSV_PATH" >&2
-  echo "Run ./scripts/run_toy_benchmark_data.sh first, or set CSV_PATH to an existing CSV." >&2
+  echo "Run ./scripts/data.sh first, or set CSV_PATH to an existing CSV." >&2
   exit 1
 fi
 

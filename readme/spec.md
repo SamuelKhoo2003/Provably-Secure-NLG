@@ -114,7 +114,21 @@ stab_counts[i,j,w]
 - sum_k a[k] * influence[k,i,j] * 1[stab_votes[k,i,j] == w]
 ```
 
-The reported implementation checks all competitors, not only the runner-up.
+The implementation checks all competitors, not only the original runner-up.
+The runner-up margin remains useful for simple DPA-style baselines, but the
+shared MILP itself is all-competitor.
+
+The stability solver also exposes a `runner_up` competitor mode for diagnostics.
+This cheaper mode checks only the original runner-up token and is a DPA-style
+top-vs-second simplification. It may overestimate robustness when a
+non-runner-up competitor is easier to promote. If both modes solve optimally:
+
+```text
+B*_runner_up >= B*_all
+```
+
+Use all-competitor mode for the exact threat model and runner-up mode only after
+comparison diagnostics show it is acceptably close for the chosen toy setting.
 
 ### Validity
 
@@ -129,6 +143,7 @@ val_counts[i,j,c]
 ```
 
 This condition is enforced for all competitors.
+Validity is unchanged by stability competitor mode.
 
 ## MILP Variables
 
@@ -172,18 +187,21 @@ r = number of destabilised token cells per selected row
 Common special cases:
 
 ```text
-q1 r1 = at least one token in at least one row
-q1 rL = full response for at least one row
-qN r1 = at least one token in every row
-qN rL = full prompt-token matrix
+q = 1, r = 1  one prompt, one token
+q = 1, r = L  one prompt, full sequence
+q = N, r = 1  all prompts, one token each
+q = N, r = L  all prompts, full matrix
 ```
 
 Validity uses:
 
 ```text
-q1 = full harmful target sequence in at least one row
-qN = full harmful target sequence in all N rows
+q = 1  one harmful target sequence
+q = N  harmful target sequences for all prompts
 ```
+
+Report-facing stability objectives should use `solve_structured_stability`.
+Report-facing validity objectives should use `solve_row_col_validity`.
 
 ## Reference Baselines
 
@@ -201,17 +219,42 @@ The confirmed DPA matrix baseline computes token-level cell certificates indepen
 row_radius[i] = min_j B_cell[i,j]
 ```
 
+For validity, this is the easiest harmful target token in a prompt row, not a
+full harmful-sequence certificate.
+
 The independent-composition baseline sums token costs:
 
 ```text
 full_row_cost[i] = sum_j B_cell[i,j]
 ```
 
+This does not reuse the same poisoned-shard allocation and should be treated as
+a loose/conservative upper reference.
+
 The phrase-DPA baseline treats an entire generated row as one atomic class:
 
 ```text
 phrase_vote[k,i] = tuple(val_votes[k,i,0:L])
 ```
+
+## Solver Exactness and Diagnostics
+
+`CertificateResult` includes:
+
+```text
+is_optimal
+mip_gap
+lower_bound
+upper_bound
+```
+
+If `is_optimal=True`, `B_star` is an exact optimum. If Gurobi stops with
+`TIME_LIMIT` or `SUBOPTIMAL` and a feasible solution exists, `B_star` is the best
+feasible upper bound found, not an exact certificate.
+
+`attacked_cells` is diagnostic. Since attacked-cell variables are not
+secondarily minimized, the list may include extra feasible cells. The certified
+quantity is `B_star`.
 
 ## Expected Outputs
 
@@ -222,3 +265,19 @@ benchmark_results.csv
 ```
 
 Plotting should be a separate step from benchmark data generation.
+
+Report-facing plots should be separated by attack objective:
+
+```text
+validity_one_prompt_by_L.svg          force one harmful sequence
+validity_all_prompts_by_L.svg         force harmful sequences for all prompts
+stability_one_prompt_by_L.svg         destabilise one prompt
+stability_all_prompts_by_L.svg        destabilise all prompts
+validity_independent_overestimate_by_L.svg
+stability_independent_overestimate_by_L.svg
+structured_stability_heatmap.svg      B*(q,r) over affected prompts/tokens
+```
+
+Legends should use human-readable objective names such as `one prompt`, `all prompts`, `one token`, `full sequence`, `full matrix`, `DPA weakest token`, `phrase-DPA full sequence`, `shared MILP full sequence`, and `independent full sequence`.
+Independent-composition diagnostics should be separated from main plots when
+they dominate the y-axis.

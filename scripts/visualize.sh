@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 PYTHON_BIN="${PYTHON_BIN:-.venv/bin/python}"
-OUT_DIR="${OUT_DIR:-toy_results/benchmark_large}"
+OUT_DIR="${OUT_DIR:-toy_results/default_instance}"
 
 if [[ ! -x "$PYTHON_BIN" ]]; then
   echo "Python executable not found at $PYTHON_BIN" >&2
@@ -13,18 +13,20 @@ if [[ ! -x "$PYTHON_BIN" ]]; then
   exit 1
 fi
 
-echo "Writing benchmark data to: $OUT_DIR"
+echo "Writing visualization outputs to: $OUT_DIR"
 
-"$PYTHON_BIN" -m toy_certificate.experiments benchmark \
-  --Ks "${KS:-3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20}" \
-  --Ns "${NS:-2,3,4,5,6,7,8,9,10,11,12}" \
-  --lengths "${LENGTHS:-2,3,4,5,6,7,8,9,10}" \
-  --Ts "${TS:-3,4,5,6,7,8,9,10,11,12}" \
-  --deltas "${DELTAS:-0.0,0.1,0.2,0.3,0.4}" \
+"$PYTHON_BIN" -m toy_certificate.experiments visualize \
+  --K "${VIS_K:-20}" \
+  --N "${VIS_N:-12}" \
+  --L "${VIS_L:-10}" \
+  --T "${VIS_T:-12}" \
+  --delta-stab "${VIS_DELTA_STAB:-${VIS_DELTA:-0.2}}" \
+  --delta-val "${VIS_DELTA_VAL:-${VIS_DELTA:-0.2}}" \
   --target-bias "${TARGET_BIAS:-0.2}" \
   --influence-mode "${INFLUENCE_MODE:-dense}" \
+  --stability-competitor-mode "${STABILITY_COMPETITOR_MODE:-all}" \
   --seed "${SEED:-0}" \
   --save-dir "$OUT_DIR"
 
 echo
-echo "CSV: $OUT_DIR/benchmark_results.csv"
+echo "Instance plots: $OUT_DIR/*.svg"

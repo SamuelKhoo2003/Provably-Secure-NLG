@@ -2,9 +2,12 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import numpy as np
+
 from toy_certificate.data import generate_toy_votes
 from toy_certificate import experiments
 from toy_certificate.experiments import compute_reference_baselines, compute_structured_stability_grid, compute_validity_q_curve
+from toy_certificate.milp import solve_row_col_validity, solve_structured_stability
 
 
 class ToyGenerationTests(unittest.TestCase):
@@ -114,12 +117,30 @@ class ExperimentCliTests(unittest.TestCase):
             rows = experiments.plot_benchmark_csv(str(csv_path), save_dir=str(base))
 
             self.assertEqual(len(rows), 1)
+            self.assertTrue((base / "validity_one_prompt_by_L.svg").exists())
+            self.assertTrue((base / "validity_all_prompts_by_L.svg").exists())
+            self.assertTrue((base / "stability_one_prompt_by_L.svg").exists())
+            self.assertTrue((base / "stability_all_prompts_by_L.svg").exists())
             self.assertTrue((base / "validity_scaling_by_L.svg").exists())
+            self.assertTrue((base / "validity_independent_overestimate_by_L.svg").exists())
             self.assertTrue((base / "stability_structured_by_L.svg").exists())
+            self.assertTrue((base / "stability_independent_overestimate_by_L.svg").exists())
             self.assertTrue((base / "validity_bias_sweep.svg").exists())
+            one_prompt_validity_svg = (base / "validity_one_prompt_by_L.svg").read_text()
+            validity_diagnostic_svg = (base / "validity_independent_overestimate_by_L.svg").read_text()
+            one_prompt_stability_svg = (base / "stability_one_prompt_by_L.svg").read_text()
+            diagnostic_svg = (base / "stability_independent_overestimate_by_L.svg").read_text()
+            self.assertIn("shared MILP full sequence", one_prompt_validity_svg)
+            self.assertIn("independent full sequence", one_prompt_validity_svg)
+            self.assertNotIn("q1", one_prompt_validity_svg)
+            self.assertIn("Independent composition overestimate", validity_diagnostic_svg)
+            self.assertIn("shared MILP: full sequence", one_prompt_stability_svg)
+            self.assertNotIn("qN", one_prompt_stability_svg)
+            self.assertIn("independent overestimate factor", diagnostic_svg)
+            self.assertFalse((base / "monotonicity_violations.csv").exists())
 
-    def test_check_run_script_does_not_run_benchmark_or_plot_csv(self):
-        script = Path("scripts/run_toy_check.sh").read_text()
+    def test_check_script_does_not_run_benchmark_or_plot_csv(self):
+        script = Path("scripts/check.sh").read_text()
 
         self.assertIn("compileall toy_certificate tests", script)
         self.assertIn("unittest discover", script)
@@ -127,16 +148,62 @@ class ExperimentCliTests(unittest.TestCase):
         self.assertNotIn("toy_certificate.experiments benchmark", script)
         self.assertNotIn("toy_certificate.experiments plot-csv", script)
 
-    def test_benchmark_wrapper_refreshes_existing_csv_without_generating_data(self):
-        script = Path("scripts/run_toy_benchmark.sh").read_text()
+    def test_short_scripts_have_expected_roles(self):
+        data_script = Path("scripts/data.sh").read_text()
+        plot_script = Path("scripts/plot.sh").read_text()
+        benchmark_script = Path("scripts/benchmark.sh").read_text()
 
-        self.assertIn("toy_certificate.experiments visualize", script)
-        self.assertIn("toy_certificate.experiments plot-csv", script)
-        self.assertIn("run_toy_benchmark_data.sh first", script)
-        self.assertNotIn("toy_certificate.experiments benchmark", script)
+        self.assertIn("toy_certificate.experiments benchmark", data_script)
+        self.assertIn("toy_certificate.experiments plot-csv", plot_script)
+        self.assertIn("scripts/data.sh", benchmark_script)
+        self.assertIn("scripts/plot.sh", benchmark_script)
 
 
 class GurobiBackedTests(unittest.TestCase):
+    def test_stability_checks_all_competitors_not_only_runner_up(self):
+        votes = np.array([[[1]], [[1]], [[1]]])
+        counts = np.array([[[1, 0, 0, 0]]])
+        clean_pred = np.array([[0]])
+        runner_up = np.array([[1]])
+        influence = np.ones((3, 1, 1), dtype=int)
+
+        try:
+            result = solve_structured_stability(votes, counts, clean_pred, runner_up, influence, q_rows=1, r_cols=1)
+        except Exception as exc:
+            if "Gurobi" in str(exc) or "license" in str(exc).lower():
+                self.skipTest(f"Gurobi unavailable: {exc}")
+            raise
+
+        self.assertEqual(result.B_star, 1)
+        self.assertTrue(result.is_optimal)
+        self.assertIn((0, 0), result.attacked_cells)
+        self.assertIsNotNone(result.lower_bound)
+        self.assertIsNotNone(result.upper_bound)
+
+        runner_result = solve_structured_stability(votes, counts, clean_pred, runner_up, influence, q_rows=1, r_cols=1, competitor_mode="runner_up")
+        self.assertTrue(runner_result.B_star is None or runner_result.B_star >= result.B_star)
+
+    def test_runner_up_stability_mode_works_and_invalid_mode_fails(self):
+        votes = np.array([[[0]], [[1]], [[2]]])
+        counts = np.array([[[2, 1, 0]]])
+        clean_pred = np.array([[0]])
+        runner_up = np.array([[1]])
+        influence = np.ones((3, 1, 1), dtype=int)
+
+        try:
+            all_result = solve_structured_stability(votes, counts, clean_pred, runner_up, influence, q_rows=1, r_cols=1, competitor_mode="all")
+            runner_result = solve_structured_stability(votes, counts, clean_pred, runner_up, influence, q_rows=1, r_cols=1, competitor_mode="runner_up")
+        except Exception as exc:
+            if "Gurobi" in str(exc) or "license" in str(exc).lower():
+                self.skipTest(f"Gurobi unavailable: {exc}")
+            raise
+
+        self.assertEqual(runner_result.B_star, 1)
+        if all_result.is_optimal and runner_result.is_optimal:
+            self.assertGreaterEqual(runner_result.B_star, all_result.B_star)
+        with self.assertRaises(ValueError):
+            solve_structured_stability(votes, counts, clean_pred, runner_up, influence, q_rows=1, r_cols=1, competitor_mode="bad")
+
     def test_structured_stability_grid_and_validity_curve_shapes(self):
         data = generate_toy_votes(K=5, N=2, L=2, T=3, delta_stab=0.2, delta_val=0.2, target_bias=0.2, seed=0)
         try:
@@ -150,6 +217,34 @@ class GurobiBackedTests(unittest.TestCase):
         self.assertEqual(stability_grid.shape, (2, 2))
         self.assertEqual(len(q_curve), 2)
         self.assertGreaterEqual(q_curve[1], q_curve[0])
+
+    def test_structured_objective_monotonicity(self):
+        data = generate_toy_votes(K=5, N=2, L=2, T=3, delta_stab=0.2, delta_val=0.2, target_bias=0.2, seed=11)
+        try:
+            stab_q1_r1 = solve_structured_stability(
+                data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=1
+            ).B_star
+            stab_q1_rL = solve_structured_stability(
+                data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=2
+            ).B_star
+            stab_qN_r1 = solve_structured_stability(
+                data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=2, r_cols=1
+            ).B_star
+            stab_qN_rL = solve_structured_stability(
+                data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=2, r_cols=2
+            ).B_star
+            val_q1 = solve_row_col_validity(data.val_votes, data.val_counts, data.target, T=3, influence=data.influence, q_rows=1).B_star
+            val_qN = solve_row_col_validity(data.val_votes, data.val_counts, data.target, T=3, influence=data.influence, q_rows=2).B_star
+        except Exception as exc:
+            if "Gurobi" in str(exc) or "license" in str(exc).lower():
+                self.skipTest(f"Gurobi unavailable: {exc}")
+            raise
+
+        self.assertLessEqual(stab_q1_r1, stab_q1_rL)
+        self.assertLessEqual(stab_q1_r1, stab_qN_r1)
+        self.assertLessEqual(stab_q1_rL, stab_qN_rL)
+        self.assertLessEqual(stab_qN_r1, stab_qN_rL)
+        self.assertLessEqual(val_q1, val_qN)
 
 
 if __name__ == "__main__":

@@ -28,14 +28,15 @@ echo
 
 echo "== 3/3 Instance visualization =="
 "$PYTHON_BIN" -m toy_certificate.experiments visualize \
-  --K "${VIS_K:-20}" \
-  --N "${VIS_N:-12}" \
-  --L "${VIS_L:-10}" \
-  --T "${VIS_T:-12}" \
+  --K "${VIS_K:-7}" \
+  --N "${VIS_N:-3}" \
+  --L "${VIS_L:-4}" \
+  --T "${VIS_T:-5}" \
   --delta-stab "${VIS_DELTA_STAB:-${VIS_DELTA:-0.2}}" \
   --delta-val "${VIS_DELTA_VAL:-${VIS_DELTA:-0.2}}" \
   --target-bias "${TARGET_BIAS:-0.2}" \
   --influence-mode "${INFLUENCE_MODE:-dense}" \
+  --stability-competitor-mode "${STABILITY_COMPETITOR_MODE:-all}" \
   --seed "${SEED:-0}" \
   --save-dir "$VIS_OUT_DIR"
 echo
