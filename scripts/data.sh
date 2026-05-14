@@ -23,7 +23,7 @@ echo "Writing benchmark data to: $OUT_DIR"
   --deltas "${DELTAS:-0.0,0.25,0.5}" \
   --target-bias "${TARGET_BIAS:-0.2}" \
   --influence-mode "${INFLUENCE_MODE:-dense}" \
-  --stability-competitor-mode "${STABILITY_COMPETITOR_MODE:-runner_up}" \
+  --stability-competitor-mode "${STABILITY_COMPETITOR_MODE:-all}" \
   --seed "${SEED:-0}" \
   --save-dir "$OUT_DIR"
 

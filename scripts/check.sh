@@ -6,6 +6,7 @@ cd "$ROOT_DIR"
 
 PYTHON_BIN="${PYTHON_BIN:-.venv/bin/python}"
 VIS_OUT_DIR="${VIS_OUT_DIR:-toy_results/check_run/instance}"
+OUT_DIR="${OUT_DIR:-$VIS_OUT_DIR}"
 
 if [[ ! -x "$PYTHON_BIN" ]]; then
   echo "Python executable not found at $PYTHON_BIN" >&2
@@ -28,17 +29,17 @@ echo
 
 echo "== 3/3 Instance visualization =="
 "$PYTHON_BIN" -m toy_certificate.experiments visualize \
-  --K "${VIS_K:-7}" \
-  --N "${VIS_N:-3}" \
-  --L "${VIS_L:-4}" \
-  --T "${VIS_T:-5}" \
+  --K "${VIS_K:-20}" \
+  --N "${VIS_N:-12}" \
+  --L "${VIS_L:-10}" \
+  --T "${VIS_T:-12}" \
   --delta-stab "${VIS_DELTA_STAB:-${VIS_DELTA:-0.2}}" \
   --delta-val "${VIS_DELTA_VAL:-${VIS_DELTA:-0.2}}" \
   --target-bias "${TARGET_BIAS:-0.2}" \
   --influence-mode "${INFLUENCE_MODE:-dense}" \
   --stability-competitor-mode "${STABILITY_COMPETITOR_MODE:-all}" \
   --seed "${SEED:-0}" \
-  --save-dir "$VIS_OUT_DIR"
+  --save-dir "$OUT_DIR"
 echo
 
 echo "Done."

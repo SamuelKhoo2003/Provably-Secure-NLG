@@ -2,7 +2,7 @@
 
 EIE Final Year Project 2026.
 
-This repository contains a runnable toy implementation of row/column poisoning certificates for natural-language generation style token voting. The core experiment builds a prompt-by-token vote matrix, solves shared-allocation MILPs with Gurobi, and compares those certificates with DPA-style baselines.
+This repository contains a runnable toy implementation of row/column poisoning certificates for natural-language generation style token voting. The core experiment builds a prompt-by-token vote matrix, solves shared-allocation MILPs with Gurobi, and compares those certificates with DPA-style stability baselines and TPA-style targeted validity baselines.
 
 The cleaned first-party implementation lives in `toy_certificate/`. The
 `phd_reference/` directory is external read-only reference code and should not be
@@ -94,6 +94,17 @@ harmful sequences. A validity cell succeeds only if the harmful target token tie
 or beats every competitor token, which is stricter than only beating the current
 clean winner.
 
+The updated NLG certification paper separates DPA-style stability from
+TPA-style targeted validity. DPA remains the natural baseline for untargeted
+stability, where the adversary tries to change the clean output. For validity,
+the paper-inspired baseline is Targeted Partition Aggregation: compute a
+targeted radius for inducing a specific harmful token. For a harmful sequence,
+the toy implementation composes token-level TPA radii using the maximum over
+token positions, since the attacker must force every token in the sequence. This
+implementation follows the toy MILP convention where target ties count as
+successful attacks; if a strict-plurality convention is used elsewhere,
+interpret this as the tie-wins toy adaptation.
+
 For report-facing objectives, use readable names rather than q/r shorthand:
 `q` is affected prompt rows and `r` is affected token positions per selected
 row. Stability objectives use `solve_structured_stability`: one prompt/one token
@@ -104,14 +115,24 @@ harmful sequence is `q_rows=1`; harmful sequences for all prompts is `q_rows=N`.
 
 ## Baselines
 
-The DPA matrix baseline computes token-level margins independently and represents
-each prompt by its weakest token, `row_radius[i] = min_j B_cell[i,j]`. For
-validity, this means the easiest harmful target token, not a full harmful
-sequence.
+The DPA weakest harmful token baseline computes token-level margins
+independently and represents each prompt by its easiest harmful token,
+`row_radius[i] = min_j B_cell[i,j]`. For validity, this is not a full-sequence
+certificate.
 
-Phrase-DPA treats the entire generated sequence as one atomic label. Independent
-composition sums token-level costs and does not reuse poisoned shards across
-cells, so it is a loose upper reference rather than the main structured method.
+The TPA max-token sequence baseline is the paper-inspired targeted validity
+baseline. It computes targeted token radii and uses `max_j r[i,j]` for a harmful
+sequence because every target token must be forced.
+
+Atomic phrase aggregation, kept in CSV columns named `phrase_dpa_*` for
+compatibility, treats the whole generated sequence as one label. It is a crude
+full-sequence baseline and often weakens as `L` grows because exact sequence
+votes diffuse across many possible outputs. It should not be interpreted as the
+main TPA validity baseline.
+
+Independent composition sums token-level costs and does not reuse poisoned
+shards across cells, so it is a loose upper reference rather than the main
+structured method.
 
 ## Solver Exactness
 
@@ -126,14 +147,13 @@ include extra feasible cells. The certified quantity is `B_star`.
 
 The plots are separated by attack objective. Stability plots measure the budget
 needed to change outputs away from the clean generation. Validity plots measure
-the budget needed to force specific harmful target tokens or sequences. The DPA
-weakest-token baseline computes token-level margins independently and represents
-each prompt by its weakest token; it should not be interpreted as a full-sequence
-certificate. Phrase-DPA treats the entire generated sequence as one atomic label.
-Independent composition sums token costs and therefore ignores poisoned-shard
-reuse, making it a loose upper reference. The shared row-column MILP uses one
-poisoned-shard allocation across all required cells, which is the main structured
-certificate studied here.
+the budget needed to force specific harmful target tokens or sequences. Validity
+plots use clear labels for four references: DPA weakest harmful token is the
+easiest single harmful token and not a full-sequence certificate; TPA max-token
+sequence is the targeted sequence baseline using the maximum over token
+positions; atomic phrase aggregation treats the whole sequence as one label;
+shared row-column MILP is the proposed method using one poisoned-shard
+allocation across all required cells.
 
 Preferred report-facing plots:
 

@@ -231,6 +231,17 @@ minimized, the list may include extra feasible cells. The certified quantity is
 
 Baseline columns are computed in `compute_reference_baselines(data)`.
 
+The updated NLG certification paper separates DPA-style stability from
+TPA-style targeted validity. DPA remains the natural baseline for untargeted
+stability, where the adversary tries to change the clean output. For validity,
+the relevant paper-inspired baseline is Targeted Partition Aggregation, which
+computes a targeted radius for inducing a specific harmful token. For a harmful
+sequence, the toy implementation composes token-level TPA radii using the
+maximum over token positions, since the attacker must force every token in the
+sequence. The older phrase-level aggregation baseline is retained as a naive
+atomic-sequence baseline, but it should not be interpreted as the main TPA
+validity baseline.
+
 DPA matrix / weakest-token baseline:
 
 ```text
@@ -250,6 +261,31 @@ row_radius[i] = min_j B_cell[i,j]
 
 For validity, this means "easiest harmful target token", not a full harmful-sequence certificate.
 
+TPA max-token sequence baseline:
+
+```text
+tpa_val_cell_min
+tpa_val_sequence_q1
+tpa_val_sequence_qN
+tpa_val_sequence_mean
+```
+
+This is the paper-inspired targeted validity baseline. Each token cell uses
+`targeted_partition_radius(counts, target)`, the minimum number of non-target
+votes that must be changed into the harmful target so the target ties or beats
+every competitor. The sequence metric then computes:
+
+```text
+R_tpa_sequence[i] = max_j r_tpa[i,j]
+tpa_val_sequence_q1 = min_i R_tpa_sequence[i]
+tpa_val_sequence_qN = max_i R_tpa_sequence[i]
+```
+
+This is not ordinary DPA top-vs-runner-up stability and not phrase aggregation.
+It follows the toy MILP tie convention where target ties count as successful
+attacks. If the paper convention being compared against is strict plurality,
+interpret this as the tie-wins toy adaptation of TPA.
+
 Independent composition:
 
 ```text
@@ -261,7 +297,7 @@ independent_val_sequence_qN
 
 This sums token costs and does not reuse the same poisoned allocation across cells. Treat it as a loose/conservative upper reference rather than the main method.
 
-Phrase-DPA:
+Atomic phrase aggregation:
 
 ```text
 phrase_dpa_val_q1
@@ -271,6 +307,10 @@ phrase_independent_val_qN
 ```
 
 This treats a full generated row as one atomic label/phrase and does not reason token-by-token.
+It is useful as a crude full-sequence baseline, but exact sequence votes diffuse
+over many possible sequences as `L` grows, so it should not be read as the main
+TPA/PHD validity baseline. The old `phrase_dpa_*` CSV names are retained for
+compatibility.
 
 Compatibility and diagnostics:
 
@@ -385,7 +425,7 @@ validity_bias_sweep.svg
 The plotter groups rows by the x-axis variable and plots mean `B*` for each metric.
 If a requested metric column is missing, the plotter skips that curve and prints a warning.
 
-The plots are separated by attack objective. Stability plots measure the budget needed to change outputs away from the clean generation. Validity plots measure the budget needed to force specific harmful target tokens or sequences. The DPA weakest-token baseline computes token-level margins independently and represents each prompt by its weakest token; it should not be interpreted as a full-sequence certificate. Phrase-DPA treats the entire generated sequence as one atomic label. Independent composition sums token costs and therefore ignores poisoned-shard reuse, making it a loose upper reference. The shared row-column MILP uses one poisoned-shard allocation across all required cells, which is the main structured certificate studied here.
+The plots are separated by attack objective. Stability plots measure the budget needed to change outputs away from the clean generation. Validity plots measure the budget needed to force specific harmful target tokens or sequences. DPA weakest harmful token is the easiest single harmful token and is not a full-sequence certificate. TPA max-token sequence is the targeted sequence baseline using the maximum over token positions. Atomic phrase aggregation treats the whole sequence as one label. Independent composition sums token costs and therefore ignores poisoned-shard reuse, making it a loose upper reference. The shared row-column MILP uses one poisoned-shard allocation across all required cells, which is the proposed structured method.
 
 ### `validity_one_prompt_by_L.svg`
 
@@ -399,13 +439,14 @@ Curves:
 
 ```text
 DPA weakest harmful token        dpa_val_row_weak_q1
-phrase-DPA full sequence         phrase_dpa_val_q1
+TPA max-token sequence           tpa_val_sequence_q1
+atomic phrase aggregation        phrase_dpa_val_q1
 shared MILP full sequence        row_col_val_q1
 independent full sequence        independent_val_sequence_q1
 ```
 
 This answers: how much poisoning is needed to force one harmful generated sequence?
-The DPA curve is a weak token-level reference, phrase-DPA treats the whole sequence as one label, the shared MILP is the proposed structured certificate, and independent composition is a loose upper reference.
+The DPA curve is a weak token-level reference, TPA max-token sequence is the targeted sequence baseline, atomic phrase aggregation treats the whole sequence as one label, the shared MILP is the proposed structured certificate, and independent composition is a loose upper reference.
 
 ### `validity_all_prompts_by_L.svg`
 
@@ -418,9 +459,10 @@ L = sequence length
 Curves:
 
 ```text
-shared MILP: all harmful sequences        row_col_val_qN
-independent: all harmful sequences        independent_val_sequence_qN
+TPA max-token sequences for all prompts   tpa_val_sequence_qN
+shared MILP all harmful sequences         row_col_val_qN
 DPA weakest harmful token per prompt      dpa_val_row_weak_qN
+independent all harmful sequences         independent_val_sequence_qN
 ```
 
 This answers: how much poisoning is needed to force harmful sequences for all prompts?
@@ -542,9 +584,10 @@ Curves:
 ```text
 DPA weakest harmful token
 DPA weakest harmful token per prompt
+TPA max-token sequence
 shared MILP: one harmful sequence
 shared MILP: harmful sequences for all prompts
-phrase-DPA full sequence
+atomic phrase aggregation
 ```
 
 This shows how validity budgets change when the harmful target already has more natural vote support.

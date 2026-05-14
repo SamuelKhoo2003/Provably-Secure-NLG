@@ -3,7 +3,7 @@
 This module is the orchestration layer for the first-party toy certificate
 implementation. It builds synthetic :class:`toy_certificate.data.ToyData`
 instances, calls the shared MILP solvers, writes benchmark CSVs, computes
-DPA/phrase-DPA/independent-composition baselines, and renders report-facing SVG
+DPA/TPA/atomic-phrase/independent-composition baselines, and renders report-facing SVG
 plots. The external ``phd_reference/`` tree is not imported or modified here.
 """
 
@@ -503,7 +503,8 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
             "Mean poison budget B*",
             {
                 "DPA weakest harmful token": "dpa_val_row_weak_q1",
-                "phrase-DPA full sequence": "phrase_dpa_val_q1",
+                "TPA max-token sequence": "tpa_val_sequence_q1",
+                "atomic phrase aggregation": "phrase_dpa_val_q1",
                 "shared MILP full sequence": "row_col_val_q1",
                 "independent full sequence": "independent_val_sequence_q1",
             },
@@ -514,9 +515,10 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
             "L",
             "Mean poison budget B*",
             {
-                "shared MILP: all harmful sequences": "row_col_val_qN",
-                "independent: all harmful sequences": "independent_val_sequence_qN",
+                "TPA max-token sequences for all prompts": "tpa_val_sequence_qN",
+                "shared MILP all harmful sequences": "row_col_val_qN",
                 "DPA weakest harmful token per prompt": "dpa_val_row_weak_qN",
+                "independent all harmful sequences": "independent_val_sequence_qN",
             },
         ),
         (
@@ -558,7 +560,8 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
         y_label="Mean poison budget B*",
         metrics={
             "DPA weakest harmful token": "dpa_val_row_weak_q1",
-            "phrase-DPA full sequence": "phrase_dpa_val_q1",
+            "TPA max-token sequence": "tpa_val_sequence_q1",
+            "atomic phrase aggregation": "phrase_dpa_val_q1",
             "shared MILP full sequence": "row_col_val_q1",
             "shared MILP: all harmful sequences": "row_col_val_qN",
         },
@@ -587,9 +590,10 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
         metrics={
             "DPA weakest harmful token": "dpa_val_row_weak_q1",
             "DPA weakest harmful token per prompt": "dpa_val_row_weak_qN",
+            "TPA max-token sequence": "tpa_val_sequence_q1",
             "shared MILP: one harmful sequence": "row_col_val_q1",
             "shared MILP: harmful sequences for all prompts": "row_col_val_qN",
-            "phrase-DPA full sequence": "phrase_dpa_val_q1",
+            "atomic phrase aggregation": "phrase_dpa_val_q1",
         },
     )
     check_monotonicity_diagnostics(rows, output_dir)
@@ -659,13 +663,15 @@ def _solve_benchmark_certificates(data: ToyData, T: int, stability_competitor_mo
     ]
 
 
-def compute_reference_baselines(data: ToyData) -> dict[str, int]:
-    """Compute DPA, phrase-DPA, and independent-composition baseline columns."""
+def compute_reference_baselines(data: ToyData) -> dict[str, int | float]:
+    """Compute DPA, TPA-style validity, phrase, and independent baseline columns."""
     stability_cell_budgets = _cell_stability_budgets(data)
     validity_cell_budgets = _cell_validity_budgets(data)
+    targeted_validity_cell_budgets = _targeted_validity_token_budgets(data)
     phrase_row_budgets = _phrase_dpa_validity_row_budgets(data)
     row_stability_radii = stability_cell_budgets.min(axis=1)
     row_validity_weak_radii = validity_cell_budgets.min(axis=1)
+    targeted_sequence_baselines = aggregate_tpa_sequence_baselines(targeted_validity_cell_budgets)
     independent_stability_row_costs = stability_cell_budgets.sum(axis=1)
     independent_validity_row_costs = validity_cell_budgets.sum(axis=1)
     return {
@@ -677,6 +683,8 @@ def compute_reference_baselines(data: ToyData) -> dict[str, int]:
         "dpa_val_row_weak_q1": int(np.min(row_validity_weak_radii)),
         "dpa_val_row_weak_qN": int(np.max(row_validity_weak_radii)),
         "raw_dpa_val_min_cell": int(np.min(validity_cell_budgets)),
+        "tpa_val_cell_min": int(np.min(targeted_validity_cell_budgets)),
+        **targeted_sequence_baselines,
         "independent_stab_full_row_q1": int(np.min(independent_stability_row_costs)),
         "independent_stab_full_row_qN": int(independent_stability_row_costs.sum()),
         "independent_stab_qN_rL": int(independent_stability_row_costs.sum()),
@@ -767,13 +775,85 @@ def _cell_validity_budgets(data: ToyData) -> np.ndarray:
     return budgets
 
 
+def targeted_partition_radius(counts: np.ndarray, target: int, *, tie_wins: bool = True) -> int:
+    """Return the TPA-style targeted token validity radius for one vote count vector.
+
+    This is a targeted validity baseline: it estimates how many non-target
+    partition votes must be converted into a specific harmful target token before
+    that target wins. It is not ordinary DPA top-vs-runner-up stability, and it
+    is not phrase aggregation over whole generated sequences.
+
+    By default, ties count as successful attacks, matching the toy MILP
+    convention. If the paper convention being compared against uses strict
+    plurality instead, this helper adapts the targeted-partition idea to the toy
+    tie-wins setting. Set ``tie_wins=False`` to require the target to strictly
+    beat every competitor.
+    """
+    counts = np.asarray(counts, dtype=np.int64)
+    if counts.ndim != 1:
+        raise ValueError("counts must be a one-dimensional token count vector")
+    if not 0 <= target < counts.shape[0]:
+        raise ValueError("target must index counts")
+    if np.any(counts < 0):
+        raise ValueError("counts must be non-negative")
+
+    target_count = int(counts[target])
+    competitor_counts = np.delete(counts, target).astype(np.int64)
+    if competitor_counts.size == 0:
+        return 0
+
+    already_succeeds = target_count >= int(np.max(competitor_counts)) if tie_wins else target_count > int(np.max(competitor_counts))
+    if already_succeeds:
+        return 0
+
+    total_non_target_votes = int(np.sum(competitor_counts))
+    for budget in range(total_non_target_votes + 1):
+        target_after = target_count + budget
+        max_competitor_after = target_after if tie_wins else target_after - 1
+        required_removals = int(np.maximum(0, competitor_counts - max_competitor_after).sum())
+        if required_removals <= budget:
+            return budget
+    return total_non_target_votes
+
+
+def aggregate_tpa_sequence_baselines(token_radii: np.ndarray) -> dict[str, int | float]:
+    """Aggregate token-level targeted radii into sequence-level TPA baselines.
+
+    For a harmful sequence, every target token must be forced. The toy
+    TPA-style sequence baseline therefore takes the maximum targeted radius over
+    token positions for each prompt row: the hardest target token controls the
+    full harmful sequence.
+    """
+    token_radii = np.asarray(token_radii, dtype=np.int64)
+    if token_radii.ndim != 2:
+        raise ValueError("token_radii must have shape (N, L)")
+    if token_radii.size == 0:
+        raise ValueError("token_radii must be non-empty")
+    row_sequence_radii = token_radii.max(axis=1)
+    return {
+        "tpa_val_sequence_q1": int(np.min(row_sequence_radii)),
+        "tpa_val_sequence_qN": int(np.max(row_sequence_radii)),
+        "tpa_val_sequence_mean": float(np.mean(row_sequence_radii)),
+    }
+
+
+def _targeted_validity_token_budgets(data: ToyData) -> np.ndarray:
+    """Compute per-cell TPA-style targeted harmful-token validity radii."""
+    N, L, _ = data.val_counts.shape
+    budgets = np.zeros((N, L), dtype=np.int64)
+    for i in range(N):
+        for j in range(L):
+            budgets[i, j] = targeted_partition_radius(data.val_counts[i, j], int(data.target[i, j]))
+    return budgets
+
+
 def _phd_margin_stability_budgets(data: ToyData) -> np.ndarray:
     margins = stability_margins(data.stab_counts, data.clean_pred, data.runner_up)
     return ((margins + 1) // 2).astype(np.int64)
 
 
 def _phrase_dpa_validity_row_budgets(data: ToyData) -> np.ndarray:
-    """Compute phrase-DPA budgets treating each generated sequence as one label."""
+    """Compute atomic phrase budgets treating each generated sequence as one label."""
     K, N, L = data.val_votes.shape
     budgets = np.zeros(N, dtype=np.int64)
     for i in range(N):
@@ -1143,7 +1223,10 @@ def _save_heatmap_svg(
     rows, cols = matrix.shape
     cell = 54
     left = 70
-    top = 58
+    title_lines = _wrap_svg_text(title, max_chars=92)
+    title_font_size = 13
+    title_line_height = 17
+    top = 46 + title_line_height * len(title_lines)
     right = 96 if colorbar_label else 24
     width = left + cols * cell + right
     height = top + rows * cell + 56
@@ -1154,10 +1237,15 @@ def _save_heatmap_svg(
     svg = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
-        f'<text x="{width / 2:.1f}" y="24" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#111827">{_xml_escape(title)}</text>',
         f'<text x="{left + cols * cell / 2:.1f}" y="{height - 12}" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#374151">{_xml_escape(x_label)}</text>',
         f'<text x="16" y="{top + rows * cell / 2:.1f}" transform="rotate(-90 16 {top + rows * cell / 2:.1f})" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#374151">{_xml_escape(y_label)}</text>',
     ]
+    for idx, line in enumerate(title_lines):
+        y = 24 + idx * title_line_height
+        svg.insert(
+            2 + idx,
+            f'<text x="{width / 2:.1f}" y="{y}" text-anchor="middle" font-family="Arial, sans-serif" font-size="{title_font_size}" fill="#111827">{_xml_escape(line)}</text>',
+        )
     for j in range(cols):
         svg.append(f'<text x="{left + j * cell + cell / 2}" y="{top - 10}" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">{j + 1 if colorbar_label else j}</text>')
     for i in range(rows):
@@ -1194,8 +1282,12 @@ def _save_heatmap_svg(
 def _save_line_plot_svg(path: Path, title: str, x_label: str, y_label: str, series: dict[str, tuple[list[float], list[float]]]) -> None:
     """Save a lightweight multi-series SVG line plot."""
     width = 1160
-    height = max(540, 430 + 22 * len(series))
-    left, right, top, bottom = 72, 360, 52, 70
+    title_lines = _wrap_svg_text(title, max_chars=105)
+    title_font_size = 14
+    title_line_height = 18
+    top = 36 + title_line_height * len(title_lines)
+    height = max(540 + title_line_height * max(0, len(title_lines) - 1), 430 + 22 * len(series) + title_line_height * max(0, len(title_lines) - 1))
+    left, right, bottom = 72, 360, 70
     plot_w = width - left - right
     plot_h = height - top - bottom
     all_x = [x for xs, _ in series.values() for x in xs]
@@ -1220,12 +1312,17 @@ def _save_line_plot_svg(path: Path, title: str, x_label: str, y_label: str, seri
     svg = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
-        f'<text x="{width / 2}" y="26" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#111827">{_xml_escape(title)}</text>',
         f'<line x1="{left}" y1="{top}" x2="{left}" y2="{top + plot_h}" stroke="#111827"/>',
         f'<line x1="{left}" y1="{top + plot_h}" x2="{left + plot_w}" y2="{top + plot_h}" stroke="#111827"/>',
         f'<text x="{width / 2}" y="{height - 18}" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#374151">{_xml_escape(x_label)}</text>',
         f'<text x="18" y="{top + plot_h / 2}" transform="rotate(-90 18 {top + plot_h / 2})" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#374151">{_xml_escape(y_label)}</text>',
     ]
+    for idx, line in enumerate(title_lines):
+        y = 26 + idx * title_line_height
+        svg.insert(
+            2 + idx,
+            f'<text x="{width / 2}" y="{y}" text-anchor="middle" font-family="Arial, sans-serif" font-size="{title_font_size}" fill="#111827">{_xml_escape(line)}</text>',
+        )
     for tick in range(5):
         y_value = ymin + (ymax - ymin) * tick / 4
         y = sy(y_value)
@@ -1247,6 +1344,31 @@ def _save_line_plot_svg(path: Path, title: str, x_label: str, y_label: str, seri
         svg.append(f'<text x="{left + plot_w + 42}" y="{legend_y}" font-family="Arial, sans-serif" font-size="12" fill="#111827">{_xml_escape(name)}</text>')
     svg.append("</svg>")
     path.write_text("\n".join(svg))
+
+
+def _wrap_svg_text(text: str, max_chars: int) -> list[str]:
+    """Wrap SVG title text into short lines without requiring SVG text layout."""
+    parts = text.split(" | ", maxsplit=1)
+    if len(parts) == 2:
+        prefix, suffix = parts
+        chunks = [prefix]
+        words = suffix.split()
+    else:
+        chunks = []
+        words = text.split()
+
+    current = ""
+    for word in words:
+        candidate = word if not current else f"{current} {word}"
+        if len(candidate) <= max_chars:
+            current = candidate
+            continue
+        if current:
+            chunks.append(current)
+        current = word
+    if current:
+        chunks.append(current)
+    return chunks or [text]
 
 
 def _heat_color(value: float, vmin: float, vmax: float) -> str:

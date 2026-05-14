@@ -1,4 +1,6 @@
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -6,7 +8,13 @@ import numpy as np
 
 from toy_certificate.data import generate_toy_votes
 from toy_certificate import experiments
-from toy_certificate.experiments import compute_reference_baselines, compute_structured_stability_grid, compute_validity_q_curve
+from toy_certificate.experiments import (
+    aggregate_tpa_sequence_baselines,
+    compute_reference_baselines,
+    compute_structured_stability_grid,
+    compute_validity_q_curve,
+    targeted_partition_radius,
+)
 from toy_certificate.milp import solve_row_col_validity, solve_structured_stability
 
 
@@ -33,6 +41,10 @@ class ToyGenerationTests(unittest.TestCase):
             "dpa_val_row_weak_q1",
             "dpa_val_row_weak_qN",
             "raw_dpa_val_min_cell",
+            "tpa_val_cell_min",
+            "tpa_val_sequence_q1",
+            "tpa_val_sequence_qN",
+            "tpa_val_sequence_mean",
             "independent_stab_full_row_q1",
             "independent_stab_full_row_qN",
             "independent_stab_qN_rL",
@@ -48,8 +60,44 @@ class ToyGenerationTests(unittest.TestCase):
         self.assertTrue(expected.issubset(baselines))
         self.assertGreaterEqual(baselines["dpa_stab_row_radius_qN"], baselines["dpa_stab_row_radius_q1"])
         self.assertGreaterEqual(baselines["dpa_val_row_weak_qN"], baselines["dpa_val_row_weak_q1"])
+        self.assertGreaterEqual(baselines["tpa_val_sequence_qN"], baselines["tpa_val_sequence_q1"])
         self.assertGreaterEqual(baselines["phrase_dpa_val_qN"], baselines["phrase_dpa_val_q1"])
         self.assertGreaterEqual(baselines["phrase_independent_val_qN"], baselines["phrase_dpa_val_qN"])
+
+
+class TargetedPartitionBaselineTests(unittest.TestCase):
+    def test_targeted_partition_radius_already_tied_or_winning(self):
+        self.assertEqual(targeted_partition_radius(np.array([3, 2, 1]), target=0), 0)
+        self.assertEqual(targeted_partition_radius(np.array([2, 2, 1]), target=1), 0)
+
+    def test_targeted_partition_radius_one_behind_leader(self):
+        self.assertEqual(targeted_partition_radius(np.array([3, 2, 0]), target=1), 1)
+
+    def test_targeted_partition_radius_far_behind_multiple_competitors(self):
+        self.assertEqual(targeted_partition_radius(np.array([5, 5, 1]), target=2), 3)
+
+    def test_targeted_partition_radius_multiple_competitors_tied_above_target(self):
+        self.assertEqual(targeted_partition_radius(np.array([4, 4, 2]), target=2), 2)
+
+    def test_targeted_partition_radius_zero_votes_and_small_vocab(self):
+        self.assertEqual(targeted_partition_radius(np.array([0, 0, 0]), target=1), 0)
+        self.assertEqual(targeted_partition_radius(np.array([0]), target=0), 0)
+        self.assertEqual(targeted_partition_radius(np.array([0, 2]), target=0), 1)
+
+    def test_targeted_partition_radius_validates_inputs(self):
+        with self.assertRaises(ValueError):
+            targeted_partition_radius(np.array([[1, 2]]), target=0)
+        with self.assertRaises(ValueError):
+            targeted_partition_radius(np.array([1, 2]), target=2)
+        with self.assertRaises(ValueError):
+            targeted_partition_radius(np.array([1, -1]), target=0)
+
+    def test_tpa_sequence_aggregation_uses_max_token_per_row(self):
+        summary = aggregate_tpa_sequence_baselines(np.array([[1, 4, 2], [3, 0, 2], [5, 1, 1]]))
+
+        self.assertEqual(summary["tpa_val_sequence_q1"], 3)
+        self.assertEqual(summary["tpa_val_sequence_qN"], 5)
+        self.assertAlmostEqual(summary["tpa_val_sequence_mean"], 4.0)
 
 
 class ExperimentCliTests(unittest.TestCase):
@@ -114,7 +162,9 @@ class ExperimentCliTests(unittest.TestCase):
                 "1,3,2,2,4,1,2,1,2,2,4,6,2\n"
             )
 
-            rows = experiments.plot_benchmark_csv(str(csv_path), save_dir=str(base))
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                rows = experiments.plot_benchmark_csv(str(csv_path), save_dir=str(base))
 
             self.assertEqual(len(rows), 1)
             self.assertTrue((base / "validity_one_prompt_by_L.svg").exists())
@@ -132,7 +182,10 @@ class ExperimentCliTests(unittest.TestCase):
             diagnostic_svg = (base / "stability_independent_overestimate_by_L.svg").read_text()
             self.assertIn("shared MILP full sequence", one_prompt_validity_svg)
             self.assertIn("independent full sequence", one_prompt_validity_svg)
+            self.assertIn("atomic phrase aggregation", one_prompt_validity_svg)
+            self.assertNotIn("phrase-DPA", one_prompt_validity_svg)
             self.assertNotIn("q1", one_prompt_validity_svg)
+            self.assertIn("tpa_val_sequence_q1", stdout.getvalue())
             self.assertIn("Independent composition overestimate", validity_diagnostic_svg)
             self.assertIn("shared MILP: full sequence", one_prompt_stability_svg)
             self.assertNotIn("qN", one_prompt_stability_svg)
