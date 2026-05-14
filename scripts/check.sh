@@ -4,15 +4,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-PYTHON_BIN="${PYTHON_BIN:-.venv/bin/python}"
+. "${ROOT_DIR}/scripts/_python.sh"
+PYTHON_BIN="$(resolve_python_bin)"
 VIS_OUT_DIR="${VIS_OUT_DIR:-toy_results/check_run/instance}"
 OUT_DIR="${OUT_DIR:-$VIS_OUT_DIR}"
-
-if [[ ! -x "$PYTHON_BIN" ]]; then
-  echo "Python executable not found at $PYTHON_BIN" >&2
-  echo "Create the environment first: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt" >&2
-  exit 1
-fi
 
 echo "== Toy certificate check run =="
 echo "Python:       $PYTHON_BIN"

@@ -4,15 +4,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-PYTHON_BIN="${PYTHON_BIN:-.venv/bin/python}"
+. "${ROOT_DIR}/scripts/_python.sh"
+PYTHON_BIN="$(resolve_python_bin)"
 OUT_DIR="${OUT_DIR:-toy_results/benchmark_large}"
 CSV_PATH="${CSV_PATH:-$OUT_DIR/benchmark_results.csv}"
-
-if [[ ! -x "$PYTHON_BIN" ]]; then
-  echo "Python executable not found at $PYTHON_BIN" >&2
-  echo "Create the environment first: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt" >&2
-  exit 1
-fi
 
 if [[ ! -f "$CSV_PATH" ]]; then
   echo "Benchmark CSV not found at $CSV_PATH" >&2
