@@ -57,12 +57,12 @@ Generate benchmark data and then refresh plots:
 
 Generate one visualization instance:
 
-```bash
-./scripts/visualize.sh
-```
-
-Run tests directly:
-
+K in {4, 6, 8}
+N in {2, 3}
+L in {2, 3, 4}
+T in {4, 6}
+delta_stab = delta_val = 0.2
+target_bias = 0.3
 ```bash
 .venv/bin/python -m unittest discover
 ```
@@ -231,15 +231,19 @@ minimized, the list may include extra feasible cells. The certified quantity is
 
 Baseline columns are computed in `compute_reference_baselines(data)`.
 
-The updated NLG certification paper separates DPA-style stability from
-TPA-style targeted validity. DPA remains the natural baseline for untargeted
-stability, where the adversary tries to change the clean output. For validity,
-the relevant paper-inspired baseline is Targeted Partition Aggregation, which
-computes a targeted radius for inducing a specific harmful token. For a harmful
+There are two main external baselines.
+
+The first is the token-level DPA margin baseline. DPA remains the natural
+baseline for untargeted stability, where the adversary tries to change the clean
+output. For validity, the same token-level baseline is a weakest harmful-token
+reference and should not be interpreted as a full-sequence certificate.
+
+The second is the Ghitu-style phrase-level TPA baseline. It computes targeted
+token validity radii for inducing a specific harmful token. For a harmful
 sequence, the toy implementation composes token-level TPA radii using the
 maximum over token positions, since the attacker must force every token in the
 sequence. The older phrase-level aggregation baseline is retained as a naive
-atomic-sequence baseline, but it should not be interpreted as the main TPA
+atomic-sequence diagnostic, but it should not be interpreted as the main TPA
 validity baseline.
 
 DPA matrix / weakest-token baseline:
@@ -307,10 +311,14 @@ phrase_independent_val_qN
 ```
 
 This treats a full generated row as one atomic label/phrase and does not reason token-by-token.
-It is useful as a crude full-sequence baseline, but exact sequence votes diffuse
+It is useful as a crude full-sequence diagnostic, but exact sequence votes diffuse
 over many possible sequences as `L` grows, so it should not be read as the main
 TPA/PHD validity baseline. The old `phrase_dpa_*` CSV names are retained for
 compatibility.
+
+The shared row-column MILP is the proposed method. Row-only, column-only, and
+joint row-column MILPs are variants or ablations of the proposed method, not
+external baselines.
 
 Compatibility and diagnostics:
 
@@ -334,32 +342,36 @@ Default benchmark data generation:
 Default output:
 
 ```text
-toy_results/benchmark_large/benchmark_results.csv
+toy_results/small_benchmark/benchmark_results.csv
+toy_results/small_benchmark/benchmark_budget_curves.csv
+toy_results/small_benchmark/benchmark_damage_curves.csv
+toy_results/small_benchmark/benchmark_horizons.csv
 ```
 
-Default large sweep:
+Default small sweep:
 
 ```text
-K in {5, 10, 15, 20, 25}
-N in {3, 5, 7, 9, 11}
-L in {3, 6, 9, 12}
-T in {3, 6, 9, 12}
-delta in {0.0, 0.25, 0.5}
-target_bias = 0.2
+K in {4, 6, 8}
+N in {2, 3}
+L in {2, 3, 4}
+T in {4, 6}
+delta_stab = delta_val = 0.2
+target_bias = 0.3
 ```
-
-This is a large sweep:
+This keeps the default benchmark compact enough for quick plot and label iteration.
 
 ```text
-5 * 5 * 4 * 4 * 3 = 1,200 generated instances
+3 * 2 * 3 * 2 * 1 * 1 * 1 = 36 generated instances
 ```
 
-Each instance solves several MILPs, so this can take a long time.
+Each instance solves several MILPs, so this can still take a little while.
+Direct damage-at-budget curves add three maximization MILPs per budget, so use a
+small `BUDGET_MAX` or disable them for larger sweeps.
 
 Override ranges with environment variables:
 
 ```bash
-KS=5,10 NS=3,5 LENGTHS=3,6 TS=3,6 DELTAS=0.0,0.25 ./scripts/data.sh
+KS=4,6 NS=2 LENGTHS=2,3 TS=4 DELTA_STABS=0.2 DELTA_VALS=0.2 TARGET_BIASES=0.3 ./scripts/data.sh
 ```
 
 Choose the stability competitor mode with:
@@ -368,7 +380,31 @@ Choose the stability competitor mode with:
 STABILITY_COMPETITOR_MODE=runner_up ./scripts/data.sh
 ```
 
-The default is `STABILITY_COMPETITOR_MODE=all`.
+The shell wrappers default to `STABILITY_COMPETITOR_MODE=runner_up` for quick
+iteration. Set it to `all` for exact all-competitor runs.
+
+Budget-sweep controls:
+
+```bash
+BUDGET_MAX=15 ./scripts/data.sh
+MAKE_BUDGET_CURVES=0 ./scripts/data.sh
+MAKE_DAMAGE_CURVES=0 ./scripts/data.sh
+MAKE_HORIZON_CURVES=0 ./scripts/data.sh
+```
+
+Metric families:
+
+```text
+benchmark_results.csv         radius-style B* metrics
+benchmark_budget_curves.csv   radius-derived coverage, certified iff B < B*_row
+benchmark_damage_curves.csv   direct shared-MILP damage maximization at fixed B
+benchmark_horizons.csv        average certified prefix horizon at fixed B
+```
+
+Radius-derived coverage solves rows independently and is cheap enough for
+baselines and quick plotting. Direct damage-at-budget MILPs are more faithful to
+the shared-allocation threat model because the solver chooses one poisoned-shard
+set and maximizes damage under that budget.
 
 ## Stability Mode Comparison
 
@@ -376,7 +412,7 @@ Run a small exact-vs-runner-up diagnostic:
 
 ```bash
 .venv/bin/python -m toy_certificate.experiments compare-stability-modes \
-  --Ks 5 --Ns 2 --lengths 2,3 --Ts 3 --deltas 0.2 \
+  --Ks 4,6 --Ns 2 --lengths 2,3 --Ts 4 --deltas 0.2 \
   --save-dir toy_results/stability_mode_comparison
 ```
 
@@ -398,8 +434,8 @@ poisoning than all-competitor mode.
 Refresh plots from an existing CSV:
 
 ```bash
-CSV_PATH=toy_results/benchmark_large/benchmark_results.csv \
-OUT_DIR=toy_results/benchmark_large \
+CSV_PATH=toy_results/small_benchmark/benchmark_results.csv \
+OUT_DIR=toy_results/small_benchmark \
 ./scripts/plot.sh
 ```
 
@@ -412,6 +448,12 @@ stability_one_prompt_by_L.svg
 stability_all_prompts_by_L.svg
 validity_independent_overestimate_by_L.svg
 stability_independent_overestimate_by_L.svg
+certified_fraction_stability_by_budget.svg
+certified_fraction_validity_by_budget.svg
+certified_fraction_stability_by_L_at_budget.svg
+certified_fraction_validity_by_L_at_budget.svg
+stability_horizon_by_budget.svg
+validity_horizon_by_budget.svg
 ```
 
 Compatibility aggregate SVGs are still written:

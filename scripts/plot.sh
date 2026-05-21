@@ -6,7 +6,7 @@ cd "$ROOT_DIR"
 
 . "${ROOT_DIR}/scripts/_python.sh"
 PYTHON_BIN="$(resolve_python_bin)"
-OUT_DIR="${OUT_DIR:-toy_results/benchmark_large}"
+OUT_DIR="${OUT_DIR:-toy_results/small_benchmark}"
 CSV_PATH="${CSV_PATH:-$OUT_DIR/benchmark_results.csv}"
 
 if [[ ! -f "$CSV_PATH" ]]; then

@@ -6,8 +6,9 @@ cd "$ROOT_DIR"
 
 . "${ROOT_DIR}/scripts/_python.sh"
 PYTHON_BIN="$(resolve_python_bin)"
-VIS_OUT_DIR="${VIS_OUT_DIR:-toy_results/check_run/instance}"
+VIS_OUT_DIR="${VIS_OUT_DIR:-toy_results/smoke/instance}"
 OUT_DIR="${OUT_DIR:-$VIS_OUT_DIR}"
+STABILITY_COMPETITOR_MODE="${STABILITY_COMPETITOR_MODE:-runner_up}"
 
 echo "== Toy certificate check run =="
 echo "Python:       $PYTHON_BIN"
@@ -24,15 +25,15 @@ echo
 
 echo "== 3/3 Instance visualization =="
 "$PYTHON_BIN" -m toy_certificate.experiments visualize \
-  --K "${VIS_K:-20}" \
-  --N "${VIS_N:-12}" \
-  --L "${VIS_L:-10}" \
-  --T "${VIS_T:-12}" \
+  --K "${VIS_K:-4}" \
+  --N "${VIS_N:-2}" \
+  --L "${VIS_L:-3}" \
+  --T "${VIS_T:-4}" \
   --delta-stab "${VIS_DELTA_STAB:-${VIS_DELTA:-0.2}}" \
   --delta-val "${VIS_DELTA_VAL:-${VIS_DELTA:-0.2}}" \
-  --target-bias "${TARGET_BIAS:-0.2}" \
+  --target-bias "${TARGET_BIAS:-0.3}" \
   --influence-mode "${INFLUENCE_MODE:-dense}" \
-  --stability-competitor-mode "${STABILITY_COMPETITOR_MODE:-all}" \
+  --stability-competitor-mode "$STABILITY_COMPETITOR_MODE" \
   --seed "${SEED:-0}" \
   --save-dir "$OUT_DIR"
 echo

@@ -40,9 +40,37 @@ Run benchmark data generation only:
 ./scripts/data.sh
 ```
 
-By default this writes `toy_results/benchmark_large/benchmark_results.csv` for
-`K={5,10,15,20,25}`, `N={3,5,7,9,11}`, `L={3,6,9,12}`,
-`T={3,6,9,12}`, `delta={0.0,0.25,0.5}`, and `target_bias=0.2`.
+By default this writes `toy_results/small_benchmark/benchmark_results.csv` for
+the small preset: `K={4,6,8}`, `N={2,3}`, `L={2,3,4}`, `T={4,6}`,
+`delta_stab=delta_val={0.2}`, and `target_bias={0.3}`. The shell wrappers use
+`STABILITY_COMPETITOR_MODE=runner_up` by default for speed; set it to `all` for
+exact all-competitor runs.
+
+It also writes reusable long-format sidecar CSVs by default:
+
+```text
+benchmark_budget_curves.csv
+benchmark_damage_curves.csv
+benchmark_horizons.csv
+```
+
+You can override the ranges with environment variables:
+
+```bash
+KS=4,6 NS=2 LENGTHS=2,3 TS=4 DELTA_STABS=0.2 DELTA_VALS=0.2 TARGET_BIASES=0.3 ./scripts/data.sh
+```
+
+Budget-curve controls:
+
+```bash
+BUDGET_MAX=15 MAKE_BUDGET_CURVES=1 MAKE_DAMAGE_CURVES=1 MAKE_HORIZON_CURVES=1 ./scripts/data.sh
+```
+
+Or choose a preset explicitly:
+
+```bash
+PRESET=large ./scripts/data.sh
+```
 
 Refresh plots from an existing benchmark CSV:
 
@@ -55,6 +83,9 @@ Run data generation followed by plotting:
 ```bash
 ./scripts/benchmark.sh
 ```
+
+This uses the small preset by default. Larger sweeps remain available through
+`PRESET=medium`, `PRESET=large`, or direct CLI arguments.
 
 Generate one visualization instance:
 
@@ -69,6 +100,19 @@ The core quantity is:
 ```text
 B* = minimum number of poisoned shards needed to make an attack objective feasible
 ```
+
+The benchmark records four metric families. Radius-style metrics keep the
+existing `B*` columns in `benchmark_results.csv`. Radius-derived coverage fixes
+a budget `B` and counts a prompt as certified exactly when `B < B*_row`. Direct
+damage-at-budget MILPs also fix `B`, but solve a new maximization problem that
+directly maximizes attacked prompt rows under one shared poisoned-shard
+allocation. Horizon metrics fix `B` and measure how many initial token positions
+remain certified on average.
+
+The radius-derived curves are cheap summaries of per-row certificates. The
+direct damage-at-budget curves are more faithful to the shared-allocation threat
+model because they solve a new MILP for each budget and maximise adversarial
+damage under that budget.
 
 The MILP uses one shared poisoned-shard allocation `a[k] in {0,1}`. The same
 selected shards are reused across all required prompt rows and token positions;
@@ -94,16 +138,19 @@ harmful sequences. A validity cell succeeds only if the harmful target token tie
 or beats every competitor token, which is stricter than only beating the current
 clean winner.
 
-The updated NLG certification paper separates DPA-style stability from
-TPA-style targeted validity. DPA remains the natural baseline for untargeted
-stability, where the adversary tries to change the clean output. For validity,
-the paper-inspired baseline is Targeted Partition Aggregation: compute a
-targeted radius for inducing a specific harmful token. For a harmful sequence,
-the toy implementation composes token-level TPA radii using the maximum over
-token positions, since the attacker must force every token in the sequence. This
-implementation follows the toy MILP convention where target ties count as
-successful attacks; if a strict-plurality convention is used elsewhere,
-interpret this as the tie-wins toy adaptation.
+There are two main external baselines.
+The first is the token-level DPA margin baseline: each prompt-token cell is
+certified independently using the standard clean-winner versus runner-up margin
+for stability, and a simple targeted margin against the strongest non-target
+competitor for validity. This is a weakest harmful-token reference, not a full-
+sequence certificate.
+The second is the Ghitu-style phrase-level TPA baseline: token certificates are
+composed across each generated response. Phrase stability is controlled by the
+weakest token, while phrase validity is controlled by the hardest target token,
+implemented as the maximum over token-level TPA validity radii.
+Atomic phrase aggregation and independent composition are retained only as
+diagnostic references. The proposed shared row-column MILP is evaluated against
+these two baselines and should not be conflated with them.
 
 For report-facing objectives, use readable names rather than q/r shorthand:
 `q` is affected prompt rows and `r` is affected token positions per selected
@@ -112,6 +159,9 @@ is `q_rows=1, r_cols=1`; one prompt/full sequence is `q_rows=1, r_cols=L`; all
 prompts/one token each is `q_rows=N, r_cols=1`; all prompts/full matrix is
 `q_rows=N, r_cols=L`. Validity objectives use `solve_row_col_validity`: one
 harmful sequence is `q_rows=1`; harmful sequences for all prompts is `q_rows=N`.
+
+The row-only, column-only, and joint row-column MILPs are proposed-method
+variants and ablations. They are not external baselines.
 
 ## Baselines
 
@@ -126,13 +176,16 @@ sequence because every target token must be forced.
 
 Atomic phrase aggregation, kept in CSV columns named `phrase_dpa_*` for
 compatibility, treats the whole generated sequence as one label. It is a crude
-full-sequence baseline and often weakens as `L` grows because exact sequence
-votes diffuse across many possible outputs. It should not be interpreted as the
-main TPA validity baseline.
+full-sequence diagnostic and should not be interpreted as the main TPA validity
+baseline.
 
 Independent composition sums token-level costs and does not reuse poisoned
-shards across cells, so it is a loose upper reference rather than the main
-structured method.
+shards across cells, so it is a loose upper reference rather than a main
+baseline.
+
+The shared row-column MILP is the proposed method. Row-only, column-only, and
+joint row-column solves are report-facing variants or ablations of that method,
+not external baselines.
 
 ## Solver Exactness
 
@@ -165,6 +218,12 @@ stability_all_prompts_by_L.svg        destabilise all prompts
 structured_stability_heatmap.svg      B*(q,r) over affected prompts/tokens
 validity_independent_overestimate_by_L.svg
 stability_independent_overestimate_by_L.svg
+certified_fraction_stability_by_budget.svg
+certified_fraction_validity_by_budget.svg
+certified_fraction_stability_by_L_at_budget.svg
+certified_fraction_validity_by_L_at_budget.svg
+stability_horizon_by_budget.svg
+validity_horizon_by_budget.svg
 ```
 
 Independent-composition diagnostics are separated because they can dominate the
@@ -198,10 +257,10 @@ Run tests directly:
 - `toy_certificate/`: toy data generator, MILP solvers, experiment CLI, plotting helpers.
 - `phd_reference/`: external read-only reference package.
 - `scripts/check.sh`: compile, test, and small visualization smoke test.
-- `scripts/data.sh`: benchmark data generation, writing `benchmark_results.csv`.
-- `scripts/plot.sh`: plot refresh from an existing CSV.
-- `scripts/benchmark.sh`: convenience data-generation plus plotting workflow.
-- `scripts/visualize.sh`: one visualization instance.
+- `scripts/data.sh`: small benchmark data generation, writing `benchmark_results.csv`.
+- `scripts/plot.sh`: plot refresh from an existing CSV without rerunning Gurobi.
+- `scripts/benchmark.sh`: small benchmark data-generation plus plotting workflow.
+- `scripts/visualize.sh`: one tiny visualization instance.
 - `tests/`: lightweight test bench.
 - `historical_csvs/`: saved benchmark CSVs.
 - `toy_results/`: generated outputs, ignored by git.

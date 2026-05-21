@@ -25,6 +25,12 @@ The core quantity is:
 B* = minimum number of poisoned shards needed to make an attack objective feasible
 ```
 
+The benchmark also supports budget-sweep data. Radius-derived coverage fixes a
+budget `B` and certifies a row if and only if `B < B*_row`. Direct
+damage-at-budget MILPs fix `B` and maximize attacked rows using one shared
+poisoned-shard allocation. Horizon metrics fix `B` and measure the longest
+certified prefix per prompt row.
+
 The main modelling requirement is that the MILPs use one shared poisoning allocation:
 
 ```text
@@ -205,62 +211,41 @@ Report-facing validity objectives should use `solve_row_col_validity`.
 
 ## Reference Baselines
 
-The shared MILP should be compared against:
+There are two main external baselines.
 
-```text
-DPA weakest-token stability/validity baseline
-TPA targeted validity baseline
-independent-composition baseline
-atomic phrase aggregation baseline
-```
-
-The confirmed DPA matrix baseline computes token-level cell certificates independently and reduces each prompt row to its weakest token:
+The first is the token-level DPA margin baseline. It computes token-level cell certificates independently and reduces each prompt row to its weakest token:
 
 ```text
 row_radius[i] = min_j B_cell[i,j]
 ```
 
-For validity, this is the easiest harmful target token in a prompt row, not a
-full harmful-sequence certificate.
+For validity, this is the easiest harmful target token in a prompt row, not a full harmful-sequence certificate.
 
-The updated NLG certification paper separates DPA-style stability from
-TPA-style targeted validity. DPA remains the natural baseline for untargeted
-stability, where the adversary tries to change the clean output. For validity,
-the relevant paper-inspired baseline is Targeted Partition Aggregation, which
-computes a targeted radius for inducing a specific harmful token. For a harmful
-sequence, the toy implementation composes token-level TPA radii using the
-maximum over token positions:
+The second is the Ghitu-style phrase-level TPA baseline. It computes a targeted radius for inducing a specific harmful token. For a harmful sequence, the toy implementation composes token-level TPA radii using the maximum over token positions:
 
 ```text
 R_tpa_sequence[i] = max_j r_tpa[i,j]
 ```
 
-The maximum is used because the attacker must force every target token in the
-sequence, so the hardest token controls the targeted sequence baseline. This is
-not ordinary DPA top-vs-runner-up stability and not phrase aggregation. The toy
-implementation follows the MILP tie convention where target ties count as
-successful attacks; if a strict-plurality convention is used elsewhere, interpret
-this as the tie-wins toy adaptation.
+The maximum is used because the attacker must force every target token in the sequence, so the hardest token controls the targeted sequence baseline. This is not ordinary DPA top-vs-runner-up stability and not atomic phrase aggregation. The toy implementation follows the MILP tie convention where target ties count as successful attacks; if a strict-plurality convention is used elsewhere, interpret this as the tie-wins toy adaptation.
 
-The independent-composition baseline sums token costs:
+The independent-composition diagnostic sums token costs:
 
 ```text
 full_row_cost[i] = sum_j B_cell[i,j]
 ```
 
-This does not reuse the same poisoned-shard allocation and should be treated as
-a loose/conservative upper reference.
+This does not reuse the same poisoned-shard allocation and should be treated as a loose/conservative upper reference.
 
-The atomic phrase aggregation baseline treats an entire generated row as one
-atomic class:
+The atomic phrase aggregation diagnostic treats an entire generated row as one atomic class:
 
 ```text
 phrase_vote[k,i] = tuple(val_votes[k,i,0:L])
 ```
 
-It is useful as a crude full-sequence baseline, but it is not the main TPA/PHD
-validity baseline. It often weakens as `L` grows because exact sequence
-agreement across shards becomes rare.
+It is useful as a crude full-sequence diagnostic, but it is not the main TPA/PHD validity baseline. It often weakens as `L` grows because exact sequence agreement across shards becomes rare.
+
+The proposed shared row-column MILP is evaluated against the two external baselines. Row-only, column-only, and joint row-column MILPs are variants or ablations of the proposed method, not external baselines.
 
 ## Solver Exactness and Diagnostics
 
@@ -283,13 +268,32 @@ quantity is `B_star`.
 
 ## Expected Outputs
 
-The benchmark should write reusable CSV data, so plots can be changed without rerunning Gurobi:
+The benchmark should write reusable CSV data, so plots can be changed without rerunning Gurobi. The default quick workflow uses the small preset and writes to `toy_results/small_benchmark/benchmark_results.csv`:
+
+```bash
+./scripts/data.sh
+./scripts/plot.sh
+```
+
+Larger sweeps remain available through `PRESET=medium`, `PRESET=large`, or direct CLI arguments.
+
+Reusable CSV data:
 
 ```text
 benchmark_results.csv
+benchmark_budget_curves.csv
+benchmark_damage_curves.csv
+benchmark_horizons.csv
 ```
 
 Plotting should be a separate step from benchmark data generation.
+
+`benchmark_results.csv` preserves the existing radius-style `B*` columns.
+`benchmark_budget_curves.csv` stores cheap radius-derived certified and attacked
+fractions. `benchmark_damage_curves.csv` stores fixed-budget shared-MILP damage
+maximization results and solver metadata; non-optimal rows are feasible damage
+bounds rather than exact maxima. `benchmark_horizons.csv` stores average,
+median, minimum, and maximum certified prefix horizons.
 
 Report-facing plots should be separated by attack objective:
 
@@ -300,9 +304,15 @@ stability_one_prompt_by_L.svg         destabilise one prompt
 stability_all_prompts_by_L.svg        destabilise all prompts
 validity_independent_overestimate_by_L.svg
 stability_independent_overestimate_by_L.svg
+certified_fraction_stability_by_budget.svg
+certified_fraction_validity_by_budget.svg
+certified_fraction_stability_by_L_at_budget.svg
+certified_fraction_validity_by_L_at_budget.svg
+stability_horizon_by_budget.svg
+validity_horizon_by_budget.svg
 structured_stability_heatmap.svg      B*(q,r) over affected prompts/tokens
 ```
 
-Legends should use human-readable objective names such as `one prompt`, `all prompts`, `one token`, `full sequence`, `full matrix`, `DPA weakest token`, `DPA weakest harmful token`, `TPA max-token sequence`, `atomic phrase aggregation`, `shared MILP full sequence`, and `independent full sequence`.
+Legends should use human-readable objective names such as `DPA weakest token`, `DPA weakest harmful token`, `TPA max-token sequence`, `Atomic phrase aggregation`, `Shared MILP full sequence`, `Shared MILP all harmful sequences`, `Shared MILP one prompt, one token`, `Shared MILP one prompt, full sequence`, `Shared MILP all prompts, one token each`, `Shared MILP full matrix`, and `Independent full sequence`.
 Independent-composition diagnostics should be separated from main plots when
 they dominate the y-axis.

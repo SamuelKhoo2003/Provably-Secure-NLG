@@ -65,6 +65,59 @@ class CertificateResult:
         }
 
 
+@dataclass(frozen=True)
+class DamageResult:
+    """Result returned by a fixed-budget damage maximization MILP.
+
+    ``objective_value`` is the maximum feasible damage found under
+    ``sum_k a[k] <= budget``. For maximization models, ``lower_bound`` is the
+    best feasible objective value and ``upper_bound`` is Gurobi's objective
+    bound. If the solve is non-optimal, the feasible value is a lower bound on
+    attack damage, not an exact maximum.
+    """
+
+    name: str
+    budget: int
+    selected_poisoned_shards: list[int]
+    attacked_cells: list[tuple[int, int]]
+    attacked_rows: list[int] | None
+    status: int
+    status_name: str
+    objective_value: float | None
+    is_optimal: bool = False
+    mip_gap: float | None = None
+    lower_bound: float | None = None
+    upper_bound: float | None = None
+    runtime_sec: float | None = None
+
+    @property
+    def max_attacked_rows(self) -> int | None:
+        if self.attacked_rows is None:
+            return None
+        return len(self.attacked_rows)
+
+    @property
+    def max_attacked_cells(self) -> int:
+        return len(self.attacked_cells)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "budget": self.budget,
+            "a": self.selected_poisoned_shards,
+            "z": self.attacked_cells,
+            "y_row": self.attacked_rows,
+            "status": self.status,
+            "status_name": self.status_name,
+            "objective_value": self.objective_value,
+            "is_optimal": self.is_optimal,
+            "mip_gap": self.mip_gap,
+            "lower_bound": self.lower_bound,
+            "upper_bound": self.upper_bound,
+            "runtime_sec": self.runtime_sec,
+        }
+
+
 def solve_row_stability(
     votes: np.ndarray,
     clean_counts: np.ndarray,
@@ -273,6 +326,106 @@ def solve_row_col_validity(
     return _optimize_and_extract(result_name, model, a, z, y_row=y_row)
 
 
+def maximize_attacked_rows_stability(
+    votes: np.ndarray,
+    clean_counts: np.ndarray,
+    clean_pred: np.ndarray,
+    runner_up: np.ndarray,
+    influence: np.ndarray | None = None,
+    budget: int = 0,
+    row_requirement: str = "any_token",
+    competitor_mode: str = "all",
+) -> DamageResult:
+    """Maximize attacked prompt rows for a fixed stability poison budget.
+
+    ``row_requirement="any_token"`` counts a row when at least one token cell is
+    destabilised. ``row_requirement="full_sequence"`` counts a row only when
+    all token cells in that row are destabilised. In both cases the same
+    poisoned-shard allocation ``a[k]`` is shared across every row and cell.
+    """
+    K, N, L, _ = _validate_stability_shapes(votes, clean_counts, clean_pred, runner_up, influence)
+    model, a = _make_budget_model(K, f"damage_stability_rows_{row_requirement}", budget)
+    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up, influence, competitor_mode=competitor_mode)
+    y_row = model.addVars(N, vtype=GRB.BINARY, name="y_row")
+    if row_requirement == "any_token":
+        for i in range(N):
+            model.addConstr(y_row[i] <= gp.quicksum(z[i, j] for j in range(L)), name=f"row_any_{i}")
+    elif row_requirement == "full_sequence":
+        for i in range(N):
+            for j in range(L):
+                model.addConstr(z[i, j] >= y_row[i], name=f"row_full_{i}_{j}")
+    else:
+        raise ValueError("row_requirement must be 'any_token' or 'full_sequence'")
+    model.setObjective(gp.quicksum(y_row[i] for i in range(N)), GRB.MAXIMIZE)
+    return _optimize_damage_and_extract(f"damage_stability_rows_{row_requirement}", model, a, z, budget, y_row=y_row)
+
+
+def maximize_attacked_rows_validity(
+    votes: np.ndarray,
+    counts: np.ndarray | None = None,
+    target: np.ndarray | None = None,
+    T: int | None = None,
+    influence: np.ndarray | None = None,
+    budget: int = 0,
+    row_requirement: str = "full_sequence",
+    *,
+    clean_counts: np.ndarray | None = None,
+) -> DamageResult:
+    """Maximize harmful target sequences forced under a fixed poison budget."""
+    counts, target, T = _resolve_validity_args(counts, clean_counts, target, T)
+    K, N, L, T = _validate_validity_shapes(votes, counts, target, T, influence)
+    model, a = _make_budget_model(K, f"damage_validity_rows_{row_requirement}", budget)
+    z = _add_validity_cell_constraints(model, a, votes, counts, target, T, influence)
+    y_row = model.addVars(N, vtype=GRB.BINARY, name="y_row")
+    if row_requirement == "any_token":
+        for i in range(N):
+            model.addConstr(y_row[i] <= gp.quicksum(z[i, j] for j in range(L)), name=f"row_any_{i}")
+    elif row_requirement == "full_sequence":
+        for i in range(N):
+            for j in range(L):
+                model.addConstr(z[i, j] >= y_row[i], name=f"row_full_{i}_{j}")
+    else:
+        raise ValueError("row_requirement must be 'any_token' or 'full_sequence'")
+    model.setObjective(gp.quicksum(y_row[i] for i in range(N)), GRB.MAXIMIZE)
+    return _optimize_damage_and_extract(f"damage_validity_rows_{row_requirement}", model, a, z, budget, y_row=y_row)
+
+
+def maximize_attacked_cells_stability(
+    votes: np.ndarray,
+    clean_counts: np.ndarray,
+    clean_pred: np.ndarray,
+    runner_up: np.ndarray,
+    influence: np.ndarray | None = None,
+    budget: int = 0,
+    competitor_mode: str = "all",
+) -> DamageResult:
+    """Maximize destabilised cells under a fixed shared poison budget."""
+    K, N, L, _ = _validate_stability_shapes(votes, clean_counts, clean_pred, runner_up, influence)
+    model, a = _make_budget_model(K, "damage_stability_cells", budget)
+    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up, influence, competitor_mode=competitor_mode)
+    model.setObjective(gp.quicksum(z[i, j] for i in range(N) for j in range(L)), GRB.MAXIMIZE)
+    return _optimize_damage_and_extract("damage_stability_cells", model, a, z, budget)
+
+
+def maximize_attacked_cells_validity(
+    votes: np.ndarray,
+    counts: np.ndarray | None = None,
+    target: np.ndarray | None = None,
+    T: int | None = None,
+    influence: np.ndarray | None = None,
+    budget: int = 0,
+    *,
+    clean_counts: np.ndarray | None = None,
+) -> DamageResult:
+    """Maximize harmful target cells under a fixed shared poison budget."""
+    counts, target, T = _resolve_validity_args(counts, clean_counts, target, T)
+    K, N, L, T = _validate_validity_shapes(votes, counts, target, T, influence)
+    model, a = _make_budget_model(K, "damage_validity_cells", budget)
+    z = _add_validity_cell_constraints(model, a, votes, counts, target, T, influence)
+    model.setObjective(gp.quicksum(z[i, j] for i in range(N) for j in range(L)), GRB.MAXIMIZE)
+    return _optimize_damage_and_extract("damage_validity_cells", model, a, z, budget)
+
+
 def _make_model(K: int, name: str) -> tuple[gp.Model, gp.tupledict]:
     """Create a silent Gurobi model with binary poisoned-shard variables."""
     env = gp.Env(empty=True)
@@ -282,6 +435,19 @@ def _make_model(K: int, name: str) -> tuple[gp.Model, gp.tupledict]:
     model._env = env
     a = model.addVars(K, vtype=GRB.BINARY, name="a")
     model.setObjective(gp.quicksum(a[k] for k in range(K)), GRB.MINIMIZE)
+    return model, a
+
+
+def _make_budget_model(K: int, name: str, budget: int) -> tuple[gp.Model, gp.tupledict]:
+    if budget < 0 or budget > K:
+        raise ValueError(f"budget must be in [0, {K}]")
+    env = gp.Env(empty=True)
+    env.setParam("OutputFlag", 0)
+    env.start()
+    model = gp.Model(name, env=env)
+    model._env = env
+    a = model.addVars(K, vtype=GRB.BINARY, name="a")
+    model.addConstr(gp.quicksum(a[k] for k in range(K)) <= budget, name="poison_budget")
     return model, a
 
 
@@ -543,6 +709,55 @@ def _optimize_and_extract(
         mip_gap=_safe_model_attr(model, "MIPGap"),
         lower_bound=_safe_model_attr(model, "ObjBound"),
         upper_bound=upper_bound,
+    )
+
+
+def _optimize_damage_and_extract(
+    name: str,
+    model: gp.Model,
+    a: gp.tupledict,
+    z: gp.tupledict,
+    budget: int,
+    y_row: gp.tupledict | None = None,
+) -> DamageResult:
+    model.optimize()
+    status_name = _status_name(model.status)
+    runtime_sec = _safe_model_attr(model, "Runtime")
+    if model.status not in {GRB.OPTIMAL, GRB.SUBOPTIMAL, GRB.TIME_LIMIT} or model.SolCount == 0:
+        return DamageResult(
+            name=name,
+            budget=budget,
+            selected_poisoned_shards=[],
+            attacked_cells=[],
+            attacked_rows=None if y_row is None else [],
+            status=model.status,
+            status_name=status_name,
+            objective_value=None,
+            is_optimal=False,
+            mip_gap=_safe_model_attr(model, "MIPGap"),
+            lower_bound=None,
+            upper_bound=_safe_model_attr(model, "ObjBound"),
+            runtime_sec=runtime_sec,
+        )
+
+    selected = [k for k in a.keys() if a[k].X > 0.5]
+    attacked = [(i, j) for i, j in z.keys() if z[i, j].X > 0.5]
+    attacked_rows = None if y_row is None else [i for i in y_row.keys() if y_row[i].X > 0.5]
+    objective = _safe_model_attr(model, "ObjVal")
+    return DamageResult(
+        name=name,
+        budget=budget,
+        selected_poisoned_shards=selected,
+        attacked_cells=attacked,
+        attacked_rows=attacked_rows,
+        status=model.status,
+        status_name=status_name,
+        objective_value=objective,
+        is_optimal=model.status == GRB.OPTIMAL,
+        mip_gap=_safe_model_attr(model, "MIPGap"),
+        lower_bound=objective,
+        upper_bound=_safe_model_attr(model, "ObjBound"),
+        runtime_sec=runtime_sec,
     )
 
 

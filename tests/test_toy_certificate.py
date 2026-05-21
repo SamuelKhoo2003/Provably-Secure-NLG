@@ -10,12 +10,16 @@ from toy_certificate.data import generate_toy_votes
 from toy_certificate import experiments
 from toy_certificate.experiments import (
     aggregate_tpa_sequence_baselines,
+    certified_fraction_from_radii,
     compute_reference_baselines,
+    compute_horizon_curve_rows,
+    compute_radius_derived_budget_curve_rows,
     compute_structured_stability_grid,
     compute_validity_q_curve,
+    prefix_horizons_from_token_radii,
     targeted_partition_radius,
 )
-from toy_certificate.milp import solve_row_col_validity, solve_structured_stability
+from toy_certificate.milp import maximize_attacked_rows_stability, solve_row_col_validity, solve_structured_stability
 
 
 class ToyGenerationTests(unittest.TestCase):
@@ -100,15 +104,159 @@ class TargetedPartitionBaselineTests(unittest.TestCase):
         self.assertAlmostEqual(summary["tpa_val_sequence_mean"], 4.0)
 
 
+class BudgetCurveHelperTests(unittest.TestCase):
+    def test_certified_fraction_from_radii_uses_strict_inequality(self):
+        rows = certified_fraction_from_radii(np.array([1, 3, 5]), budgets=[0, 1, 3, 5])
+
+        fractions = {row["budget"]: row["certified_fraction"] for row in rows}
+        self.assertEqual(fractions[0], 1.0)
+        self.assertEqual(fractions[1], 2 / 3)
+        self.assertEqual(fractions[3], 1 / 3)
+        self.assertEqual(fractions[5], 0.0)
+
+    def test_prefix_horizon_stops_at_first_uncertified_token(self):
+        token_radii = np.array([[2, 4, 1]])
+
+        self.assertEqual(prefix_horizons_from_token_radii(token_radii, budget=0).tolist(), [3])
+        self.assertEqual(prefix_horizons_from_token_radii(token_radii, budget=1).tolist(), [2])
+        self.assertEqual(prefix_horizons_from_token_radii(token_radii, budget=2).tolist(), [0])
+
+    def test_new_long_format_curve_rows_have_expected_columns(self):
+        data = generate_toy_votes(K=4, N=2, L=2, T=4, delta_stab=0.2, delta_val=0.2, target_bias=0.3, seed=5)
+        metadata = {
+            "seed": 5,
+            "K": 4,
+            "N": 2,
+            "L": 2,
+            "T": 4,
+            "delta_stab": 0.2,
+            "delta_val": 0.2,
+            "target_bias": 0.3,
+            "influence_mode": "dense",
+            "stability_competitor_mode": "runner_up",
+        }
+
+        try:
+            budget_rows = compute_radius_derived_budget_curve_rows(data, T=4, budgets=[0, 1], metadata=metadata, stability_competitor_mode="runner_up")
+            horizon_rows = compute_horizon_curve_rows(data, budgets=[0, 1], metadata=metadata)
+        except Exception as exc:
+            if "Gurobi" in str(exc) or "license" in str(exc).lower():
+                self.skipTest(f"Gurobi unavailable: {exc}")
+            raise
+
+        self.assertTrue(
+            {
+                "seed",
+                "K",
+                "N",
+                "L",
+                "T",
+                "delta_stab",
+                "delta_val",
+                "target_bias",
+                "influence_mode",
+                "stability_competitor_mode",
+                "budget",
+                "method",
+                "objective",
+                "curve_type",
+                "certified_fraction",
+                "attacked_fraction",
+                "mean_radius",
+                "median_radius",
+                "min_radius",
+                "max_radius",
+                "num_certified",
+                "num_total",
+            }.issubset(budget_rows[0])
+        )
+        self.assertTrue(
+            {
+                "seed",
+                "K",
+                "N",
+                "L",
+                "T",
+                "delta_stab",
+                "delta_val",
+                "target_bias",
+                "budget",
+                "method",
+                "mean_horizon",
+                "median_horizon",
+                "min_horizon",
+                "max_horizon",
+                "max_possible_horizon",
+                "certified_fraction_full_horizon",
+            }.issubset(horizon_rows[0])
+        )
+
+    def test_benchmark_writes_new_curve_csvs(self):
+        with TemporaryDirectory() as tmp_dir:
+            try:
+                experiments.benchmark_scale(
+                    Ks=[4],
+                    Ns=[2],
+                    Ls=[2],
+                    Ts=[4],
+                    delta_stabs=[0.2],
+                    delta_vals=[0.2],
+                    target_biases=[0.3],
+                    influence_mode="dense",
+                    stability_competitor_mode="runner_up",
+                    seed=0,
+                    save_dir=tmp_dir,
+                    budget_max=1,
+                    make_budget_curves=True,
+                    make_damage_curves=True,
+                    make_horizon_curves=True,
+                )
+            except Exception as exc:
+                if "Gurobi" in str(exc) or "license" in str(exc).lower():
+                    self.skipTest(f"Gurobi unavailable: {exc}")
+                raise
+
+            self.assertTrue((Path(tmp_dir) / "benchmark_budget_curves.csv").exists())
+            self.assertTrue((Path(tmp_dir) / "benchmark_damage_curves.csv").exists())
+            self.assertTrue((Path(tmp_dir) / "benchmark_horizons.csv").exists())
+
+            budget_header = (Path(tmp_dir) / "benchmark_budget_curves.csv").read_text().splitlines()[0].split(",")
+            damage_header = (Path(tmp_dir) / "benchmark_damage_curves.csv").read_text().splitlines()[0].split(",")
+            horizon_header = (Path(tmp_dir) / "benchmark_horizons.csv").read_text().splitlines()[0].split(",")
+
+        self.assertIn("certified_fraction", budget_header)
+        self.assertIn("curve_type", damage_header)
+        self.assertIn("mean_horizon", horizon_header)
+
+
 class ExperimentCliTests(unittest.TestCase):
     def test_benchmark_does_not_make_plots_by_default(self):
         parser = experiments.build_parser()
 
         args = parser.parse_args(["benchmark"])
         self.assertFalse(args.make_plots)
+        self.assertEqual(args.budget_max, 15)
+        self.assertTrue(args.make_budget_curves)
+        self.assertTrue(args.make_damage_curves)
+        self.assertTrue(args.make_horizon_curves)
 
         args = parser.parse_args(["benchmark", "--make-plots"])
         self.assertTrue(args.make_plots)
+
+        args = parser.parse_args(["benchmark", "--budget-max", "3", "--no-make-damage-curves"])
+        self.assertEqual(args.budget_max, 3)
+        self.assertFalse(args.make_damage_curves)
+
+    def test_small_benchmark_preset_is_bounded(self):
+        preset = experiments._benchmark_preset("small")
+
+        instance_count = len(preset["Ks"]) * len(preset["Ns"]) * len(preset["lengths"]) * len(preset["Ts"]) * len(preset["delta_stabs"]) * len(preset["delta_vals"]) * len(preset["target_biases"])
+
+        self.assertEqual(instance_count, 36)
+        self.assertEqual(experiments._benchmark_preset("smoke")["Ks"], [4])
+        self.assertEqual(experiments._benchmark_preset("smoke")["Ns"], [2])
+        self.assertEqual(experiments._benchmark_preset("smoke")["lengths"], [2])
+        self.assertEqual(experiments._benchmark_preset("smoke")["Ts"], [4])
 
     def test_metric_names_use_qN_and_rL_aliases_for_current_shape(self):
         self.assertEqual(experiments._csv_metric_name("row_col_stability_q1_r1", N=4, L=5), "row_col_stab_q1_r1")
@@ -180,14 +328,14 @@ class ExperimentCliTests(unittest.TestCase):
             validity_diagnostic_svg = (base / "validity_independent_overestimate_by_L.svg").read_text()
             one_prompt_stability_svg = (base / "stability_one_prompt_by_L.svg").read_text()
             diagnostic_svg = (base / "stability_independent_overestimate_by_L.svg").read_text()
-            self.assertIn("shared MILP full sequence", one_prompt_validity_svg)
-            self.assertIn("independent full sequence", one_prompt_validity_svg)
-            self.assertIn("atomic phrase aggregation", one_prompt_validity_svg)
+            self.assertIn("Shared MILP full sequence", one_prompt_validity_svg)
+            self.assertIn("Independent full sequence", one_prompt_validity_svg)
+            self.assertIn("Atomic phrase aggregation", one_prompt_validity_svg)
             self.assertNotIn("phrase-DPA", one_prompt_validity_svg)
             self.assertNotIn("q1", one_prompt_validity_svg)
             self.assertIn("tpa_val_sequence_q1", stdout.getvalue())
             self.assertIn("Independent composition overestimate", validity_diagnostic_svg)
-            self.assertIn("shared MILP: full sequence", one_prompt_stability_svg)
+            self.assertIn("Shared MILP one prompt, full sequence", one_prompt_stability_svg)
             self.assertNotIn("qN", one_prompt_stability_svg)
             self.assertIn("independent overestimate factor", diagnostic_svg)
             self.assertFalse((base / "monotonicity_violations.csv").exists())
@@ -200,16 +348,31 @@ class ExperimentCliTests(unittest.TestCase):
         self.assertIn("toy_certificate.experiments visualize", script)
         self.assertNotIn("toy_certificate.experiments benchmark", script)
         self.assertNotIn("toy_certificate.experiments plot-csv", script)
+        self.assertIn("toy_results/smoke/instance", script)
+        self.assertIn("runner_up", script)
 
     def test_short_scripts_have_expected_roles(self):
         data_script = Path("scripts/data.sh").read_text()
         plot_script = Path("scripts/plot.sh").read_text()
         benchmark_script = Path("scripts/benchmark.sh").read_text()
+        visualize_script = Path("scripts/visualize.sh").read_text()
 
         self.assertIn("toy_certificate.experiments benchmark", data_script)
         self.assertIn("toy_certificate.experiments plot-csv", plot_script)
         self.assertIn("scripts/data.sh", benchmark_script)
         self.assertIn("scripts/plot.sh", benchmark_script)
+        self.assertIn("toy_results/small_benchmark", data_script)
+        self.assertIn("--preset", data_script)
+        self.assertIn("--delta-stabs", data_script)
+        self.assertIn("--delta-vals", data_script)
+        self.assertIn("--target-biases", data_script)
+        self.assertIn("--budget-max", data_script)
+        self.assertIn("MAKE_BUDGET_CURVES", data_script)
+        self.assertIn("MAKE_DAMAGE_CURVES", data_script)
+        self.assertIn("MAKE_HORIZON_CURVES", data_script)
+        self.assertIn("toy_results/small_benchmark", plot_script)
+        self.assertIn("toy_results/small_benchmark", benchmark_script)
+        self.assertIn("toy_results/smoke/instance", visualize_script)
 
 
 class GurobiBackedTests(unittest.TestCase):
@@ -298,6 +461,80 @@ class GurobiBackedTests(unittest.TestCase):
         self.assertLessEqual(stab_q1_rL, stab_qN_rL)
         self.assertLessEqual(stab_qN_r1, stab_qN_rL)
         self.assertLessEqual(val_q1, val_qN)
+
+    def test_direct_damage_stability_is_monotone_in_budget(self):
+        data = generate_toy_votes(K=4, N=2, L=2, T=3, delta_stab=0.2, delta_val=0.2, target_bias=0.2, seed=17)
+        try:
+            b0 = maximize_attacked_rows_stability(
+                data.stab_votes,
+                data.stab_counts,
+                data.clean_pred,
+                data.runner_up,
+                data.influence,
+                budget=0,
+                row_requirement="any_token",
+                competitor_mode="runner_up",
+            )
+            b1 = maximize_attacked_rows_stability(
+                data.stab_votes,
+                data.stab_counts,
+                data.clean_pred,
+                data.runner_up,
+                data.influence,
+                budget=1,
+                row_requirement="any_token",
+                competitor_mode="runner_up",
+            )
+            b2 = maximize_attacked_rows_stability(
+                data.stab_votes,
+                data.stab_counts,
+                data.clean_pred,
+                data.runner_up,
+                data.influence,
+                budget=2,
+                row_requirement="any_token",
+                competitor_mode="runner_up",
+            )
+        except Exception as exc:
+            if "Gurobi" in str(exc) or "license" in str(exc).lower():
+                self.skipTest(f"Gurobi unavailable: {exc}")
+            raise
+
+        attacked = [b0.max_attacked_rows, b1.max_attacked_rows, b2.max_attacked_rows]
+        self.assertLessEqual(attacked[0], attacked[1])
+        self.assertLessEqual(attacked[1], attacked[2])
+        certified = [1 - value / 2 for value in attacked]
+        self.assertGreaterEqual(certified[0], certified[1])
+        self.assertGreaterEqual(certified[1], certified[2])
+
+    def test_report_facing_objective_names_match_qr_semantics(self):
+        data = generate_toy_votes(K=5, N=2, L=2, T=3, delta_stab=0.2, delta_val=0.2, target_bias=0.2, seed=13)
+        try:
+            stab_q1_r1 = solve_structured_stability(
+                data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=1
+            )
+            stab_q1_rL = solve_structured_stability(
+                data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=2
+            )
+            stab_qN_r1 = solve_structured_stability(
+                data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=2, r_cols=1
+            )
+            stab_qN_rL = solve_structured_stability(
+                data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=2, r_cols=2
+            )
+            val_q1 = solve_row_col_validity(data.val_votes, data.val_counts, data.target, T=3, influence=data.influence, q_rows=1)
+            val_qN = solve_row_col_validity(data.val_votes, data.val_counts, data.target, T=3, influence=data.influence, q_rows=2)
+        except Exception as exc:
+            if "Gurobi" in str(exc) or "license" in str(exc).lower():
+                self.skipTest(f"Gurobi unavailable: {exc}")
+            raise
+
+        self.assertEqual(stab_q1_r1.name, "row_col_stability_q1_r1")
+        self.assertEqual(stab_q1_rL.name, "row_col_stability_q1_r2")
+        self.assertEqual(stab_qN_r1.name, "row_col_stability_q2_r1")
+        self.assertEqual(stab_qN_rL.name, "row_col_stability_q2_r2")
+        self.assertEqual(val_q1.name, "row_col_validity_q1")
+        self.assertEqual(val_qN.name, "row_col_validity_q2")
 
 
 if __name__ == "__main__":

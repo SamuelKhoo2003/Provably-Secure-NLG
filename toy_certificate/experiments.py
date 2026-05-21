@@ -21,6 +21,9 @@ import numpy as np
 from .data import ToyData, generate_toy_votes, stability_margins
 from .milp import (
     CertificateResult,
+    DamageResult,
+    maximize_attacked_rows_stability,
+    maximize_attacked_rows_validity,
     solve_col_stability,
     solve_col_validity,
     solve_row_col_stability,
@@ -182,13 +185,18 @@ def benchmark_scale(
     Ns: Iterable[int],
     Ls: Iterable[int],
     Ts: Iterable[int],
-    deltas: Iterable[float],
-    target_bias: float,
+    delta_stabs: Iterable[float],
+    delta_vals: Iterable[float],
+    target_biases: Iterable[float],
     influence_mode: str,
     stability_competitor_mode: str,
     seed: int,
     save_dir: str,
     make_plots: bool = False,
+    budget_max: int = 15,
+    make_budget_curves: bool = True,
+    make_damage_curves: bool = True,
+    make_horizon_curves: bool = True,
 ) -> list[dict[str, object]]:
     """Generate benchmark CSV rows for the configured parameter grid.
 
@@ -199,57 +207,110 @@ def benchmark_scale(
     output_dir = Path(save_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     rows: list[dict[str, object]] = []
+    budget_curve_rows: list[dict[str, object]] = []
+    damage_curve_rows: list[dict[str, object]] = []
+    horizon_rows: list[dict[str, object]] = []
 
     for K in Ks:
         for N in Ns:
             for L in Ls:
                 for T in Ts:
-                    for delta in deltas:
-                        data = generate_toy_votes(
-                            K=K,
-                            N=N,
-                            L=L,
-                            T=T,
-                            delta_stab=delta,
-                            delta_val=delta,
-                            target_bias=target_bias,
-                            seed=seed,
-                            influence_mode=influence_mode,
-                        )
-                        start = perf_counter()
-                        results = _solve_benchmark_certificates(data, T, stability_competitor_mode=stability_competitor_mode)
-                        runtime_total = perf_counter() - start
-                        row = {
-                            "K": K,
-                            "N": N,
-                            "L": L,
-                            "T": T,
-                            "delta_stab": delta,
-                            "delta_val": delta,
-                            "target_bias": target_bias,
-                            "seed": seed,
-                            "influence_mode": influence_mode,
-                            "stability_competitor_mode": stability_competitor_mode,
-                            "runtime_gurobi_total": f"{runtime_total:.6f}",
-                        }
-                        for result in results:
-                            metric_name = _csv_metric_name(result.name, N, L)
-                            row[metric_name] = result.B_star
-                        _fill_degenerate_corner_columns(row)
-                        row.update(compute_reference_baselines(data))
-                        rows.append(row)
-                        print(
-                            "bench "
-                            f"K={K} N={N} L={L} T={T} delta={delta}: "
-                            + ", ".join(f"{result.name}={result.B_star}" for result in results)
-                        )
+                    for delta_stab in delta_stabs:
+                        for delta_val in delta_vals:
+                            for target_bias in target_biases:
+                                data = generate_toy_votes(
+                                    K=K,
+                                    N=N,
+                                    L=L,
+                                    T=T,
+                                    delta_stab=delta_stab,
+                                    delta_val=delta_val,
+                                    target_bias=target_bias,
+                                    seed=seed,
+                                    influence_mode=influence_mode,
+                                )
+                                start = perf_counter()
+                                results = _solve_benchmark_certificates(data, T, stability_competitor_mode=stability_competitor_mode)
+                                runtime_total = perf_counter() - start
+                                row = {
+                                    "K": K,
+                                    "N": N,
+                                    "L": L,
+                                    "T": T,
+                                    "delta_stab": delta_stab,
+                                    "delta_val": delta_val,
+                                    "target_bias": target_bias,
+                                    "seed": seed,
+                                    "influence_mode": influence_mode,
+                                    "stability_competitor_mode": stability_competitor_mode,
+                                    "runtime_gurobi_total": f"{runtime_total:.6f}",
+                                }
+                                for result in results:
+                                    metric_name = _csv_metric_name(result.name, N, L)
+                                    row[metric_name] = result.B_star
+                                _fill_degenerate_corner_columns(row)
+                                row.update(compute_reference_baselines(data))
+                                rows.append(row)
+                                budgets = list(range(0, min(K, budget_max) + 1))
+                                metadata = _benchmark_metadata(
+                                    seed=seed,
+                                    K=K,
+                                    N=N,
+                                    L=L,
+                                    T=T,
+                                    delta_stab=delta_stab,
+                                    delta_val=delta_val,
+                                    target_bias=target_bias,
+                                    influence_mode=influence_mode,
+                                    stability_competitor_mode=stability_competitor_mode,
+                                )
+                                if make_budget_curves:
+                                    budget_curve_rows.extend(
+                                        compute_radius_derived_budget_curve_rows(
+                                            data,
+                                            T=T,
+                                            budgets=budgets,
+                                            metadata=metadata,
+                                            stability_competitor_mode=stability_competitor_mode,
+                                        )
+                                    )
+                                if make_damage_curves:
+                                    damage_curve_rows.extend(
+                                        compute_direct_damage_curve_rows(
+                                            data,
+                                            T=T,
+                                            budgets=budgets,
+                                            metadata=metadata,
+                                            stability_competitor_mode=stability_competitor_mode,
+                                        )
+                                    )
+                                if make_horizon_curves:
+                                    horizon_rows.extend(compute_horizon_curve_rows(data, budgets=budgets, metadata=metadata))
+                                print(
+                                    "bench "
+                                    f"K={K} N={N} L={L} T={T} delta_stab={delta_stab} delta_val={delta_val} target_bias={target_bias}: "
+                                    + ", ".join(f"{result.name}={result.B_star}" for result in results)
+                                )
 
     csv_path = output_dir / "benchmark_results.csv"
     _write_rows_csv(csv_path, rows)
     print()
     print(f"Wrote benchmark CSV: {csv_path}")
+    if make_budget_curves:
+        budget_csv_path = output_dir / "benchmark_budget_curves.csv"
+        _write_rows_csv(budget_csv_path, budget_curve_rows)
+        print(f"Wrote budget-curve CSV: {budget_csv_path}")
+    if make_damage_curves:
+        damage_csv_path = output_dir / "benchmark_damage_curves.csv"
+        _write_rows_csv(damage_csv_path, damage_curve_rows)
+        print(f"Wrote direct-damage CSV: {damage_csv_path}")
+    if make_horizon_curves:
+        horizon_csv_path = output_dir / "benchmark_horizons.csv"
+        _write_rows_csv(horizon_csv_path, horizon_rows)
+        print(f"Wrote horizon CSV: {horizon_csv_path}")
     if make_plots:
         save_benchmark_plots(rows, output_dir)
+        save_budget_curve_plots(output_dir)
         print(f"Wrote benchmark plots under: {output_dir}")
     else:
         print(f"Skipped plots. Replot later with: python -m toy_certificate.experiments plot-csv --csv {csv_path}")
@@ -293,6 +354,7 @@ def plot_benchmark_csv(csv_path: str, save_dir: str | None = None) -> list[dict[
     output_dir.mkdir(parents=True, exist_ok=True)
     rows = _read_rows_csv(path)
     save_benchmark_plots(rows, output_dir)
+    save_budget_curve_plots(output_dir)
     print(f"Wrote benchmark plots under: {output_dir}")
     return rows
 
@@ -504,9 +566,9 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
             {
                 "DPA weakest harmful token": "dpa_val_row_weak_q1",
                 "TPA max-token sequence": "tpa_val_sequence_q1",
-                "atomic phrase aggregation": "phrase_dpa_val_q1",
-                "shared MILP full sequence": "row_col_val_q1",
-                "independent full sequence": "independent_val_sequence_q1",
+                "Atomic phrase aggregation": "phrase_dpa_val_q1",
+                "Shared MILP full sequence": "row_col_val_q1",
+                "Independent full sequence": "independent_val_sequence_q1",
             },
         ),
         (
@@ -516,9 +578,9 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
             "Mean poison budget B*",
             {
                 "TPA max-token sequences for all prompts": "tpa_val_sequence_qN",
-                "shared MILP all harmful sequences": "row_col_val_qN",
+                "Shared MILP all harmful sequences": "row_col_val_qN",
                 "DPA weakest harmful token per prompt": "dpa_val_row_weak_qN",
-                "independent all harmful sequences": "independent_val_sequence_qN",
+                "Independent all harmful sequences": "independent_val_sequence_qN",
             },
         ),
         (
@@ -528,8 +590,8 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
             "Mean poison budget B*",
             {
                 "DPA weakest token": "dpa_stab_row_radius_q1",
-                "shared MILP: one token": "row_col_stab_q1_r1",
-                "shared MILP: full sequence": "row_col_stab_q1_rL",
+                "Shared MILP one prompt, one token": "row_col_stab_q1_r1",
+                "Shared MILP one prompt, full sequence": "row_col_stab_q1_rL",
             },
         ),
         (
@@ -538,8 +600,8 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
             "L",
             "Mean poison budget B*",
             {
-                "shared MILP: one token per prompt": "row_col_stab_qN_r1",
-                "shared MILP: full matrix": "row_col_stab_qN_rL",
+                "Shared MILP all prompts, one token each": "row_col_stab_qN_r1",
+                "Shared MILP full matrix": "row_col_stab_qN_rL",
                 "DPA weakest token per prompt": "dpa_stab_row_radius_qN",
             },
         ),
@@ -561,9 +623,9 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
         metrics={
             "DPA weakest harmful token": "dpa_val_row_weak_q1",
             "TPA max-token sequence": "tpa_val_sequence_q1",
-            "atomic phrase aggregation": "phrase_dpa_val_q1",
-            "shared MILP full sequence": "row_col_val_q1",
-            "shared MILP: all harmful sequences": "row_col_val_qN",
+            "Atomic phrase aggregation": "phrase_dpa_val_q1",
+            "Shared MILP full sequence": "row_col_val_q1",
+            "Shared MILP all harmful sequences": "row_col_val_qN",
         },
     )
     _save_focused_plot(
@@ -575,10 +637,10 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
         metrics={
             "DPA weakest token": "dpa_stab_row_radius_q1",
             "DPA weakest token per prompt": "dpa_stab_row_radius_qN",
-            "one prompt, one token": "row_col_stab_q1_r1",
-            "one prompt, full sequence": "row_col_stab_q1_rL",
-            "all prompts, one token each": "row_col_stab_qN_r1",
-            "all prompts, full matrix": "row_col_stab_qN_rL",
+            "Shared MILP one prompt, one token": "row_col_stab_q1_r1",
+            "Shared MILP one prompt, full sequence": "row_col_stab_q1_rL",
+            "Shared MILP all prompts, one token each": "row_col_stab_qN_r1",
+            "Shared MILP full matrix": "row_col_stab_qN_rL",
         },
     )
     _save_focused_plot(
@@ -591,12 +653,59 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
             "DPA weakest harmful token": "dpa_val_row_weak_q1",
             "DPA weakest harmful token per prompt": "dpa_val_row_weak_qN",
             "TPA max-token sequence": "tpa_val_sequence_q1",
-            "shared MILP: one harmful sequence": "row_col_val_q1",
-            "shared MILP: harmful sequences for all prompts": "row_col_val_qN",
-            "atomic phrase aggregation": "phrase_dpa_val_q1",
+            "Shared MILP one harmful sequence": "row_col_val_q1",
+            "Shared MILP harmful sequences for all prompts": "row_col_val_qN",
+            "Atomic phrase aggregation": "phrase_dpa_val_q1",
         },
     )
     check_monotonicity_diagnostics(rows, output_dir)
+
+
+def save_budget_curve_plots(output_dir: Path) -> None:
+    """Write plots based on optional long-format budget, damage, and horizon CSVs."""
+    budget_rows = _read_optional_csv(output_dir / "benchmark_budget_curves.csv")
+    damage_rows = _read_optional_csv(output_dir / "benchmark_damage_curves.csv")
+    horizon_rows = _read_optional_csv(output_dir / "benchmark_horizons.csv")
+
+    combined = budget_rows + damage_rows
+    _save_certified_fraction_budget_plot(
+        combined,
+        output_dir / "certified_fraction_stability_by_budget.svg",
+        "Certified stability by poison budget",
+        [
+            ("DPA weakest token, radius-derived", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
+            ("Shared one token, direct MILP", "Shared MILP", "stability_one_token_per_prompt", "direct_damage_milp"),
+            ("Shared full sequence, direct MILP", "Shared MILP", "stability_full_sequence_per_prompt", "direct_damage_milp"),
+        ],
+    )
+    _save_certified_fraction_budget_plot(
+        combined,
+        output_dir / "certified_fraction_validity_by_budget.svg",
+        "Certified validity by poison budget",
+        [
+            ("TPA max-token sequence, radius-derived", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("Shared full sequence, radius-derived", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("Shared full sequence, direct MILP", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "direct_damage_milp"),
+        ],
+    )
+    _save_certified_fraction_by_length_plot(
+        combined,
+        output_dir / "certified_fraction_stability_by_L_at_budget.svg",
+        "Certified stability by length at fixed budgets",
+        method="Shared MILP",
+        objective="stability_full_sequence_per_prompt",
+        curve_type="direct_damage_milp",
+    )
+    _save_certified_fraction_by_length_plot(
+        combined,
+        output_dir / "certified_fraction_validity_by_L_at_budget.svg",
+        "Certified validity by length at fixed budgets",
+        method="Shared MILP",
+        objective="validity_full_harmful_sequence_per_prompt",
+        curve_type="direct_damage_milp",
+    )
+    _save_horizon_plot(horizon_rows, output_dir / "stability_horizon_by_budget.svg", "DPA stability horizon", "Stability horizon by budget")
+    _save_horizon_plot(horizon_rows, output_dir / "validity_horizon_by_budget.svg", "TPA validity horizon", "Validity horizon by budget")
 
 
 def print_certificate_table(results: list[CertificateResult]) -> None:
@@ -664,11 +773,18 @@ def _solve_benchmark_certificates(data: ToyData, T: int, stability_competitor_mo
 
 
 def compute_reference_baselines(data: ToyData) -> dict[str, int | float]:
-    """Compute DPA, TPA-style validity, phrase, and independent baseline columns."""
+    """Compute baseline columns for the report-facing taxonomy.
+
+    Metric meanings are intentionally fixed across the repo:
+    - ``dpa_*``: independent token-level DPA-style margins.
+    - ``tpa_*``: targeted token validity radii composed with a max over tokens.
+    - ``phrase_dpa_*``: atomic full-sequence voting diagnostics kept for compatibility.
+    - ``independent_*``: token-cost sums that do not reuse a shared poisoned allocation.
+    """
     stability_cell_budgets = _cell_stability_budgets(data)
     validity_cell_budgets = _cell_validity_budgets(data)
     targeted_validity_cell_budgets = _targeted_validity_token_budgets(data)
-    phrase_row_budgets = _phrase_dpa_validity_row_budgets(data)
+    phrase_row_budgets = _atomic_phrase_validity_row_budgets(data)
     row_stability_radii = stability_cell_budgets.min(axis=1)
     row_validity_weak_radii = validity_cell_budgets.min(axis=1)
     targeted_sequence_baselines = aggregate_tpa_sequence_baselines(targeted_validity_cell_budgets)
@@ -697,6 +813,206 @@ def compute_reference_baselines(data: ToyData) -> dict[str, int | float]:
         "phrase_independent_val_q1": int(np.min(phrase_row_budgets)),
         "phrase_independent_val_qN": int(phrase_row_budgets.sum()),
     }
+
+
+def certified_fraction_from_radii(radii: np.ndarray, budgets: Iterable[int]) -> list[dict[str, int | float]]:
+    """Compute strict ``B < B*`` certification summaries for each budget."""
+    radii = np.asarray(radii, dtype=float)
+    if radii.ndim != 1:
+        raise ValueError("radii must be one-dimensional")
+    if radii.size == 0:
+        raise ValueError("radii must be non-empty")
+    rows = []
+    for budget in budgets:
+        certified = budget < radii
+        num_certified = int(np.sum(certified))
+        num_total = int(radii.size)
+        certified_fraction = num_certified / num_total
+        rows.append(
+            {
+                "budget": int(budget),
+                "certified_fraction": float(certified_fraction),
+                "attacked_fraction": float(1.0 - certified_fraction),
+                "mean_radius": float(np.mean(radii)),
+                "median_radius": float(np.median(radii)),
+                "min_radius": float(np.min(radii)),
+                "max_radius": float(np.max(radii)),
+                "num_certified": num_certified,
+                "num_total": num_total,
+            }
+        )
+    return rows
+
+
+def prefix_horizons_from_token_radii(token_radii: np.ndarray, budget: int) -> np.ndarray:
+    """Return longest certified prefix per row under the strict ``B < B*`` rule."""
+    token_radii = np.asarray(token_radii, dtype=float)
+    if token_radii.ndim != 2:
+        raise ValueError("token_radii must have shape (N, L)")
+    horizons = np.zeros(token_radii.shape[0], dtype=np.int64)
+    for i in range(token_radii.shape[0]):
+        horizon = 0
+        for radius in token_radii[i]:
+            if budget < radius:
+                horizon += 1
+            else:
+                break
+        horizons[i] = horizon
+    return horizons
+
+
+def compute_radius_derived_budget_curve_rows(
+    data: ToyData,
+    T: int,
+    budgets: Iterable[int],
+    metadata: dict[str, object],
+    stability_competitor_mode: str = "all",
+) -> list[dict[str, object]]:
+    """Build long-format radius-derived certified-fraction curve rows."""
+    del T
+    stability_cell_budgets = _cell_stability_budgets(data)
+    validity_cell_budgets = _cell_validity_budgets(data)
+    targeted_validity_cell_budgets = _targeted_validity_token_budgets(data)
+    phrase_row_budgets = _atomic_phrase_validity_row_budgets(data)
+    curves = [
+        (
+            "DPA token margin",
+            "full_response_stable_against_any_token_change",
+            stability_cell_budgets.min(axis=1),
+        ),
+        (
+            "Shared MILP",
+            "stability_one_token_per_prompt",
+            _shared_stability_row_radii(data, r_cols=1, competitor_mode=stability_competitor_mode),
+        ),
+        (
+            "Shared MILP",
+            "stability_full_sequence_per_prompt",
+            _shared_stability_row_radii(data, r_cols=data.stab_votes.shape[2], competitor_mode=stability_competitor_mode),
+        ),
+        (
+            "DPA weakest harmful token",
+            "weakest_harmful_token_not_full_sequence_validity",
+            validity_cell_budgets.min(axis=1),
+        ),
+        (
+            "TPA max-token sequence",
+            "validity_full_harmful_sequence_per_prompt",
+            targeted_validity_cell_budgets.max(axis=1),
+        ),
+        (
+            "Shared MILP",
+            "validity_full_harmful_sequence_per_prompt",
+            _shared_validity_row_radii(data),
+        ),
+        (
+            "Atomic phrase aggregation",
+            "validity_full_harmful_sequence_per_prompt",
+            phrase_row_budgets,
+        ),
+        (
+            "Independent composition",
+            "validity_full_harmful_sequence_per_prompt",
+            validity_cell_budgets.sum(axis=1),
+        ),
+    ]
+    rows: list[dict[str, object]] = []
+    for method, objective, radii in curves:
+        for summary in certified_fraction_from_radii(radii, budgets):
+            rows.append(
+                {
+                    **metadata,
+                    **summary,
+                    "method": method,
+                    "objective": objective,
+                    "curve_type": "radius_derived",
+                }
+            )
+    return rows
+
+
+def compute_direct_damage_curve_rows(
+    data: ToyData,
+    T: int,
+    budgets: Iterable[int],
+    metadata: dict[str, object],
+    stability_competitor_mode: str = "all",
+) -> list[dict[str, object]]:
+    """Build long-format fixed-budget shared-MILP damage curve rows."""
+    objectives = [
+        (
+            "stability_one_token_per_prompt",
+            lambda budget: maximize_attacked_rows_stability(
+                data.stab_votes,
+                data.stab_counts,
+                data.clean_pred,
+                data.runner_up,
+                data.influence,
+                budget=budget,
+                row_requirement="any_token",
+                competitor_mode=stability_competitor_mode,
+            ),
+        ),
+        (
+            "stability_full_sequence_per_prompt",
+            lambda budget: maximize_attacked_rows_stability(
+                data.stab_votes,
+                data.stab_counts,
+                data.clean_pred,
+                data.runner_up,
+                data.influence,
+                budget=budget,
+                row_requirement="full_sequence",
+                competitor_mode=stability_competitor_mode,
+            ),
+        ),
+        (
+            "validity_full_harmful_sequence_per_prompt",
+            lambda budget: maximize_attacked_rows_validity(
+                data.val_votes,
+                data.val_counts,
+                data.target,
+                T,
+                data.influence,
+                budget=budget,
+                row_requirement="full_sequence",
+            ),
+        ),
+    ]
+    rows: list[dict[str, object]] = []
+    N = data.stab_votes.shape[1]
+    for budget in budgets:
+        for objective, solve in objectives:
+            result = solve(int(budget))
+            rows.append(_damage_curve_row(metadata, result, objective=objective, num_rows=N))
+    return rows
+
+
+def compute_horizon_curve_rows(data: ToyData, budgets: Iterable[int], metadata: dict[str, object]) -> list[dict[str, object]]:
+    """Build long-format prefix horizon summaries for fixed budgets."""
+    curves = [
+        ("DPA stability horizon", _cell_stability_budgets(data)),
+        ("TPA validity horizon", _targeted_validity_token_budgets(data)),
+    ]
+    rows: list[dict[str, object]] = []
+    for method, token_radii in curves:
+        for budget in budgets:
+            horizons = prefix_horizons_from_token_radii(token_radii, int(budget))
+            full_horizon = int(token_radii.shape[1])
+            rows.append(
+                {
+                    **metadata,
+                    "budget": int(budget),
+                    "method": method,
+                    "mean_horizon": float(np.mean(horizons)),
+                    "median_horizon": float(np.median(horizons)),
+                    "min_horizon": int(np.min(horizons)),
+                    "max_horizon": int(np.max(horizons)),
+                    "max_possible_horizon": full_horizon,
+                    "certified_fraction_full_horizon": float(np.mean(horizons == full_horizon)),
+                }
+            )
+    return rows
 
 
 def compute_structured_stability_grid(data: ToyData, competitor_mode: str = "all") -> np.ndarray:
@@ -847,13 +1163,101 @@ def _targeted_validity_token_budgets(data: ToyData) -> np.ndarray:
     return budgets
 
 
+def _shared_stability_row_radii(data: ToyData, r_cols: int, competitor_mode: str = "all") -> np.ndarray:
+    K, N, L = data.stab_votes.shape
+    radii = np.zeros(N, dtype=np.int64)
+    for i in range(N):
+        row_slice = slice(i, i + 1)
+        result = solve_structured_stability(
+            data.stab_votes[:, row_slice, :],
+            data.stab_counts[row_slice, :, :],
+            data.clean_pred[row_slice, :],
+            data.runner_up[row_slice, :],
+            data.influence[:, row_slice, :],
+            q_rows=1,
+            r_cols=r_cols,
+            competitor_mode=competitor_mode,
+        )
+        radii[i] = K + 1 if result.B_star is None else result.B_star
+    return radii
+
+
+def _shared_validity_row_radii(data: ToyData) -> np.ndarray:
+    K, N, L = data.val_votes.shape
+    T = data.val_counts.shape[2]
+    radii = np.zeros(N, dtype=np.int64)
+    for i in range(N):
+        row_slice = slice(i, i + 1)
+        result = solve_row_col_validity(
+            data.val_votes[:, row_slice, :],
+            data.val_counts[row_slice, :, :],
+            data.target[row_slice, :],
+            T,
+            data.influence[:, row_slice, :],
+            q_rows=1,
+        )
+        radii[i] = K + 1 if result.B_star is None else result.B_star
+    return radii
+
+
+def _benchmark_metadata(
+    seed: int,
+    K: int,
+    N: int,
+    L: int,
+    T: int,
+    delta_stab: float,
+    delta_val: float,
+    target_bias: float,
+    influence_mode: str,
+    stability_competitor_mode: str,
+) -> dict[str, object]:
+    return {
+        "seed": seed,
+        "K": K,
+        "N": N,
+        "L": L,
+        "T": T,
+        "delta_stab": delta_stab,
+        "delta_val": delta_val,
+        "target_bias": target_bias,
+        "influence_mode": influence_mode,
+        "stability_competitor_mode": stability_competitor_mode,
+    }
+
+
+def _damage_curve_row(metadata: dict[str, object], result: DamageResult, objective: str, num_rows: int) -> dict[str, object]:
+    max_attacked_rows = result.max_attacked_rows
+    if max_attacked_rows is None:
+        max_attacked_rows = int(round(result.objective_value or 0.0))
+    attacked_fraction = max_attacked_rows / num_rows
+    return {
+        **metadata,
+        "budget": result.budget,
+        "method": "Shared MILP",
+        "objective": objective,
+        "curve_type": "direct_damage_milp",
+        "max_attacked_rows": max_attacked_rows,
+        "max_attacked_cells": result.max_attacked_cells,
+        "attacked_fraction": float(attacked_fraction),
+        "certified_fraction": float(1.0 - attacked_fraction),
+        "status_name": result.status_name,
+        "is_optimal": result.is_optimal,
+        "objective_value": "" if result.objective_value is None else result.objective_value,
+        "lower_bound": "" if result.lower_bound is None else result.lower_bound,
+        "upper_bound": "" if result.upper_bound is None else result.upper_bound,
+        "mip_gap": "" if result.mip_gap is None else result.mip_gap,
+        "runtime_sec": "" if result.runtime_sec is None else result.runtime_sec,
+    }
+
+
 def _phd_margin_stability_budgets(data: ToyData) -> np.ndarray:
     margins = stability_margins(data.stab_counts, data.clean_pred, data.runner_up)
     return ((margins + 1) // 2).astype(np.int64)
 
 
-def _phrase_dpa_validity_row_budgets(data: ToyData) -> np.ndarray:
-    """Compute atomic phrase budgets treating each generated sequence as one label."""
+def _atomic_phrase_validity_row_budgets(data: ToyData) -> np.ndarray:
+    """Compute atomic full-sequence budgets treating each generated sequence as one label."""
     K, N, L = data.val_votes.shape
     budgets = np.zeros(N, dtype=np.int64)
     for i in range(N):
@@ -1009,6 +1413,80 @@ def _save_stability_mode_comparison_plots(rows: list[dict[str, object]], output_
             "Mean all-competitor / runner-up runtime",
             {"runtime ratio": (xs, ys)},
         )
+
+
+def _save_certified_fraction_budget_plot(
+    rows: list[dict[str, object]],
+    path: Path,
+    title: str,
+    selections: list[tuple[str, str, str, str]],
+) -> None:
+    if not rows:
+        print(f"Warning: skipped {path.name}; no budget curve CSV rows were available.")
+        return
+    series = {}
+    for label, method, objective, curve_type in selections:
+        selected = [
+            row
+            for row in rows
+            if row.get("method") == method and row.get("objective") == objective and row.get("curve_type") == curve_type
+        ]
+        metric_series = _mean_series_by_axis(selected, "budget", "certified_fraction")
+        if metric_series is None:
+            print(f"Warning: skipping {path.name} curve '{label}' because matching rows are missing.")
+            continue
+        xs, ys = metric_series
+        series[label] = (xs, [100.0 * y for y in ys])
+    if not series:
+        print(f"Warning: skipped {path.name}; none of the requested curves were available.")
+        return
+    _save_line_plot_svg(path, title, "poison budget B", "Certified prompts (%)", series)
+
+
+def _save_certified_fraction_by_length_plot(
+    rows: list[dict[str, object]],
+    path: Path,
+    title: str,
+    method: str,
+    objective: str,
+    curve_type: str,
+    selected_budgets: tuple[int, ...] = (1, 3, 5, 9),
+) -> None:
+    selected = [
+        row
+        for row in rows
+        if row.get("method") == method
+        and row.get("objective") == objective
+        and row.get("curve_type") == curve_type
+        and int(_numeric_value(row.get("budget")) or -1) in selected_budgets
+    ]
+    if not selected:
+        print(f"Warning: skipped {path.name}; no matching fixed-budget rows were available.")
+        return
+    series = {}
+    for budget in selected_budgets:
+        budget_rows = [row for row in selected if _numeric_value(row.get("budget")) == budget]
+        metric_series = _mean_series_by_axis(budget_rows, "L", "certified_fraction")
+        if metric_series is None:
+            continue
+        xs, ys = metric_series
+        series[f"B={budget}"] = (xs, [100.0 * y for y in ys])
+    if not series:
+        print(f"Warning: skipped {path.name}; selected budgets had no numeric values.")
+        return
+    _save_line_plot_svg(path, title, _axis_label("L"), "Certified prompts (%)", series)
+
+
+def _save_horizon_plot(rows: list[dict[str, object]], path: Path, method: str, title: str) -> None:
+    selected = [row for row in rows if row.get("method") == method]
+    if not selected:
+        print(f"Warning: skipped {path.name}; no horizon rows for '{method}' were available.")
+        return
+    metric_series = _mean_series_by_axis(selected, "budget", "mean_horizon")
+    if metric_series is None:
+        print(f"Warning: skipped {path.name}; horizon rows had no numeric values.")
+        return
+    _save_line_plot_svg(path, title, "poison budget B", "Average certified horizon", {method: metric_series})
 
 
 def _print_stability_mode_comparison_summary(rows: list[dict[str, object]]) -> None:
@@ -1172,6 +1650,13 @@ def _read_rows_csv(path: Path) -> list[dict[str, object]]:
             _copy_legacy_csv_columns(parsed)
             rows.append(parsed)
     return rows
+
+
+def _read_optional_csv(path: Path) -> list[dict[str, object]]:
+    if not path.exists():
+        print(f"Warning: optional CSV not found, skipping: {path}")
+        return []
+    return _read_rows_csv(path)
 
 
 def _copy_legacy_csv_columns(row: dict[str, object]) -> None:
@@ -1402,6 +1887,53 @@ def _parse_int_list(value: str) -> list[int]:
     return [int(part.strip()) for part in value.split(",") if part.strip()]
 
 
+BENCHMARK_PRESETS: dict[str, dict[str, list[float] | list[int]]] = {
+    "smoke": {
+        "Ks": [4],
+        "Ns": [2],
+        "lengths": [2],
+        "Ts": [4],
+        "delta_stabs": [0.2],
+        "delta_vals": [0.2],
+        "target_biases": [0.3],
+    },
+    "small": {
+        "Ks": [4, 6, 8],
+        "Ns": [2, 3],
+        "lengths": [2, 3, 4],
+        "Ts": [4, 6],
+        "delta_stabs": [0.2],
+        "delta_vals": [0.2],
+        "target_biases": [0.3],
+    },
+    "medium": {
+        "Ks": [4, 6, 8, 10],
+        "Ns": [2, 3, 4],
+        "lengths": [2, 3, 4, 5],
+        "Ts": [4, 6, 8],
+        "delta_stabs": [0.0, 0.2],
+        "delta_vals": [0.0, 0.2],
+        "target_biases": [0.1, 0.3],
+    },
+    "large": {
+        "Ks": [5, 10, 15, 20, 25],
+        "Ns": [3, 5, 7, 9, 11],
+        "lengths": [3, 6, 9, 12],
+        "Ts": [3, 6, 9, 12],
+        "delta_stabs": [0.0, 0.25, 0.5],
+        "delta_vals": [0.0, 0.25, 0.5],
+        "target_biases": [0.2],
+    },
+}
+
+
+def _benchmark_preset(name: str) -> dict[str, list[float] | list[int]]:
+    try:
+        return BENCHMARK_PRESETS[name]
+    except KeyError as exc:  # pragma: no cover - argparse guards this in normal use.
+        raise ValueError(f"Unknown benchmark preset: {name}") from exc
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the command-line parser for toy experiment workflows."""
     parser = argparse.ArgumentParser(description="Toy row/column certificate experiments.")
@@ -1415,21 +1947,46 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--delta", type=float, default=0.2)
     parser.add_argument("--delta-stab", type=float, default=None)
     parser.add_argument("--delta-val", type=float, default=None)
-    parser.add_argument("--target-bias", type=float, default=0.2)
+    parser.add_argument("--delta-stabs", type=_parse_float_list, default=None)
+    parser.add_argument("--delta-vals", type=_parse_float_list, default=None)
+    parser.add_argument("--target-bias", type=float, default=None)
+    parser.add_argument("--target-biases", type=_parse_float_list, default=None)
     parser.add_argument("--influence-mode", choices=["dense", "row-local", "column-local"], default="dense")
     parser.add_argument("--stability-competitor-mode", choices=["all", "runner_up"], default="all")
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--deltas", type=_parse_float_list, default=[0.0, 0.2, 0.4])
-    parser.add_argument("--Ks", type=_parse_int_list, default=[5, 7, 9])
-    parser.add_argument("--Ns", type=_parse_int_list, default=[2, 3, 5])
-    parser.add_argument("--lengths", type=_parse_int_list, default=[2, 4])
-    parser.add_argument("--prompts", type=_parse_int_list, default=[1, 2, 4, 8])
-    parser.add_argument("--Ts", type=_parse_int_list, default=[3, 5])
+    parser.add_argument("--preset", choices=sorted(BENCHMARK_PRESETS), default=None, help="Benchmark preset used when explicit grid ranges are omitted.")
+    parser.add_argument("--deltas", type=_parse_float_list, default=None)
+    parser.add_argument("--Ks", type=_parse_int_list, default=None)
+    parser.add_argument("--Ns", type=_parse_int_list, default=None)
+    parser.add_argument("--lengths", type=_parse_int_list, default=None)
+    parser.add_argument("--prompts", type=_parse_int_list, default=None)
+    parser.add_argument("--Ts", type=_parse_int_list, default=None)
     parser.add_argument("--save-dir", default=None)
     parser.add_argument("--csv", default="toy_results/benchmark_large/benchmark_results.csv")
     parser.add_argument("--show-grid", action="store_true")
     parser.add_argument("--make-plots", action="store_true", help="Also render benchmark plots after running Gurobi.")
+    parser.add_argument("--budget-max", type=int, default=15, help="Maximum poisoned-shard budget for fixed-budget curve CSVs.")
+    parser.add_argument("--make-budget-curves", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--make-damage-curves", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--make-horizon-curves", action=argparse.BooleanOptionalAction, default=True)
     return parser
+
+
+def _resolve_benchmark_grid(args: argparse.Namespace) -> dict[str, list[float] | list[int]]:
+    preset_name = args.preset or "small"
+    preset = _benchmark_preset(preset_name)
+    target_bias_values = args.target_biases if args.target_biases is not None else preset["target_biases"]
+    if args.target_bias is not None:
+        target_bias_values = [args.target_bias]
+    return {
+        "Ks": args.Ks if args.Ks is not None else preset["Ks"],
+        "Ns": args.Ns if args.Ns is not None else preset["Ns"],
+        "lengths": args.lengths if args.lengths is not None else preset["lengths"],
+        "Ts": args.Ts if args.Ts is not None else preset["Ts"],
+        "delta_stabs": args.delta_stabs if args.delta_stabs is not None else args.deltas if args.deltas is not None else preset["delta_stabs"],
+        "delta_vals": args.delta_vals if args.delta_vals is not None else args.deltas if args.deltas is not None else preset["delta_vals"],
+        "target_biases": target_bias_values,
+    }
 
 
 def main() -> None:
@@ -1437,6 +1994,7 @@ def main() -> None:
     args = build_parser().parse_args()
     delta_stab = args.delta if args.delta_stab is None else args.delta_stab
     delta_val = args.delta if args.delta_val is None else args.delta_val
+    target_bias = args.target_bias if args.target_bias is not None else 0.2
     if args.command == "sanity":
         run_sanity(
             K=args.K,
@@ -1445,7 +2003,7 @@ def main() -> None:
             T=args.T,
             delta_stab=delta_stab,
             delta_val=delta_val,
-            target_bias=args.target_bias,
+            target_bias=target_bias,
             seed=args.seed,
             influence_mode=args.influence_mode,
             stability_competitor_mode=args.stability_competitor_mode,
@@ -1460,42 +2018,72 @@ def main() -> None:
             T=args.T,
             delta_stab=delta_stab,
             delta_val=delta_val,
-            target_bias=args.target_bias,
+            target_bias=target_bias,
             seed=args.seed,
             influence_mode=args.influence_mode,
             save_dir=args.save_dir or "toy_results",
             stability_competitor_mode=args.stability_competitor_mode,
         )
     elif args.command == "benchmark":
+        grid = _resolve_benchmark_grid(args)
         benchmark_scale(
-            Ks=args.Ks,
-            Ns=args.Ns,
-            Ls=args.lengths,
-            Ts=args.Ts,
-            deltas=args.deltas,
-            target_bias=args.target_bias,
+            Ks=grid["Ks"],
+            Ns=grid["Ns"],
+            Ls=grid["lengths"],
+            Ts=grid["Ts"],
+            delta_stabs=grid["delta_stabs"],
+            delta_vals=grid["delta_vals"],
+            target_biases=grid["target_biases"],
             influence_mode=args.influence_mode,
             stability_competitor_mode=args.stability_competitor_mode,
             seed=args.seed,
-            save_dir=args.save_dir or "toy_results",
+            save_dir=args.save_dir or "toy_results/small_benchmark",
             make_plots=args.make_plots,
+            budget_max=args.budget_max,
+            make_budget_curves=args.make_budget_curves,
+            make_damage_curves=args.make_damage_curves,
+            make_horizon_curves=args.make_horizon_curves,
         )
     elif args.command == "plot-csv":
         plot_benchmark_csv(args.csv, save_dir=args.save_dir)
     elif args.command == "sweep-delta":
-        sweep_delta(K=args.K, N=args.N, L=args.L, T=args.T, deltas=args.deltas, seed=args.seed, stability_competitor_mode=args.stability_competitor_mode)
+        sweep_delta(
+            K=args.K,
+            N=args.N,
+            L=args.L,
+            T=args.T,
+            deltas=args.deltas if args.deltas is not None else [0.0, 0.2, 0.4],
+            seed=args.seed,
+            stability_competitor_mode=args.stability_competitor_mode,
+        )
     elif args.command == "sweep-length":
-        sweep_length(K=args.K, N=args.N, lengths=args.lengths, T=args.T, delta=args.delta, seed=args.seed, stability_competitor_mode=args.stability_competitor_mode)
+        sweep_length(
+            K=args.K,
+            N=args.N,
+            lengths=args.lengths if args.lengths is not None else [2, 4],
+            T=args.T,
+            delta=args.delta,
+            seed=args.seed,
+            stability_competitor_mode=args.stability_competitor_mode,
+        )
     elif args.command == "sweep-prompts":
-        sweep_prompts(K=args.K, prompts=args.prompts, L=args.L, T=args.T, delta=args.delta, seed=args.seed, stability_competitor_mode=args.stability_competitor_mode)
+        sweep_prompts(
+            K=args.K,
+            prompts=args.prompts if args.prompts is not None else [1, 2, 4, 8],
+            L=args.L,
+            T=args.T,
+            delta=args.delta,
+            seed=args.seed,
+            stability_competitor_mode=args.stability_competitor_mode,
+        )
     elif args.command == "compare-stability-modes":
         compare_stability_modes(
-            Ks=args.Ks,
-            Ns=args.Ns,
-            Ls=args.lengths,
-            Ts=args.Ts,
-            deltas=args.deltas,
-            target_bias=args.target_bias,
+            Ks=args.Ks if args.Ks is not None else _benchmark_preset("small")["Ks"],
+            Ns=args.Ns if args.Ns is not None else _benchmark_preset("small")["Ns"],
+            Ls=args.lengths if args.lengths is not None else _benchmark_preset("small")["lengths"],
+            Ts=args.Ts if args.Ts is not None else _benchmark_preset("small")["Ts"],
+            deltas=args.deltas if args.deltas is not None else [0.0, 0.2, 0.4],
+            target_bias=args.target_bias if args.target_bias is not None else 0.2,
             influence_mode=args.influence_mode,
             seed=args.seed,
             save_dir=args.save_dir or "toy_results/stability_mode_comparison",
