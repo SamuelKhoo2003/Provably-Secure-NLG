@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="382" height="276" viewBox="0 0 382 276">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="191.0" y="24" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#111827">Structured stability poison budget | K=7, N=3, L=4, T=5, delta_stab=0.2, delta_val=0.2, target_bias=0.2, influence=dense, stability_competitor_mode=all, seed=0</text>
+<text x="178.0" y="264" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#374151">affected tokens per prompt</text>
+<text x="16" y="139.0" transform="rotate(-90 16 139.0)" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#374151">affected prompts</text>
+<text x="97.0" y="48" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">1</text>
+<text x="151.0" y="48" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">2</text>
+<text x="205.0" y="48" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">3</text>
+<text x="259.0" y="48" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">4</text>
+<text x="58" y="89.0" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#374151">1</text>
+<rect x="70" y="58" width="54" height="54" fill="#2563eb" stroke="#ffffff" stroke-width="2"/>
+<text x="97.0" y="90.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#ffffff">2</text>
+<rect x="124" y="58" width="54" height="54" fill="#2563eb" stroke="#ffffff" stroke-width="2"/>
+<text x="151.0" y="90.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#ffffff">2</text>
+<rect x="178" y="58" width="54" height="54" fill="#14b8a6" stroke="#ffffff" stroke-width="2"/>
+<text x="205.0" y="90.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#ffffff">3</text>
+<rect x="232" y="58" width="54" height="54" fill="#14b8a6" stroke="#ffffff" stroke-width="2"/>
+<text x="259.0" y="90.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#ffffff">3</text>
+<text x="58" y="143.0" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#374151">2</text>
+<rect x="70" y="112" width="54" height="54" fill="#2563eb" stroke="#ffffff" stroke-width="2"/>
+<text x="97.0" y="144.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#ffffff">2</text>
+<rect x="124" y="112" width="54" height="54" fill="#14b8a6" stroke="#ffffff" stroke-width="2"/>
+<text x="151.0" y="144.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#ffffff">3</text>
+<rect x="178" y="112" width="54" height="54" fill="#14b8a6" stroke="#ffffff" stroke-width="2"/>
+<text x="205.0" y="144.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#ffffff">3</text>
+<rect x="232" y="112" width="54" height="54" fill="#eab308" stroke="#ffffff" stroke-width="2"/>
+<text x="259.0" y="144.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#ffffff">4</text>
+<text x="58" y="197.0" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#374151">3</text>
+<rect x="70" y="166" width="54" height="54" fill="#14b8a6" stroke="#ffffff" stroke-width="2"/>
+<text x="97.0" y="198.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#ffffff">3</text>
+<rect x="124" y="166" width="54" height="54" fill="#14b8a6" stroke="#ffffff" stroke-width="2"/>
+<text x="151.0" y="198.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#ffffff">3</text>
+<rect x="178" y="166" width="54" height="54" fill="#eab308" stroke="#ffffff" stroke-width="2"/>
+<text x="205.0" y="198.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#ffffff">4</text>
+<rect x="232" y="166" width="54" height="54" fill="#eab308" stroke="#ffffff" stroke-width="2"/>
+<text x="259.0" y="198.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#ffffff">4</text>
+<rect x="314" y="213.2" width="14" height="7.5" fill="#2563eb"/>
+<rect x="314" y="206.5" width="14" height="7.5" fill="#246ae5"/>
+<rect x="314" y="199.8" width="14" height="7.5" fill="#2271e0"/>
+<rect x="314" y="193.0" width="14" height="7.5" fill="#2178da"/>
+<rect x="314" y="186.2" width="14" height="7.5" fill="#1f7fd4"/>
+<rect x="314" y="179.5" width="14" height="7.5" fill="#1e86ce"/>
+<rect x="314" y="172.8" width="14" height="7.5" fill="#1c8ec8"/>
+<rect x="314" y="166.0" width="14" height="7.5" fill="#1b95c3"/>
+<rect x="314" y="159.2" width="14" height="7.5" fill="#1a9cbd"/>
+<rect x="314" y="152.5" width="14" height="7.5" fill="#18a3b7"/>
+<rect x="314" y="145.8" width="14" height="7.5" fill="#17aab2"/>
+<rect x="314" y="139.0" width="14" height="7.5" fill="#15b1ac"/>
+<rect x="314" y="132.2" width="14" height="7.5" fill="#14b8a6"/>
+<rect x="314" y="125.5" width="14" height="7.5" fill="#26b899"/>
+<rect x="314" y="118.8" width="14" height="7.5" fill="#38b78c"/>
+<rect x="314" y="112.0" width="14" height="7.5" fill="#4ab77e"/>
+<rect x="314" y="105.2" width="14" height="7.5" fill="#5bb671"/>
+<rect x="314" y="98.5" width="14" height="7.5" fill="#6db664"/>
+<rect x="314" y="91.8" width="14" height="7.5" fill="#7fb657"/>
+<rect x="314" y="85.0" width="14" height="7.5" fill="#91b54a"/>
+<rect x="314" y="78.2" width="14" height="7.5" fill="#a3b53d"/>
+<rect x="314" y="71.5" width="14" height="7.5" fill="#b4b430"/>
+<rect x="314" y="64.8" width="14" height="7.5" fill="#c6b422"/>
+<rect x="314" y="58.0" width="14" height="7.5" fill="#d8b315"/>
+<text x="334" y="62" font-family="Arial, sans-serif" font-size="10" fill="#374151">4</text>
+<text x="334" y="220.0" font-family="Arial, sans-serif" font-size="10" fill="#374151">2</text>
+<text x="372" y="139.0" transform="rotate(-90 372 139.0)" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">poison budget B*</text>
+</svg>

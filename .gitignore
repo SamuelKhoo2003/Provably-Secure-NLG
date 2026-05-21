@@ -1,5 +1,4 @@
 .venv/
-past_runs/
 phd_reference/
 __pycache__/
 *.py[cod]

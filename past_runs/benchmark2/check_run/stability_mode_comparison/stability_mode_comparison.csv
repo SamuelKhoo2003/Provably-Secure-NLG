@@ -1,0 +1,5 @@
+seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,objective,B_star_all,B_star_runner_up,diff,all_is_optimal,runner_up_is_optimal,all_status_name,runner_up_status_name,all_runtime_sec,runner_up_runtime_sec
+0,5,2,2,3,0.2,0.2,0.2,dense,"one prompt, one token",0,0,0,True,True,OPTIMAL,OPTIMAL,0.001148,0.000826
+0,5,2,2,3,0.2,0.2,0.2,dense,"one prompt, full sequence",1,1,0,True,True,OPTIMAL,OPTIMAL,0.002921,0.000810
+0,5,2,2,3,0.2,0.2,0.2,dense,"all prompts, one token each",2,2,0,True,True,OPTIMAL,OPTIMAL,0.001246,0.000665
+0,5,2,2,3,0.2,0.2,0.2,dense,"all prompts, full matrix",3,3,0,True,True,OPTIMAL,OPTIMAL,0.002228,0.000667
