@@ -10,6 +10,7 @@ plots. The external ``phd_reference/`` tree is not imported or modified here.
 from __future__ import annotations
 
 import argparse
+import os
 from collections.abc import Iterable
 from pathlib import Path
 from time import perf_counter
@@ -382,13 +383,15 @@ def _copy_metric_family(row: dict[str, object], source: str, target: str) -> Non
 
 
 def plot_benchmark_csv(csv_path: str, save_dir: str | None = None) -> list[dict[str, object]]:
-    """Read a benchmark CSV and regenerate report-facing SVG plots."""
+    """Read a benchmark CSV and regenerate the cleaned thesis plotting bundle."""
     path = Path(csv_path)
     output_dir = Path(save_dir) if save_dir is not None else path.parent
     output_dir.mkdir(parents=True, exist_ok=True)
     rows = _read_rows_csv(path)
     save_benchmark_plots(rows, output_dir)
-    save_budget_curve_plots(output_dir)
+    save_budget_curve_plots(output_dir, source_dir=path.parent)
+    audit_rows = audit_milp_vs_phd_equivalence(output_dir, source_dir=path.parent, result_rows=rows)
+    print_plot_mapping_summary(path.parent, rows, audit_rows)
     print(f"Wrote benchmark plots under: {output_dir}")
     return rows
 
@@ -655,160 +658,329 @@ def save_instance_plots(
     print(f"Wrote instance plots under: {output_dir}")
 
 
+CANONICAL_METHODS = (
+    "Joint row-column MILP",
+    "DPA weakest-token baseline",
+    "PHD sequence baseline",
+)
+
+CANONICAL_COLORS = {
+    "Joint row-column MILP": "#1f77b4",
+    "DPA weakest-token baseline": "#d62728",
+    "PHD sequence baseline": "#2ca02c",
+    "Row-only MILP ablation": "#9467bd",
+    "Column-only MILP ablation": "#ff7f0e",
+}
+
+MAIN_STABILITY_METRICS = {
+    "Joint row-column MILP": "row_col_stab_qN_rL",
+    "DPA weakest-token baseline": "dpa_stab_row_radius_qN",
+}
+
+MAIN_VALIDITY_METRICS = {
+    "Joint row-column MILP": "row_col_val_qN",
+    "DPA weakest-token baseline": "dpa_val_row_weak_qN",
+    "PHD sequence baseline": "tpa_val_sequence_qN",
+}
+
+ABLATION_STABILITY_METRICS = {
+    "Joint row-column MILP": "row_col_stab_qN_rL",
+    "Row-only MILP ablation": "row_stability",
+    "Column-only MILP ablation": "column_stability",
+}
+
+ABLATION_VALIDITY_METRICS = {
+    "Joint row-column MILP": "row_col_val_qN",
+    "Row-only MILP ablation": "row_validity",
+    "Column-only MILP ablation": "column_validity_full_column",
+}
+
+
 def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> None:
-    """Write report-facing benchmark plots plus compatibility aggregate plots."""
+    """Write cleaned aggregate and sensitivity PNG plots."""
     if not rows:
         return
 
-    report_plots = [
-        (
-            output_dir / "validity_one_prompt_by_L.svg",
-            "Validity: forcing one harmful sequence",
-            "L",
-            "Mean poison budget B*",
-            {
-                "DPA weakest harmful token": "dpa_val_row_weak_q1",
-                "TPA max-token sequence": "tpa_val_sequence_q1",
-                "Atomic phrase aggregation": "phrase_dpa_val_q1",
-                "Shared MILP full sequence": "row_col_val_q1",
-                "Independent full sequence": "independent_val_sequence_q1",
-            },
-        ),
-        (
-            output_dir / "validity_all_prompts_by_L.svg",
-            "Validity: forcing harmful sequences for all prompts",
-            "L",
-            "Mean poison budget B*",
-            {
-                "TPA max-token sequences for all prompts": "tpa_val_sequence_qN",
-                "Shared MILP all harmful sequences": "row_col_val_qN",
-                "DPA weakest harmful token per prompt": "dpa_val_row_weak_qN",
-                "Independent all harmful sequences": "independent_val_sequence_qN",
-            },
-        ),
-        (
-            output_dir / "stability_one_prompt_by_L.svg",
-            "Stability: changing one prompt",
-            "L",
-            "Mean poison budget B*",
-            {
-                "DPA weakest token": "dpa_stab_row_radius_q1",
-                "Shared MILP one prompt, one token": "row_col_stab_q1_r1",
-                "Shared MILP one prompt, full sequence": "row_col_stab_q1_rL",
-            },
-        ),
-        (
-            output_dir / "stability_all_prompts_by_L.svg",
-            "Stability: changing all prompts",
-            "L",
-            "Mean poison budget B*",
-            {
-                "Shared MILP all prompts, one token each": "row_col_stab_qN_r1",
-                "Shared MILP full matrix": "row_col_stab_qN_rL",
-                "DPA weakest token per prompt": "dpa_stab_row_radius_qN",
-            },
-        ),
-    ]
-    for path, title, axis_name, y_label, metrics in report_plots:
-        _save_focused_plot(rows, path, title=title, axis_name=axis_name, y_label=y_label, metrics=metrics)
-
-    _save_independent_validity_overestimate_plot(rows, output_dir / "validity_independent_overestimate_by_L.svg")
-    _save_independent_stability_overestimate_plot(rows, output_dir / "stability_independent_overestimate_by_L.svg")
-
-    # Backwards-compatible aggregate plots. The objective-specific plots above are
-    # preferred for report figures.
     _save_focused_plot(
         rows,
-        output_dir / "validity_scaling_by_L.svg",
-        title="Validity scaling with sequence length",
-        axis_name="L",
-        y_label="Mean poison budget B*",
-        metrics={
-            "DPA weakest harmful token": "dpa_val_row_weak_q1",
-            "TPA max-token sequence": "tpa_val_sequence_q1",
-            "Atomic phrase aggregation": "phrase_dpa_val_q1",
-            "Shared MILP full sequence": "row_col_val_q1",
-            "Shared MILP all harmful sequences": "row_col_val_qN",
-        },
+        output_dir / "stability_certificate_vs_K.png",
+        title="Aggregate stability certificate vs K",
+        axis_name="K",
+        y_label="Mean certified budget B*",
+        metrics=MAIN_STABILITY_METRICS,
     )
     _save_focused_plot(
         rows,
-        output_dir / "stability_structured_by_L.svg",
-        title="Structured stability scaling with sequence length",
-        axis_name="L",
-        y_label="Mean poison budget B*",
-        metrics={
-            "DPA weakest token": "dpa_stab_row_radius_q1",
-            "DPA weakest token per prompt": "dpa_stab_row_radius_qN",
-            "Shared MILP one prompt, one token": "row_col_stab_q1_r1",
-            "Shared MILP one prompt, full sequence": "row_col_stab_q1_rL",
-            "Shared MILP all prompts, one token each": "row_col_stab_qN_r1",
-            "Shared MILP full matrix": "row_col_stab_qN_rL",
-        },
+        output_dir / "validity_certificate_vs_K.png",
+        title="Aggregate validity certificate vs K",
+        axis_name="K",
+        y_label="Mean certified budget B*",
+        metrics=MAIN_VALIDITY_METRICS,
     )
     _save_focused_plot(
         rows,
-        output_dir / "validity_bias_sweep.svg",
-        title="Validity sensitivity to harmful-prefix target bias",
+        output_dir / "validity_sensitivity_target_bias.png",
+        title="Validity sensitivity to target bias",
         axis_name="target_bias",
-        y_label="Mean poison budget B*",
-        metrics={
-            "DPA weakest harmful token": "dpa_val_row_weak_q1",
-            "DPA weakest harmful token per prompt": "dpa_val_row_weak_qN",
-            "TPA max-token sequence": "tpa_val_sequence_q1",
-            "Shared MILP one harmful sequence": "row_col_val_q1",
-            "Shared MILP harmful sequences for all prompts": "row_col_val_qN",
-            "Atomic phrase aggregation": "phrase_dpa_val_q1",
-        },
+        y_label="Mean certified budget B*",
+        metrics=MAIN_VALIDITY_METRICS,
+    )
+    _save_focused_plot(
+        rows,
+        output_dir / "ablation_stability_row_column_joint.png",
+        title="Stability ablation: row, column, and joint MILP",
+        axis_name="K",
+        y_label="Mean certified budget B*",
+        metrics=ABLATION_STABILITY_METRICS,
+    )
+    _save_focused_plot(
+        rows,
+        output_dir / "ablation_validity_row_column_joint.png",
+        title="Validity ablation: row, column, and joint MILP",
+        axis_name="K",
+        y_label="Mean certified budget B*",
+        metrics=ABLATION_VALIDITY_METRICS,
     )
     check_monotonicity_diagnostics(rows, output_dir)
 
 
-def save_budget_curve_plots(output_dir: Path) -> None:
-    """Write plots based on optional long-format budget, damage, and horizon CSVs."""
-    budget_rows = _read_optional_csv(output_dir / "benchmark_budget_curves.csv")
-    damage_rows = _read_optional_csv(output_dir / "benchmark_damage_curves.csv")
-    horizon_rows = _read_optional_csv(output_dir / "benchmark_horizons.csv")
+def save_budget_curve_plots(output_dir: Path, source_dir: Path | None = None) -> None:
+    """Write cleaned main budget and direct-damage PNG plots."""
+    csv_dir = source_dir if source_dir is not None else output_dir
+    budget_rows = _read_optional_csv(csv_dir / "benchmark_budget_curves.csv")
+    damage_rows = _read_optional_csv(csv_dir / "benchmark_damage_curves.csv")
 
-    combined = budget_rows + damage_rows
     _save_certified_fraction_budget_plot(
-        combined,
-        output_dir / "certified_fraction_stability_by_budget.svg",
-        "Certified stability by poison budget",
+        budget_rows,
+        output_dir / "main_stability_budget_curve.png",
+        "Main stability budget curve",
         [
-            ("DPA weakest token, radius-derived", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
-            ("Shared one-token-per-prompt, direct MILP", "Shared MILP", "stability_one_token_per_prompt", "direct_damage_milp"),
-            ("Shared full-sequence-per-prompt, direct MILP", "Shared MILP", "stability_full_sequence_per_prompt", "direct_damage_milp"),
+            ("Joint row-column MILP", "Shared MILP", "stability_full_sequence_per_prompt", "radius_derived"),
+            ("DPA weakest-token baseline", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
+            ("PHD sequence baseline", "PHD sequence baseline", "stability_full_sequence_per_prompt", "radius_derived"),
         ],
     )
     _save_certified_fraction_budget_plot(
-        combined,
-        output_dir / "certified_fraction_validity_by_budget.svg",
-        "Certified validity by poison budget",
+        budget_rows,
+        output_dir / "main_validity_budget_curve.png",
+        "Main validity budget curve",
         [
-            ("TPA max-token sequence, radius-derived", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-            ("Shared full sequence, radius-derived", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-            ("Shared full sequence, direct MILP", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "direct_damage_milp"),
+            ("Joint row-column MILP", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("DPA weakest-token baseline", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
+            ("PHD sequence baseline", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
         ],
     )
-    _save_certified_fraction_by_length_plot(
-        combined,
-        output_dir / "certified_fraction_stability_by_L_at_budget.svg",
-        "Certified stability by length at fixed budgets",
-        method="Shared MILP",
-        objective="stability_full_sequence_per_prompt",
-        curve_type="direct_damage_milp",
-    )
-    _save_certified_fraction_by_length_plot(
-        combined,
-        output_dir / "certified_fraction_validity_by_L_at_budget.svg",
-        "Certified validity by length at fixed budgets",
+    _save_damage_curve_plot(
+        damage_rows,
+        output_dir / "direct_damage_curve_joint_milp.png",
+        "Direct shared-budget damage curve",
         method="Shared MILP",
         objective="validity_full_harmful_sequence_per_prompt",
-        curve_type="direct_damage_milp",
     )
-    _save_horizon_plot(horizon_rows, output_dir / "stability_horizon_by_budget.svg", "DPA stability horizon", "Stability horizon by budget")
-    _save_horizon_plot(horizon_rows, output_dir / "validity_horizon_by_budget.svg", "TPA validity horizon", "Validity horizon by budget")
+
+
+def print_plot_mapping_summary(source_dir: Path, rows: list[dict[str, object]], audit_rows: list[dict[str, object]]) -> None:
+    budget_rows = _read_optional_csv(source_dir / "benchmark_budget_curves.csv")
+    raw_methods = sorted({str(row.get("method")) for row in budget_rows if row.get("method") not in {None, ""}})
+    mapped = build_method_mapping_report(rows, budget_rows)
+    identical = sum(1 for row in audit_rows if row.get("exactly_identical") is True)
+    different = sum(1 for row in audit_rows if row.get("differs_at_any_budget") is True)
+    print()
+    print("Clean plotting method summary")
+    print(f"Raw curve methods detected: {', '.join(raw_methods) if raw_methods else 'none'}")
+    print("Headline methods: " + ", ".join(CANONICAL_METHODS))
+    print("Excluded from headline plots: " + ", ".join(mapped["excluded_methods"]))
+    print("Ablation-only methods: Row-only MILP ablation, Column-only MILP ablation")
+    print(f"Joint vs PHD curve audit: identical parameter settings={identical}, different parameter settings={different}")
+
+
+def build_method_mapping_report(rows: list[dict[str, object]], budget_rows: list[dict[str, object]]) -> dict[str, list[str]]:
+    del rows
+    raw_curve_methods = sorted({str(row.get("method")) for row in budget_rows if row.get("method") not in {None, ""}})
+    return {
+        "Joint row-column MILP": [
+            "budget curves: method='Shared MILP' with full-sequence stability or full-harmful-sequence validity objectives",
+            "summary CSV: row_col_stab_qN_rL and row_col_val_qN",
+            "direct damage: method='Shared MILP', objective='validity_full_harmful_sequence_per_prompt'",
+        ],
+        "DPA weakest-token baseline": [
+            "budget curves: method='DPA token margin' for stability",
+            "budget curves: method='DPA weakest harmful token' for validity",
+            "summary CSV: dpa_stab_row_radius_qN and dpa_val_row_weak_qN",
+        ],
+        "PHD sequence baseline": [
+            "budget curves: method='TPA max-token sequence' with objective='validity_full_harmful_sequence_per_prompt'",
+            "summary CSV: tpa_val_sequence_qN",
+            "no stability PHD sequence curve is plotted unless exported under the canonical PHD stability mapping",
+        ],
+        "excluded_methods": [
+            method
+            for method in raw_curve_methods
+            if method
+            not in {
+                "Shared MILP",
+                "DPA token margin",
+                "DPA weakest harmful token",
+                "TPA max-token sequence",
+                "PHD sequence baseline",
+            }
+        ],
+        "ablation_methods": [
+            "summary CSV: row_stability -> Row-only MILP ablation",
+            "summary CSV: column_stability -> Column-only MILP ablation",
+            "summary CSV: row_validity -> Row-only MILP ablation",
+            "summary CSV: column_validity_full_column -> Column-only MILP ablation",
+        ],
+    }
+
+
+def write_method_mapping_report(output_dir: Path, rows: list[dict[str, object]], budget_rows: list[dict[str, object]], audit_notes: list[str]) -> None:
+    report = build_method_mapping_report(rows, budget_rows)
+    lines = [
+        "Clean plotting method mapping",
+        "",
+        "Mapped to Joint row-column MILP:",
+        *[f"- {item}" for item in report["Joint row-column MILP"]],
+        "",
+        "Mapped to DPA weakest-token baseline:",
+        *[f"- {item}" for item in report["DPA weakest-token baseline"]],
+        "",
+        "Mapped to PHD sequence baseline:",
+        *[f"- {item}" for item in report["PHD sequence baseline"]],
+        "",
+        "Excluded methods:",
+        *[f"- {item}" for item in (report["excluded_methods"] or ["none detected"])],
+        "",
+        "Ablation methods:",
+        *[f"- {item}" for item in report["ablation_methods"]],
+        "",
+        "Implementation audit notes:",
+        *[f"- {item}" for item in audit_notes],
+        "",
+    ]
+    (output_dir / "audit_method_mapping.txt").write_text("\n".join(lines))
+
+
+def audit_milp_vs_phd_equivalence(output_dir: Path, source_dir: Path | None = None, result_rows: list[dict[str, object]] | None = None) -> list[dict[str, object]]:
+    """Compare exported joint MILP and PHD/TPA sequence curves and columns."""
+    csv_dir = source_dir if source_dir is not None else output_dir
+    result_rows = result_rows if result_rows is not None else _read_optional_csv(csv_dir / "benchmark_results.csv")
+    budget_rows = _read_optional_csv(csv_dir / "benchmark_budget_curves.csv")
+    diagnostics = _audit_joint_vs_phd_budget_curves(budget_rows)
+    summary_notes = _audit_joint_vs_phd_summary_columns(result_rows)
+    implementation_notes = [
+        "PHD sequence baseline columns are produced by aggregate_tpa_sequence_baselines(targeted_validity_token_budgets(data)) in toy_certificate/baselines.py.",
+        "Joint row-column MILP validity columns are produced by solve_row_col_validity(...) in toy_certificate/milp.py through _solve_benchmark_certificates(...).",
+        "The PHD sequence baseline does not call solve_row_col_validity or the shared MILP solver in the inspected implementation.",
+        "TPA max-token sequence is mapped to PHD sequence baseline for validity; Atomic phrase aggregation and Independent composition are excluded from headline plots.",
+    ]
+    audit_path = output_dir / "audit_milp_vs_phd_equivalence.csv"
+    _write_rows_csv(audit_path, diagnostics)
+    write_method_mapping_report(output_dir, result_rows, budget_rows, summary_notes + implementation_notes)
+    identical = sum(1 for row in diagnostics if row.get("exactly_identical") is True)
+    different = sum(1 for row in diagnostics if row.get("differs_at_any_budget") is True)
+    print()
+    print("Joint row-column MILP vs PHD sequence baseline audit")
+    print(f"Budget-curve parameter settings identical: {identical}")
+    print(f"Budget-curve parameter settings different: {different}")
+    for row in [item for item in diagnostics if item.get("differs_at_any_budget") is True][:3]:
+        print(f"- differs example: K={row.get('K')} N={row.get('N')} L={row.get('L')} target_bias={row.get('target_bias')} diff_budget={row.get('first_different_budget')}")
+    for row in [item for item in diagnostics if item.get("exactly_identical") is True][:3]:
+        print(f"- identical example: K={row.get('K')} N={row.get('N')} L={row.get('L')} target_bias={row.get('target_bias')}")
+    print(f"Wrote audit CSV: {audit_path}")
+    print(f"Wrote method mapping: {output_dir / 'audit_method_mapping.txt'}")
+    return diagnostics
+
+
+def _audit_joint_vs_phd_budget_curves(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    joint_rows = [
+        row
+        for row in rows
+        if row.get("method") == "Shared MILP"
+        and row.get("objective") == "validity_full_harmful_sequence_per_prompt"
+        and row.get("curve_type") == "radius_derived"
+    ]
+    phd_rows = [
+        row
+        for row in rows
+        if row.get("method") == "TPA max-token sequence"
+        and row.get("objective") == "validity_full_harmful_sequence_per_prompt"
+        and row.get("curve_type") == "radius_derived"
+    ]
+    key_fields = ["seed", "K", "N", "L", "T", "delta_stab", "delta_val", "target_bias", "influence_mode", "stability_competitor_mode"]
+    joint_by_key = _curve_series_by_key(joint_rows, key_fields)
+    phd_by_key = _curve_series_by_key(phd_rows, key_fields)
+    diagnostics: list[dict[str, object]] = []
+    for key in sorted(set(joint_by_key) & set(phd_by_key)):
+        joint = joint_by_key[key]
+        phd = phd_by_key[key]
+        shared_budgets = sorted(set(joint) & set(phd))
+        diffs = [budget for budget in shared_budgets if not np.isclose(joint[budget], phd[budget])]
+        first_diff = diffs[0] if diffs else ""
+        row = {field: key[idx] for idx, field in enumerate(key_fields)}
+        row.update(
+            {
+                "objective": "validity_full_harmful_sequence_per_prompt",
+                "joint_method": "Shared MILP",
+                "phd_method": "TPA max-token sequence",
+                "joint_label": "Joint row-column MILP",
+                "phd_label": "PHD sequence baseline",
+                "num_shared_budgets": len(shared_budgets),
+                "exactly_identical": len(shared_budgets) > 0 and not diffs and len(joint) == len(phd) == len(shared_budgets),
+                "differs_at_any_budget": bool(diffs),
+                "num_different_budgets": len(diffs),
+                "first_different_budget": first_diff,
+                "joint_value_at_first_difference": "" if first_diff == "" else joint[first_diff],
+                "phd_value_at_first_difference": "" if first_diff == "" else phd[first_diff],
+                "joint_curve": _format_curve_series(joint),
+                "phd_curve": _format_curve_series(phd),
+            }
+        )
+        diagnostics.append(row)
+    return diagnostics
+
+
+def _curve_series_by_key(rows: list[dict[str, object]], key_fields: list[str]) -> dict[tuple[object, ...], dict[float, float]]:
+    grouped: dict[tuple[object, ...], dict[float, float]] = {}
+    for row in rows:
+        budget = _numeric_value(row.get("budget"))
+        value = _numeric_value(row.get("certified_fraction"))
+        if budget is None or value is None:
+            continue
+        key = tuple(row.get(field) for field in key_fields)
+        grouped.setdefault(key, {})[budget] = value
+    return grouped
+
+
+def _format_curve_series(series: dict[float, float]) -> str:
+    return ";".join(f"{budget:g}:{value:.12g}" for budget, value in sorted(series.items()))
+
+
+def _audit_joint_vs_phd_summary_columns(rows: list[dict[str, object]]) -> list[str]:
+    pairs = [
+        ("row_col_val_q1", "tpa_val_sequence_q1"),
+        ("row_col_val_qN", "tpa_val_sequence_qN"),
+    ]
+    notes: list[str] = []
+    for joint_col, phd_col in pairs:
+        comparable = []
+        different = 0
+        for row in rows:
+            joint = _numeric_value(row.get(joint_col))
+            phd = _numeric_value(row.get(phd_col))
+            if joint is None or phd is None:
+                continue
+            comparable.append((joint, phd))
+            if not np.isclose(joint, phd):
+                different += 1
+        if not comparable:
+            notes.append(f"Summary columns {joint_col} and {phd_col}: no comparable numeric rows.")
+        elif different:
+            notes.append(f"Summary columns {joint_col} and {phd_col}: {different}/{len(comparable)} rows differ.")
+        else:
+            notes.append(f"Summary columns {joint_col} and {phd_col}: exactly identical on {len(comparable)} comparable rows.")
+    notes.append("No exported PHD sequence stability summary column was detected in benchmark_results.csv.")
+    return notes
 
 
 def print_certificate_table(results: list[CertificateResult]) -> None:
@@ -1222,7 +1394,7 @@ def _save_focused_plot(rows: list[dict[str, object]], path: Path, title: str, ax
     if not series:
         print(f"Warning: skipped {path.name}; none of the requested metric columns were available.")
         return
-    _save_line_plot_svg(path, title, _axis_label(axis_name), y_label, series)
+    _save_line_plot(path, title, _axis_label(axis_name), y_label, series)
 
 
 def _save_independent_stability_overestimate_plot(rows: list[dict[str, object]], path: Path) -> None:
@@ -1329,7 +1501,31 @@ def _save_certified_fraction_budget_plot(
     if not series:
         print(f"Warning: skipped {path.name}; none of the requested curves were available.")
         return
-    _save_line_plot_svg(path, title, "poison budget B", "Certified prompts (%)", series)
+    _save_line_plot(path, title, "Poisoned shard budget", "Certified fraction (%)", series)
+
+
+def _save_damage_curve_plot(rows: list[dict[str, object]], path: Path, title: str, method: str, objective: str) -> None:
+    selected = [
+        row
+        for row in rows
+        if row.get("method") == method and row.get("objective") == objective and row.get("curve_type") == "direct_damage_milp"
+    ]
+    exact_rows = [row for row in selected if row.get("certified_fraction_is_exact") is True or row.get("is_optimal") is True]
+    skipped = len(selected) - len(exact_rows)
+    if skipped:
+        print(f"Warning: skipping {skipped} non-optimal direct-damage row(s) for {path.name}.")
+    metric_series = _mean_series_by_axis(exact_rows, "budget", "attacked_fraction")
+    if metric_series is None:
+        print(f"Warning: skipped {path.name}; no exact direct-damage rows were available.")
+        return
+    xs, ys = metric_series
+    _save_line_plot(
+        path,
+        title,
+        "Poisoned shard budget",
+        "Attacked fraction (%)",
+        {"Joint row-column MILP": (xs, [100.0 * y for y in ys])},
+    )
 
 
 def _select_curve_rows(rows: list[dict[str, object]], method: str, objective: str, curve_type: str) -> list[dict[str, object]]:
@@ -1663,6 +1859,48 @@ def _save_heatmap_svg(
         )
     svg.append("</svg>")
     path.write_text("\n".join(svg))
+
+
+def _save_line_plot(path: Path, title: str, x_label: str, y_label: str, series: dict[str, tuple[list[float], list[float]]]) -> None:
+    """Save a thesis-facing line plot.
+
+    PNG is used for the cleaned report outputs. If matplotlib is unavailable,
+    the lightweight SVG renderer is used as a compatibility fallback.
+    """
+    if path.suffix.lower() != ".png":
+        _save_line_plot_svg(path, title, x_label, y_label, series)
+        return
+    try:
+        cache_dir = Path(os.environ.get("TMPDIR", "/tmp")) / "provably_secure_nlg_plot_cache"
+        os.environ.setdefault("MPLCONFIGDIR", str(cache_dir / "matplotlib"))
+        os.environ.setdefault("XDG_CACHE_HOME", str(cache_dir / "xdg"))
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except Exception as exc:  # pragma: no cover - depends on local plotting deps.
+        fallback = path.with_suffix(".svg")
+        print(f"Warning: matplotlib unavailable ({exc}); writing SVG fallback {fallback.name}.")
+        _save_line_plot_svg(fallback, title, x_label, y_label, series)
+        return
+
+    fig, ax = plt.subplots(figsize=(8.0, 5.2), dpi=220)
+    for label, (xs, ys) in series.items():
+        color = CANONICAL_COLORS.get(label)
+        linestyle = "--" if "baseline" in label else "-"
+        marker = "s" if "PHD" in label else "o"
+        ax.plot(xs, ys, label=label, color=color, linestyle=linestyle, marker=marker, linewidth=2.2, markersize=4.8)
+    ax.set_title(title, fontsize=12, pad=10)
+    ax.set_xlabel(x_label, fontsize=11)
+    ax.set_ylabel(y_label, fontsize=11)
+    ax.grid(True, color="#e5e7eb", linewidth=0.8)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.legend(frameon=False, fontsize=9)
+    fig.tight_layout()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=220)
+    plt.close(fig)
 
 
 def _save_line_plot_svg(path: Path, title: str, x_label: str, y_label: str, series: dict[str, tuple[list[float], list[float]]]) -> None:

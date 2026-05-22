@@ -426,18 +426,18 @@ class ExperimentCliTests(unittest.TestCase):
         self.assertTrue(all(row["method"] == "Shared MILP" for row in rows))
         self.assertEqual(len(calls), 6)
 
-    def test_plot_csv_regenerates_expected_svg_files_from_existing_rows(self):
+    def test_plot_csv_regenerates_expected_png_files_from_existing_rows(self):
         with TemporaryDirectory() as tmp_dir:
             base = Path(tmp_dir)
             csv_path = base / "benchmark_results.csv"
             csv_path.write_text(
                 "K,N,L,T,delta_stab,delta_val,target_bias,seed,influence_mode,"
                 "dpa_val_row_weak_q1,independent_val_sequence_q1,phrase_dpa_val_q1,"
-                "row_col_val_q1,row_col_val_qN,dpa_stab_row_radius_q1,dpa_stab_row_radius_qN,"
+                "row_col_val_q1,row_col_val_qN,tpa_val_sequence_qN,dpa_stab_row_radius_q1,dpa_stab_row_radius_qN,"
                 "row_col_stab_q1_r1,row_col_stab_q1_rL,row_col_stab_qN_r1,row_col_stab_qN_rL,"
                 "independent_stab_full_row_qN,dpa_val_row_weak_qN\n"
                 "5,2,2,3,0.2,0.2,0.2,0,dense,"
-                "1,3,2,2,4,1,2,1,2,2,4,6,2\n"
+                "1,3,2,2,4,3,1,2,1,2,2,4,6,2\n"
             )
 
             stdout = StringIO()
@@ -445,29 +445,22 @@ class ExperimentCliTests(unittest.TestCase):
                 rows = experiments.plot_benchmark_csv(str(csv_path), save_dir=str(base))
 
             self.assertEqual(len(rows), 1)
-            self.assertTrue((base / "validity_one_prompt_by_L.svg").exists())
-            self.assertTrue((base / "validity_all_prompts_by_L.svg").exists())
-            self.assertTrue((base / "stability_one_prompt_by_L.svg").exists())
-            self.assertTrue((base / "stability_all_prompts_by_L.svg").exists())
-            self.assertTrue((base / "validity_scaling_by_L.svg").exists())
-            self.assertTrue((base / "validity_independent_overestimate_by_L.svg").exists())
-            self.assertTrue((base / "stability_structured_by_L.svg").exists())
-            self.assertTrue((base / "stability_independent_overestimate_by_L.svg").exists())
-            self.assertTrue((base / "validity_bias_sweep.svg").exists())
-            one_prompt_validity_svg = (base / "validity_one_prompt_by_L.svg").read_text()
-            validity_diagnostic_svg = (base / "validity_independent_overestimate_by_L.svg").read_text()
-            one_prompt_stability_svg = (base / "stability_one_prompt_by_L.svg").read_text()
-            diagnostic_svg = (base / "stability_independent_overestimate_by_L.svg").read_text()
-            self.assertIn("Shared MILP full sequence", one_prompt_validity_svg)
-            self.assertIn("Independent full sequence", one_prompt_validity_svg)
-            self.assertIn("Atomic phrase aggregation", one_prompt_validity_svg)
-            self.assertNotIn("phrase-DPA", one_prompt_validity_svg)
-            self.assertNotIn("q1", one_prompt_validity_svg)
-            self.assertIn("tpa_val_sequence_q1", stdout.getvalue())
-            self.assertIn("Independent composition overestimate", validity_diagnostic_svg)
-            self.assertIn("Shared MILP one prompt, full sequence", one_prompt_stability_svg)
-            self.assertNotIn("qN", one_prompt_stability_svg)
-            self.assertIn("independent overestimate factor", diagnostic_svg)
+            expected_pngs = [
+                "stability_certificate_vs_K.png",
+                "validity_certificate_vs_K.png",
+                "validity_sensitivity_target_bias.png",
+                "ablation_stability_row_column_joint.png",
+                "ablation_validity_row_column_joint.png",
+            ]
+            for filename in expected_pngs:
+                self.assertTrue((base / filename).exists())
+                self.assertEqual((base / filename).read_bytes()[:8], b"\x89PNG\r\n\x1a\n")
+            mapping = (base / "audit_method_mapping.txt").read_text()
+            self.assertIn("Joint row-column MILP", mapping)
+            self.assertIn("DPA weakest-token baseline", mapping)
+            self.assertIn("PHD sequence baseline", mapping)
+            self.assertIn("tpa_val_sequence_qN", mapping)
+            self.assertIn("Raw curve methods detected: none", stdout.getvalue())
             self.assertFalse((base / "monotonicity_violations.csv").exists())
 
     def test_budget_curve_plot_labels_and_audit_sources(self):
@@ -476,8 +469,10 @@ class ExperimentCliTests(unittest.TestCase):
             (base / "benchmark_budget_curves.csv").write_text(
                 "seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competitor_mode,budget,method,objective,curve_type,certified_fraction,attacked_fraction,mean_radius,median_radius,min_radius,max_radius,num_certified,num_known,num_unknown,num_total\n"
                 "0,4,2,2,3,0.2,0.2,0.3,dense,runner_up,0,DPA token margin,full_response_stable_against_any_token_change,radius_derived,1.0,0.0,2,2,2,2,2,2,0,2\n"
+                "0,4,2,2,3,0.2,0.2,0.3,dense,runner_up,0,Shared MILP,stability_full_sequence_per_prompt,radius_derived,1.0,0.0,2,2,2,2,2,2,0,2\n"
                 "0,4,2,2,3,0.2,0.2,0.3,dense,runner_up,0,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived,0.5,0.5,1,1,1,1,1,2,0,2\n"
                 "0,4,2,2,3,0.2,0.2,0.3,dense,runner_up,0,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived,0.5,0.5,1,1,1,1,1,2,0,2\n"
+                "0,4,2,2,3,0.2,0.2,0.3,dense,runner_up,0,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived,0.0,1.0,0,0,0,0,0,2,0,2\n"
             )
             (base / "benchmark_damage_curves.csv").write_text(
                 "seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competitor_mode,budget,method,objective,curve_type,max_attacked_rows,max_attacked_cells,attacked_fraction,certified_fraction,status_name,is_optimal,certified_fraction_is_exact,bound_type,objective_value,lower_bound,upper_bound,mip_gap,runtime_sec\n"
@@ -496,14 +491,9 @@ class ExperimentCliTests(unittest.TestCase):
                 experiments.save_budget_curve_plots(base)
                 diagnostics = experiments.audit_curve_csvs(str(base))
 
-            stability_svg = (base / "certified_fraction_stability_by_budget.svg").read_text()
-            validity_svg = (base / "certified_fraction_validity_by_budget.svg").read_text()
-            self.assertIn("DPA weakest token, radius-derived", stability_svg)
-            self.assertIn("Shared one-token-per-prompt, direct MILP", stability_svg)
-            self.assertIn("Shared full-sequence-per-prompt, direct MILP", stability_svg)
-            self.assertIn("TPA max-token sequence, radius-derived", validity_svg)
-            self.assertIn("Shared full sequence, radius-derived", validity_svg)
-            self.assertIn("Shared full sequence, direct MILP", validity_svg)
+            for filename in ["main_stability_budget_curve.png", "main_validity_budget_curve.png", "direct_damage_curve_joint_milp.png"]:
+                self.assertTrue((base / filename).exists())
+                self.assertEqual((base / filename).read_bytes()[:8], b"\x89PNG\r\n\x1a\n")
             self.assertIn("source=benchmark_budget_curves.csv", stdout.getvalue())
             self.assertIn("source=benchmark_damage_curves.csv", stdout.getvalue())
             self.assertTrue(any(item["check"] == "identical_series" for item in diagnostics))

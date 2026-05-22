@@ -14,4 +14,4 @@ CSV_PATH="$CSV_PATH" OUT_DIR="$OUT_DIR" "$ROOT_DIR/scripts/plot.sh"
 echo
 echo "Benchmark workflow complete."
 echo "CSV:   $CSV_PATH"
-echo "Plots: $OUT_DIR/*.svg"
+echo "Plots: $OUT_DIR/*.png"

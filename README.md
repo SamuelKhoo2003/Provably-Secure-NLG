@@ -293,6 +293,7 @@ Run tests directly:
 
 - `readme/spec.md`: consolidated design/specification notes for what the toy certificate experiment is meant to build.
 - `readme/implementation.md`: consolidated implementation, command, benchmark, plot, and baseline explanation.
+- `readme/toy_example.md`: focused explanation of the toy token-generation model, certificates, plotting, and audits.
 - `readme/phd_readme.md`: notes on the external `phd_reference` package structure and where the closest reference-code concepts live.
 
 ## Developer Notes
