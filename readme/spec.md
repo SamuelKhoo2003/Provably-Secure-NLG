@@ -213,21 +213,38 @@ Report-facing validity objectives should use `solve_row_col_validity`.
 
 There are two main external baselines.
 
-The first is the token-level DPA margin baseline. It computes token-level cell certificates independently and reduces each prompt row to its weakest token:
+The first is the token-level DPA margin baseline. This is a cell-wise baseline.
+For stability it uses the standard DPA top-vs-runner-up margin at each
+prompt-token cell and answers how robust a single token prediction is to
+arbitrary change. It reduces each prompt row to its weakest token when a
+row-level summary is needed:
 
 ```text
 row_radius[i] = min_j B_cell[i,j]
 ```
 
-For validity, this is the easiest harmful target token in a prompt row, not a full harmful-sequence certificate.
+For validity, it uses a simple targeted margin between the harmful target token
+and the strongest non-target competitor. This is the easiest harmful target
+token in a prompt row, not a full harmful-sequence certificate.
 
-The second is the Ghitu-style phrase-level TPA baseline. It computes a targeted radius for inducing a specific harmful token. For a harmful sequence, the toy implementation composes token-level TPA radii using the maximum over token positions:
+The second is the Ghitu-style phrase-level TPA baseline. This is the row-wise
+certified NLG baseline. For phrase stability, a row radius is the minimum over
+token-level stability radii because a response is no longer stable if any one
+token changes. For phrase validity, the toy implementation computes a targeted
+radius for inducing each specific harmful token and composes token-level TPA
+radii using the maximum over token positions:
 
 ```text
 R_tpa_sequence[i] = max_j r_tpa[i,j]
 ```
 
-The maximum is used because the attacker must force every target token in the sequence, so the hardest token controls the targeted sequence baseline. This is not ordinary DPA top-vs-runner-up stability and not atomic phrase aggregation. The toy implementation follows the MILP tie convention where target ties count as successful attacks; if a strict-plurality convention is used elsewhere, interpret this as the tie-wins toy adaptation.
+The maximum is used because the attacker must force every target token in the
+sequence, so the hardest target token controls the phrase certificate. This is
+the main paper-inspired validity baseline. It is not ordinary DPA
+top-vs-runner-up stability and not atomic phrase aggregation. The toy
+implementation follows the MILP tie convention where target ties count as
+successful attacks; if a strict-plurality convention is used elsewhere,
+interpret this as the tie-wins toy adaptation.
 
 The independent-composition diagnostic sums token costs:
 

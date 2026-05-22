@@ -6,12 +6,13 @@ This document consolidates how the toy certificate code is implemented, how to r
 `phd_reference/` is external read-only reference code; do not edit, reformat, or
 delete files inside it as part of toy implementation cleanup.
 
-## Files
+## Module Layout
 
 ```text
-toy_certificate/data.py         toy vote generation and counts
-toy_certificate/milp.py         Gurobi MILP builders and solvers
-toy_certificate/experiments.py  CLI, benchmark runner, baselines, SVG plots
+toy_certificate/data.py         toy vote generation, target generation, counts, influence masks
+toy_certificate/milp.py         radius-style shared MILPs and direct damage-at-budget MILPs
+toy_certificate/experiments.py  CLI, benchmark runner, baselines, CSV writing, SVG plots
+tests/                         unit tests for baselines, MILPs, plotting labels, coverage, horizons
 scripts/check.sh                compile/test/visualization check run
 scripts/data.sh                 benchmark CSV generation
 scripts/plot.sh                 plot refresh from existing CSV
@@ -29,7 +30,9 @@ pip install -r requirements.txt
 
 Gurobi requires a valid local license.
 
-## Main Commands
+## Preferred Workflow
+
+The short shell wrappers are the preferred entry points.
 
 Check the repo without running a benchmark:
 
@@ -57,12 +60,29 @@ Generate benchmark data and then refresh plots:
 
 Generate one visualization instance:
 
+```bash
+./scripts/visualize.sh
+```
+
+`check.sh` runs compile checks, unit tests, and a small visualization smoke
+test. `data.sh` generates benchmark CSV data. `plot.sh` regenerates plots from
+existing CSV files. `benchmark.sh` is a convenience wrapper for data generation
+followed by plotting. Older direct CLI commands still exist for debugging, but
+the shorter scripts are the normal workflow.
+
+Default small benchmark grid:
+
+```text
 K in {4, 6, 8}
 N in {2, 3}
 L in {2, 3, 4}
 T in {4, 6}
 delta_stab = delta_val = 0.2
 target_bias = 0.3
+```
+
+Run tests directly:
+
 ```bash
 .venv/bin/python -m unittest discover
 ```
@@ -79,9 +99,13 @@ The experiment module exposes:
 .venv/bin/python -m toy_certificate.experiments sweep-delta
 .venv/bin/python -m toy_certificate.experiments sweep-length
 .venv/bin/python -m toy_certificate.experiments sweep-prompts
+.venv/bin/python -m toy_certificate.experiments compare-stability-modes
 ```
 
 `benchmark` writes CSV data only by default. Add `--make-plots` only if you explicitly want plotting in the same run.
+The benchmark save directory defaults to `toy_results/small_benchmark`; script
+wrappers also use `toy_results/small_benchmark` for benchmark data/plots and
+`toy_results/smoke/instance` for visualization smoke tests.
 
 ## Data Representation
 
@@ -233,18 +257,23 @@ Baseline columns are computed in `compute_reference_baselines(data)`.
 
 There are two main external baselines.
 
-The first is the token-level DPA margin baseline. DPA remains the natural
-baseline for untargeted stability, where the adversary tries to change the clean
-output. For validity, the same token-level baseline is a weakest harmful-token
-reference and should not be interpreted as a full-sequence certificate.
+The first is the token-level DPA margin baseline. This is a cell-wise baseline.
+For stability, it uses the standard DPA top-vs-runner-up margin at each
+prompt-token cell and asks how robust one token prediction is to arbitrary
+change. For validity, it uses a simple targeted margin between the harmful
+target token and the strongest non-target competitor. This is a weakest
+harmful-token reference and should not be interpreted as a full-sequence
+validity certificate.
 
-The second is the Ghitu-style phrase-level TPA baseline. It computes targeted
-token validity radii for inducing a specific harmful token. For a harmful
-sequence, the toy implementation composes token-level TPA radii using the
-maximum over token positions, since the attacker must force every token in the
-sequence. The older phrase-level aggregation baseline is retained as a naive
-atomic-sequence diagnostic, but it should not be interpreted as the main TPA
-validity baseline.
+The second is the Ghitu-style phrase-level TPA baseline. This is the row-wise
+certified NLG baseline. For phrase stability, the row radius is the minimum over
+token-level stability radii, because a response is no longer stable if any one
+token changes. For phrase validity, the row radius is the maximum over targeted
+token validity radii, because the attacker must force every target token in the
+harmful sequence and the hardest target token controls the phrase certificate.
+This is the main paper-inspired validity baseline. The older phrase-level
+aggregation reference is retained as a naive atomic-sequence diagnostic, not as
+the main TPA validity baseline.
 
 DPA matrix / weakest-token baseline:
 
@@ -392,6 +421,55 @@ MAKE_DAMAGE_CURVES=0 ./scripts/data.sh
 MAKE_HORIZON_CURVES=0 ./scripts/data.sh
 ```
 
+Common environment variables and CLI overrides:
+
+```text
+PRESET                    smoke, small, medium, or large
+KS, NS, LENGTHS, TS       comma-separated grid overrides
+DELTAS                    shared shortcut for DELTA_STABS and DELTA_VALS
+DELTA_STABS, DELTA_VALS   separate stability/validity noise grids
+TARGET_BIASES             comma-separated harmful-target support values
+TARGET_BIAS               single-value shortcut for visualization or data
+BUDGET_MAX                maximum budget for budget/damage/horizon curves
+MAKE_BUDGET_CURVES        1/0 to write benchmark_budget_curves.csv
+MAKE_DAMAGE_CURVES        1/0 to write benchmark_damage_curves.csv
+MAKE_HORIZON_CURVES       1/0 to write benchmark_horizons.csv
+STABILITY_COMPETITOR_MODE runner_up for quick sweeps, all for exact stability
+CSV_PATH                  input/output benchmark_results.csv path
+OUT_DIR                   output directory for CSVs and plots
+INFLUENCE_MODE            dense, row-local, or column-local
+SEED                      random seed
+PYTHON_BIN                Python executable override
+```
+
+Examples:
+
+```bash
+./scripts/data.sh
+./scripts/plot.sh
+
+KS=4,6 NS=2 LENGTHS=2,3 TS=4 TARGET_BIASES=0.3 ./scripts/data.sh
+
+BUDGET_MAX=15 MAKE_DAMAGE_CURVES=1 ./scripts/data.sh
+
+CSV_PATH=toy_results/small_benchmark/benchmark_results.csv \
+OUT_DIR=toy_results/small_benchmark \
+./scripts/plot.sh
+```
+
+Presets:
+
+```text
+smoke   one tiny instance for checks and quick debugging
+small   default plot-development sweep, currently 36 generated instances
+medium  broader development sweep
+large   expensive research sweep
+```
+
+Current defaults are intentionally small for quick plotting and debugging.
+Larger runs can be enabled through `PRESET=medium`, `PRESET=large`, or direct
+environment/CLI grid overrides.
+
 Metric families:
 
 ```text
@@ -405,6 +483,50 @@ Radius-derived coverage solves rows independently and is cheap enough for
 baselines and quick plotting. Direct damage-at-budget MILPs are more faithful to
 the shared-allocation threat model because the solver chooses one poisoned-shard
 set and maximizes damage under that budget.
+
+### `benchmark_results.csv`
+
+Wide format: one row per generated instance and parameter setting. Main columns
+include `K`, `N`, `L`, `T`, `delta_stab`, `delta_val`, `target_bias`, `seed`,
+`influence_mode`, `stability_competitor_mode`, `runtime_gurobi_total`,
+radius-style proposed-method metrics such as `row_col_val_q1`,
+`row_col_val_qN`, `row_col_stab_q1_r1`, `row_col_stab_q1_rL`,
+`row_col_stab_qN_r1`, `row_col_stab_qN_rL`, and baseline/diagnostic radii such
+as `dpa_*`, `tpa_*`, `phrase_dpa_*`, and `independent_*`.
+
+### `benchmark_budget_curves.csv`
+
+Long format: one row per method/objective/budget/instance. Main columns include
+the benchmark metadata, `budget`, `method`, `objective`, `curve_type`,
+`certified_fraction`, `attacked_fraction`, `mean_radius`, `median_radius`,
+`min_radius`, `max_radius`, `num_certified`, and `num_total`. These are
+radius-derived summaries using the rule `B < B*_row`.
+
+### `benchmark_damage_curves.csv`
+
+Long format: one row per direct shared-MILP damage objective, budget, and
+instance. Main columns include benchmark metadata, `budget`, `method`,
+`objective`, `curve_type`, `max_attacked_rows`, `max_attacked_cells`,
+`attacked_fraction`, `certified_fraction`, `objective_value`, `runtime_sec`,
+and solver metadata.
+
+For direct damage maximization, `lower_bound` is the best feasible damage found
+and `upper_bound` is Gurobi's objective bound. If `is_optimal=True`, the damage
+value is exact. If status is `TIME_LIMIT` or `SUBOPTIMAL`, the returned damage
+is feasible but not necessarily maximal.
+
+### `benchmark_horizons.csv`
+
+Long format: one row per horizon method, budget, and instance. Main columns
+include benchmark metadata, `budget`, `method`, `mean_horizon`,
+`median_horizon`, `min_horizon`, `max_horizon`, `max_possible_horizon`, and
+`certified_fraction_full_horizon`. Horizon metrics measure how many initial
+token positions remain certified on average at fixed budget `B`.
+
+Solver metadata fields include `is_optimal`, `status_name`, `mip_gap`,
+`lower_bound`, and `upper_bound` where relevant. If `is_optimal=True`, the value
+is an exact optimum. If status is `TIME_LIMIT` or `SUBOPTIMAL`, the returned
+value is a feasible bound, not necessarily the exact optimum.
 
 ## Stability Mode Comparison
 

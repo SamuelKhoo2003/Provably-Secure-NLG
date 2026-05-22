@@ -34,6 +34,15 @@ Quick smoke test:
 ./scripts/check.sh
 ```
 
+Preferred workflow:
+
+```bash
+./scripts/check.sh
+./scripts/data.sh
+./scripts/plot.sh
+./scripts/benchmark.sh
+```
+
 Run benchmark data generation only:
 
 ```bash
@@ -85,7 +94,8 @@ Run data generation followed by plotting:
 ```
 
 This uses the small preset by default. Larger sweeps remain available through
-`PRESET=medium`, `PRESET=large`, or direct CLI arguments.
+`PRESET=medium`, `PRESET=large`, or direct CLI arguments. Current defaults are
+intentionally small for quick plotting and debugging.
 
 Generate one visualization instance:
 
@@ -95,19 +105,25 @@ Generate one visualization instance:
 
 ## Experiment Taxonomy
 
-The core quantity is:
+The toy setting has `K` shard models/DPA partitions, `N` prompt rows, `L` token
+positions, and toy vocabulary size `T`. Each shard casts one token vote for each
+prompt-token cell. The core radius-style quantity is:
 
 ```text
 B* = minimum number of poisoned shards needed to make an attack objective feasible
 ```
 
 The benchmark records four metric families. Radius-style metrics keep the
-existing `B*` columns in `benchmark_results.csv`. Radius-derived coverage fixes
-a budget `B` and counts a prompt as certified exactly when `B < B*_row`. Direct
-damage-at-budget MILPs also fix `B`, but solve a new maximization problem that
-directly maximizes attacked prompt rows under one shared poisoned-shard
-allocation. Horizon metrics fix `B` and measure how many initial token positions
-remain certified on average.
+existing `B*` columns in the wide-format `benchmark_results.csv`, such as
+`row_col_val_q1`, `row_col_val_qN`, `row_col_stab_q1_r1`, and
+`row_col_stab_qN_rL`. Radius-derived coverage fixes a budget `B` and counts a
+prompt as certified exactly when `B < B*_row`, producing long-format
+`benchmark_budget_curves.csv`. Direct damage-at-budget MILPs fix `B` and solve
+a new maximization problem that directly maximizes attacked prompt rows/cells
+under one shared poisoned-shard allocation, producing long-format
+`benchmark_damage_curves.csv`. Horizon metrics fix `B` and measure how many
+initial token positions remain certified on average, producing long-format
+`benchmark_horizons.csv`.
 
 The radius-derived curves are cheap summaries of per-row certificates. The
 direct damage-at-budget curves are more faithful to the shared-allocation threat
@@ -120,9 +136,9 @@ this shared allocation is the row/column coupling studied here.
 
 Stability measures the budget needed to change outputs away from the clean
 generation. A cell is destabilised if any competitor token can tie or beat the
-clean winner after poisoning. The shared MILP checks all competitors, not just
-the original runner-up. Runner-up margins remain useful for simple DPA-style
-baselines.
+clean winner after poisoning. In exact mode, the shared MILP checks all
+competitors, not just the original runner-up. Runner-up margins remain useful
+for simple DPA-style baselines.
 
 Stability has two competitor modes. `all` is exact and checks every competitor
 token, matching the stated threat model. `runner_up` checks only the original
@@ -136,34 +152,39 @@ distribution.
 Validity measures the budget needed to force harmful target tokens or full
 harmful sequences. A validity cell succeeds only if the harmful target token ties
 or beats every competitor token, which is stricter than only beating the current
-clean winner.
+clean winner. Ties are treated as favourable to the adversary, so a row is
+certified at budget `B` exactly when `B < B*`.
 
 There are two main external baselines.
-The first is the token-level DPA margin baseline: each prompt-token cell is
-certified independently using the standard clean-winner versus runner-up margin
-for stability, and a simple targeted margin against the strongest non-target
-competitor for validity. This is a weakest harmful-token reference, not a full-
-sequence certificate.
-The second is the Ghitu-style phrase-level TPA baseline: token certificates are
-composed across each generated response. Phrase stability is controlled by the
-weakest token, while phrase validity is controlled by the hardest target token,
-implemented as the maximum over token-level TPA validity radii.
+
+1. Token-level DPA margin baseline: a cell-wise baseline. Stability uses the
+   standard DPA top-vs-runner-up margin at each prompt-token cell and asks how
+   robust one token prediction is to arbitrary change. Validity uses a simple
+   targeted margin between the harmful target token and the strongest non-target
+   competitor. This is a weakest harmful-token reference, not a full-sequence
+   validity certificate.
+2. Ghitu-style phrase-level TPA baseline: the row-wise certified NLG baseline.
+   Phrase stability is the minimum over token-level stability radii, because a
+   response changes if any one token changes. Phrase validity is the maximum
+   over targeted token validity radii, because forcing a harmful sequence
+   requires every target token and the hardest target token controls the
+   certificate. This is the main paper-inspired validity baseline.
+
 Atomic phrase aggregation and independent composition are retained only as
 diagnostic references. The proposed shared row-column MILP is evaluated against
-these two baselines and should not be conflated with them.
+the two external baselines and should not be conflated with the diagnostics.
 
-For report-facing objectives, use readable names rather than q/r shorthand:
-`q` is affected prompt rows and `r` is affected token positions per selected
-row. Stability objectives use `solve_structured_stability`: one prompt/one token
-is `q_rows=1, r_cols=1`; one prompt/full sequence is `q_rows=1, r_cols=L`; all
-prompts/one token each is `q_rows=N, r_cols=1`; all prompts/full matrix is
-`q_rows=N, r_cols=L`. Validity objectives use `solve_row_col_validity`: one
-harmful sequence is `q_rows=1`; harmful sequences for all prompts is `q_rows=N`.
+For report-facing objectives, use readable names rather than raw q/r shorthand.
+`q_rows` is the number of affected prompt rows and `r_cols` is the number of
+affected token positions per selected row. Stability objectives are: one prompt,
+one token; one prompt, full sequence; all prompts, one token each; and all
+prompts, full matrix. Validity objectives are: force one full harmful sequence,
+or force harmful sequences for all prompts.
 
 The row-only, column-only, and joint row-column MILPs are proposed-method
 variants and ablations. They are not external baselines.
 
-## Baselines
+## Baselines And Diagnostics
 
 The DPA weakest harmful token baseline computes token-level margins
 independently and represents each prompt by its easiest harmful token,
@@ -195,6 +216,24 @@ returns `TIME_LIMIT` or `SUBOPTIMAL` with a feasible solution, `B_star` is the
 best feasible upper bound found, not an exact certificate. The `attacked_cells`
 field is diagnostic; because `z` variables are not secondarily minimized, it may
 include extra feasible cells. The certified quantity is `B_star`.
+
+## CSV Outputs
+
+- `benchmark_results.csv`: wide-format radius-style `B*` metrics, benchmark
+  parameters, baseline radii, proposed-method radii, and runtime totals.
+- `benchmark_budget_curves.csv`: long-format radius-derived certified and
+  attacked fractions by fixed budget, method, and objective.
+- `benchmark_damage_curves.csv`: long-format direct shared-MILP
+  damage-at-budget results, including `max_attacked_rows`,
+  `max_attacked_cells`, `certified_fraction`, and solver metadata.
+- `benchmark_horizons.csv`: long-format stability/validity prefix horizon
+  summaries by budget, including mean/median/min/max horizon and full-horizon
+  certified fraction.
+
+Solver metadata includes `is_optimal`, `status_name`, `mip_gap`,
+`lower_bound`, and `upper_bound` where relevant. If `is_optimal=True`, the value
+is an exact optimum. If status is `TIME_LIMIT` or `SUBOPTIMAL`, the returned
+value is a feasible bound, not necessarily the exact optimum.
 
 ## Plot Taxonomy
 
@@ -229,6 +268,13 @@ validity_horizon_by_budget.svg
 Independent-composition diagnostics are separated because they can dominate the
 y-axis and make the shared MILP curves unreadable.
 
+Diagnostic plots may also include stability mode comparisons and atomic phrase
+aggregation comparisons. Plot labels should prefer human-readable names such as
+`DPA weakest token`, `DPA weakest harmful token`, `TPA max-token sequence`,
+`Atomic phrase aggregation`, `Shared MILP full sequence`, `Shared MILP all
+harmful sequences`, `Shared MILP one prompt, one token`, and `Shared MILP full
+matrix`.
+
 Run tests directly:
 
 ```bash
@@ -254,13 +300,14 @@ Run tests directly:
 
 ## Repository Layout
 
-- `toy_certificate/`: toy data generator, MILP solvers, experiment CLI, plotting helpers.
+- `toy_certificate/data.py`: toy vote generation, harmful target generation, token counts, and influence masks.
+- `toy_certificate/milp.py`: radius-style shared MILPs and direct damage-at-budget MILPs.
+- `toy_certificate/experiments.py`: CLI, benchmark runner, baseline computation, CSV writing, and plotting.
+- `tests/`: unit tests for baselines, MILPs, plotting labels, coverage, horizon metrics, and scripts.
+- `scripts/`: shell entry points for check/data/plot/benchmark workflows.
 - `phd_reference/`: external read-only reference package.
-- `scripts/check.sh`: compile, test, and small visualization smoke test.
-- `scripts/data.sh`: small benchmark data generation, writing `benchmark_results.csv`.
 - `scripts/plot.sh`: plot refresh from an existing CSV without rerunning Gurobi.
 - `scripts/benchmark.sh`: small benchmark data-generation plus plotting workflow.
 - `scripts/visualize.sh`: one tiny visualization instance.
-- `tests/`: lightweight test bench.
-- `historical_csvs/`: saved benchmark CSVs.
+- `past_runs/`: saved historical benchmark outputs.
 - `toy_results/`: generated outputs, ignored by git.

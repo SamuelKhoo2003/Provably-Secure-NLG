@@ -1962,7 +1962,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--prompts", type=_parse_int_list, default=None)
     parser.add_argument("--Ts", type=_parse_int_list, default=None)
     parser.add_argument("--save-dir", default=None)
-    parser.add_argument("--csv", default="toy_results/benchmark_large/benchmark_results.csv")
+    parser.add_argument("--csv", default="toy_results/small_benchmark/benchmark_results.csv")
     parser.add_argument("--show-grid", action="store_true")
     parser.add_argument("--make-plots", action="store_true", help="Also render benchmark plots after running Gurobi.")
     parser.add_argument("--budget-max", type=int, default=15, help="Maximum poisoned-shard budget for fixed-budget curve CSVs.")
