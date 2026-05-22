@@ -458,7 +458,7 @@ class ExperimentCliTests(unittest.TestCase):
             mapping = (base / "audit_method_mapping.txt").read_text()
             self.assertIn("Joint row-column MILP", mapping)
             self.assertIn("DPA weakest-token baseline", mapping)
-            self.assertIn("PHD sequence baseline", mapping)
+            self.assertIn("TPA sequence baseline", mapping)
             self.assertIn("tpa_val_sequence_qN", mapping)
             self.assertIn("Raw curve methods detected: none", stdout.getvalue())
             self.assertFalse((base / "monotonicity_violations.csv").exists())
@@ -498,18 +498,19 @@ class ExperimentCliTests(unittest.TestCase):
             self.assertIn("source=benchmark_damage_curves.csv", stdout.getvalue())
             self.assertTrue(any(item["check"] == "identical_series" for item in diagnostics))
 
-    def test_check_script_does_not_run_benchmark_or_plot_csv(self):
+    def test_check_script_is_smoke_only_by_default(self):
         script = Path("scripts/check.sh").read_text()
 
         self.assertIn("compileall toy_certificate tests", script)
         self.assertIn("unittest discover", script)
+        self.assertIn('RUN_TESTS:-0', script)
         self.assertIn("toy_certificate.experiments visualize", script)
         self.assertNotIn("toy_certificate.experiments benchmark", script)
         self.assertNotIn("toy_certificate.experiments plot-csv", script)
-        self.assertIn("toy_results/smoke/instance", script)
-        self.assertIn("runner_up", script)
-        self.assertIn('--N "${VIS_N:-8}"', script)
-        self.assertIn('--L "${VIS_L:-8}"', script)
+        self.assertIn("outputs/smoke", script)
+        self.assertIn("config_value stability_competitor_mode all", script)
+        self.assertIn('--N "${VIS_N:-$(config_first_value N 2)}"', script)
+        self.assertIn('--L "${VIS_L:-$(config_first_value L 2)}"', script)
 
     def test_short_scripts_have_expected_roles(self):
         data_script = Path("scripts/data.sh").read_text()
@@ -520,7 +521,7 @@ class ExperimentCliTests(unittest.TestCase):
         self.assertIn("toy_certificate.experiments plot-csv", plot_script)
         self.assertIn("scripts/data.sh", benchmark_script)
         self.assertIn("scripts/plot.sh", benchmark_script)
-        self.assertIn("toy_results/small_benchmark", data_script)
+        self.assertIn("outputs/results", data_script)
         self.assertIn("--preset", data_script)
         self.assertIn("--delta-stabs", data_script)
         self.assertIn("--delta-vals", data_script)
@@ -529,9 +530,10 @@ class ExperimentCliTests(unittest.TestCase):
         self.assertIn("MAKE_BUDGET_CURVES", data_script)
         self.assertIn("MAKE_DAMAGE_CURVES", data_script)
         self.assertIn("MAKE_HORIZON_CURVES", data_script)
-        self.assertIn("TOY_RESULTS_DIR", plot_script)
-        self.assertIn("find \"$TOY_RESULTS_DIR\"", plot_script)
-        self.assertIn("toy_results/small_benchmark", benchmark_script)
+        self.assertIn("INPUT_DIR", plot_script)
+        self.assertNotIn("toy_certificate.experiments benchmark", plot_script)
+        self.assertIn("outputs/results", benchmark_script)
+        self.assertIn("outputs/plots", benchmark_script)
 
 
 class GurobiBackedTests(unittest.TestCase):

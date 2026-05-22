@@ -1,0 +1,13 @@
+preset: medium
+K_values: [4,6,8,10]
+N_values: [2,3,4]
+L_values: [2,3,4,5]
+T_values: [4,6,8]
+delta_stab_values: [0.0,0.2]
+delta_val_values: [0.0,0.2]
+target_bias_values: [0.1,0.3]
+seed: 0
+budget_max: 15
+influence_mode: dense
+stability_competitor_mode: all
+output_dir: outputs/results

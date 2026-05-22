@@ -5,46 +5,53 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 . "${ROOT_DIR}/scripts/_python.sh"
+. "${ROOT_DIR}/scripts/_config.sh"
 PYTHON_BIN="$(resolve_python_bin)"
-OUT_DIR="${OUT_DIR:-toy_results/small_benchmark}"
+CONFIG="${CONFIG:-configs/small.yaml}"
+OUT_DIR="${OUT_DIR:-$(config_value output_dir outputs/results)}"
 CSV_PATH="${CSV_PATH:-$OUT_DIR/benchmark_results.csv}"
-PRESET="${PRESET:-small}"
-STABILITY_COMPETITOR_MODE="${STABILITY_COMPETITOR_MODE:-runner_up}"
-BUDGET_MAX="${BUDGET_MAX:-15}"
+PRESET="${PRESET:-$(config_value preset small)}"
+STABILITY_COMPETITOR_MODE="${STABILITY_COMPETITOR_MODE:-$(config_value stability_competitor_mode all)}"
+BUDGET_MAX="${BUDGET_MAX:-$(config_value budget_max 15)}"
 MAKE_BUDGET_CURVES="${MAKE_BUDGET_CURVES:-1}"
 MAKE_DAMAGE_CURVES="${MAKE_DAMAGE_CURVES:-1}"
 MAKE_HORIZON_CURVES="${MAKE_HORIZON_CURVES:-1}"
 
 echo "Writing benchmark data to: $OUT_DIR"
+echo "Config: $CONFIG"
+echo "Stability competitor mode: $STABILITY_COMPETITOR_MODE"
+mkdir -p "$OUT_DIR" outputs/logs
 
-args=(--preset "$PRESET" --influence-mode "${INFLUENCE_MODE:-dense}" --stability-competitor-mode "$STABILITY_COMPETITOR_MODE" --seed "${SEED:-0}" --save-dir "$OUT_DIR" --budget-max "$BUDGET_MAX")
+args=(--preset "$PRESET" --influence-mode "${INFLUENCE_MODE:-$(config_value influence_mode dense)}" --stability-competitor-mode "$STABILITY_COMPETITOR_MODE" --seed "${SEED:-$(config_value seed 0)}" --save-dir "$OUT_DIR" --budget-max "$BUDGET_MAX")
 
-if [[ -n "${KS:-}" ]]; then
+KS="${KS:-$(config_value K_values "")}"
+NS="${NS:-$(config_value N_values "")}"
+LENGTHS="${LENGTHS:-$(config_value L_values "")}"
+TS="${TS:-$(config_value T_values "")}"
+DELTA_STABS="${DELTA_STABS:-${DELTAS:-$(config_value delta_stab_values "")}}"
+DELTA_VALS="${DELTA_VALS:-${DELTAS:-$(config_value delta_val_values "")}}"
+TARGET_BIASES="${TARGET_BIASES:-${TARGET_BIAS:-$(config_value target_bias_values "")}}"
+
+if [[ -n "$KS" ]]; then
   args+=(--Ks "$KS")
 fi
-if [[ -n "${NS:-}" ]]; then
+if [[ -n "$NS" ]]; then
   args+=(--Ns "$NS")
 fi
-if [[ -n "${LENGTHS:-}" ]]; then
+if [[ -n "$LENGTHS" ]]; then
   args+=(--lengths "$LENGTHS")
 fi
-if [[ -n "${TS:-}" ]]; then
+if [[ -n "$TS" ]]; then
   args+=(--Ts "$TS")
 fi
-if [[ -n "${DELTA_STABS:-}" ]]; then
+if [[ -n "$DELTA_STABS" ]]; then
   args+=(--delta-stabs "$DELTA_STABS")
-elif [[ -n "${DELTAS:-}" ]]; then
-  args+=(--delta-stabs "$DELTAS")
 fi
-if [[ -n "${DELTA_VALS:-}" ]]; then
+if [[ -n "$DELTA_VALS" ]]; then
   args+=(--delta-vals "$DELTA_VALS")
-elif [[ -n "${DELTAS:-}" ]]; then
-  args+=(--delta-vals "$DELTAS")
 fi
-if [[ -n "${TARGET_BIASES:-}" ]]; then
+if [[ -n "$TARGET_BIASES" ]]; then
   args+=(--target-biases "$TARGET_BIASES")
-elif [[ -n "${TARGET_BIAS:-}" ]]; then
-  args+=(--target-biases "$TARGET_BIAS")
 fi
 if [[ "$MAKE_BUDGET_CURVES" == "0" ]]; then
   args+=(--no-make-budget-curves)

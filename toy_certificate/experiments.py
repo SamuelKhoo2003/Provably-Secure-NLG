@@ -3,7 +3,7 @@
 This module is the orchestration layer for the first-party toy certificate
 implementation. It builds synthetic :class:`toy_certificate.data.ToyData`
 instances, calls the shared MILP solvers, writes benchmark CSVs, computes
-DPA/TPA/atomic-phrase/independent-composition baselines, and renders report-facing SVG
+DPA/TPA/atomic-phrase/independent-composition baselines, and renders PNG/SVG
 plots. The external ``phd_reference/`` tree is not imported or modified here.
 """
 
@@ -661,13 +661,13 @@ def save_instance_plots(
 CANONICAL_METHODS = (
     "Joint row-column MILP",
     "DPA weakest-token baseline",
-    "PHD sequence baseline",
+    "TPA sequence baseline",
 )
 
 CANONICAL_COLORS = {
     "Joint row-column MILP": "#1f77b4",
     "DPA weakest-token baseline": "#d62728",
-    "PHD sequence baseline": "#2ca02c",
+    "TPA sequence baseline": "#2ca02c",
     "Row-only MILP ablation": "#9467bd",
     "Column-only MILP ablation": "#ff7f0e",
 }
@@ -680,7 +680,7 @@ MAIN_STABILITY_METRICS = {
 MAIN_VALIDITY_METRICS = {
     "Joint row-column MILP": "row_col_val_qN",
     "DPA weakest-token baseline": "dpa_val_row_weak_qN",
-    "PHD sequence baseline": "tpa_val_sequence_qN",
+    "TPA sequence baseline": "tpa_val_sequence_qN",
 }
 
 ABLATION_STABILITY_METRICS = {
@@ -757,7 +757,6 @@ def save_budget_curve_plots(output_dir: Path, source_dir: Path | None = None) ->
         [
             ("Joint row-column MILP", "Shared MILP", "stability_full_sequence_per_prompt", "radius_derived"),
             ("DPA weakest-token baseline", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
-            ("PHD sequence baseline", "PHD sequence baseline", "stability_full_sequence_per_prompt", "radius_derived"),
         ],
     )
     _save_certified_fraction_budget_plot(
@@ -767,7 +766,7 @@ def save_budget_curve_plots(output_dir: Path, source_dir: Path | None = None) ->
         [
             ("Joint row-column MILP", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
             ("DPA weakest-token baseline", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
-            ("PHD sequence baseline", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("TPA sequence baseline", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
         ],
     )
     _save_damage_curve_plot(
@@ -808,10 +807,10 @@ def build_method_mapping_report(rows: list[dict[str, object]], budget_rows: list
             "budget curves: method='DPA weakest harmful token' for validity",
             "summary CSV: dpa_stab_row_radius_qN and dpa_val_row_weak_qN",
         ],
-        "PHD sequence baseline": [
+        "TPA sequence baseline": [
             "budget curves: method='TPA max-token sequence' with objective='validity_full_harmful_sequence_per_prompt'",
             "summary CSV: tpa_val_sequence_qN",
-            "no stability PHD sequence curve is plotted unless exported under the canonical PHD stability mapping",
+            "validity-only sequence baseline; no TPA stability curve is plotted by default",
         ],
         "excluded_methods": [
             method
@@ -822,7 +821,7 @@ def build_method_mapping_report(rows: list[dict[str, object]], budget_rows: list
                 "DPA token margin",
                 "DPA weakest harmful token",
                 "TPA max-token sequence",
-                "PHD sequence baseline",
+                "TPA sequence baseline",
             }
         ],
         "ablation_methods": [
@@ -845,8 +844,8 @@ def write_method_mapping_report(output_dir: Path, rows: list[dict[str, object]],
         "Mapped to DPA weakest-token baseline:",
         *[f"- {item}" for item in report["DPA weakest-token baseline"]],
         "",
-        "Mapped to PHD sequence baseline:",
-        *[f"- {item}" for item in report["PHD sequence baseline"]],
+        "Mapped to TPA sequence baseline:",
+        *[f"- {item}" for item in report["TPA sequence baseline"]],
         "",
         "Excluded methods:",
         *[f"- {item}" for item in (report["excluded_methods"] or ["none detected"])],
@@ -869,10 +868,10 @@ def audit_milp_vs_phd_equivalence(output_dir: Path, source_dir: Path | None = No
     diagnostics = _audit_joint_vs_phd_budget_curves(budget_rows)
     summary_notes = _audit_joint_vs_phd_summary_columns(result_rows)
     implementation_notes = [
-        "PHD sequence baseline columns are produced by aggregate_tpa_sequence_baselines(targeted_validity_token_budgets(data)) in toy_certificate/baselines.py.",
+        "TPA sequence baseline columns are produced by aggregate_tpa_sequence_baselines(targeted_validity_token_budgets(data)) in toy_certificate/baselines.py.",
         "Joint row-column MILP validity columns are produced by solve_row_col_validity(...) in toy_certificate/milp.py through _solve_benchmark_certificates(...).",
-        "The PHD sequence baseline does not call solve_row_col_validity or the shared MILP solver in the inspected implementation.",
-        "TPA max-token sequence is mapped to PHD sequence baseline for validity; Atomic phrase aggregation and Independent composition are excluded from headline plots.",
+        "The TPA sequence baseline does not call solve_row_col_validity or the shared MILP solver in the inspected implementation.",
+        "TPA max-token sequence is the current report-facing TPA sequence validity baseline; Atomic phrase aggregation and Independent composition are excluded from headline plots.",
     ]
     audit_path = output_dir / "audit_milp_vs_phd_equivalence.csv"
     _write_rows_csv(audit_path, diagnostics)
@@ -880,7 +879,7 @@ def audit_milp_vs_phd_equivalence(output_dir: Path, source_dir: Path | None = No
     identical = sum(1 for row in diagnostics if row.get("exactly_identical") is True)
     different = sum(1 for row in diagnostics if row.get("differs_at_any_budget") is True)
     print()
-    print("Joint row-column MILP vs PHD sequence baseline audit")
+    print("Joint row-column MILP vs TPA sequence baseline audit")
     print(f"Budget-curve parameter settings identical: {identical}")
     print(f"Budget-curve parameter settings different: {different}")
     for row in [item for item in diagnostics if item.get("differs_at_any_budget") is True][:3]:
@@ -924,7 +923,7 @@ def _audit_joint_vs_phd_budget_curves(rows: list[dict[str, object]]) -> list[dic
                 "joint_method": "Shared MILP",
                 "phd_method": "TPA max-token sequence",
                 "joint_label": "Joint row-column MILP",
-                "phd_label": "PHD sequence baseline",
+                "phd_label": "TPA sequence baseline",
                 "num_shared_budgets": len(shared_budgets),
                 "exactly_identical": len(shared_budgets) > 0 and not diffs and len(joint) == len(phd) == len(shared_budgets),
                 "differs_at_any_budget": bool(diffs),
@@ -979,7 +978,7 @@ def _audit_joint_vs_phd_summary_columns(rows: list[dict[str, object]]) -> list[s
             notes.append(f"Summary columns {joint_col} and {phd_col}: {different}/{len(comparable)} rows differ.")
         else:
             notes.append(f"Summary columns {joint_col} and {phd_col}: exactly identical on {len(comparable)} comparable rows.")
-    notes.append("No exported PHD sequence stability summary column was detected in benchmark_results.csv.")
+    notes.append("No exported TPA sequence stability summary column was detected in benchmark_results.csv.")
     return notes
 
 
@@ -2112,8 +2111,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--prompts", type=_parse_int_list, default=None)
     parser.add_argument("--Ts", type=_parse_int_list, default=None)
     parser.add_argument("--save-dir", default=None)
-    parser.add_argument("--csv", default="toy_results/small_benchmark/benchmark_results.csv")
-    parser.add_argument("--csv-dir", default="toy_results/small_benchmark")
+    parser.add_argument("--csv", default="outputs/results/benchmark_results.csv")
+    parser.add_argument("--csv-dir", default="outputs/results")
     parser.add_argument("--show-grid", action="store_true")
     parser.add_argument("--make-plots", action="store_true", help="Also render benchmark plots after running Gurobi.")
     parser.add_argument("--budget-max", type=int, default=15, help="Maximum poisoned-shard budget for fixed-budget curve CSVs.")
@@ -2159,7 +2158,7 @@ def main() -> None:
             influence_mode=args.influence_mode,
             stability_competitor_mode=args.stability_competitor_mode,
             show_grid=args.show_grid,
-            save_dir=(args.save_dir or "toy_results") if args.show_grid else None,
+            save_dir=(args.save_dir or "outputs/smoke") if args.show_grid else None,
         )
     elif args.command == "visualize":
         visualize_instance(
@@ -2172,7 +2171,7 @@ def main() -> None:
             target_bias=target_bias,
             seed=args.seed,
             influence_mode=args.influence_mode,
-            save_dir=args.save_dir or "toy_results",
+            save_dir=args.save_dir or "outputs/smoke",
             stability_competitor_mode=args.stability_competitor_mode,
         )
     elif args.command == "benchmark":
@@ -2188,7 +2187,7 @@ def main() -> None:
             influence_mode=args.influence_mode,
             stability_competitor_mode=args.stability_competitor_mode,
             seed=args.seed,
-            save_dir=args.save_dir or "toy_results/small_benchmark",
+            save_dir=args.save_dir or "outputs/results",
             make_plots=args.make_plots,
             budget_max=args.budget_max,
             make_budget_curves=args.make_budget_curves,
@@ -2239,7 +2238,7 @@ def main() -> None:
             target_bias=args.target_bias if args.target_bias is not None else 0.2,
             influence_mode=args.influence_mode,
             seed=args.seed,
-            save_dir=args.save_dir or "toy_results/stability_mode_comparison",
+            save_dir=args.save_dir or "outputs/results/stability_mode_comparison",
         )
     else:
         raise ValueError(f"Unknown command: {args.command}")
