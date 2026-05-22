@@ -577,10 +577,14 @@ def _validate_stability_shapes(
     if clean_counts.shape[:2] != (N, L):
         raise ValueError(f"clean_counts must have leading shape {(N, L)}, got {clean_counts.shape[:2]}")
     T = clean_counts.shape[-1]
+    _validate_counts(clean_counts, "clean_counts")
+    _validate_token_ids(votes, T, "votes")
     if clean_pred.shape != (N, L):
         raise ValueError(f"clean_pred must have shape {(N, L)}, got {clean_pred.shape}")
+    _validate_token_ids(clean_pred, T, "clean_pred")
     if runner_up.shape != (N, L):
         raise ValueError(f"runner_up must have shape {(N, L)}, got {runner_up.shape}")
+    _validate_token_ids(runner_up, T, "runner_up")
     if influence is not None and influence.shape != (K, N, L):
         raise ValueError(f"influence must have shape {(K, N, L)}, got {influence.shape}")
     return K, N, L, T
@@ -602,11 +606,24 @@ def _validate_validity_shapes(
         raise ValueError(f"counts must have leading shape {(N, L)}, got {counts.shape[:2]}")
     if T != counts.shape[-1]:
         raise ValueError(f"T must equal counts.shape[-1] ({counts.shape[-1]}), got {T}")
+    _validate_counts(counts, "counts")
+    _validate_token_ids(votes, T, "votes")
     if target.shape != (N, L):
         raise ValueError(f"target must have shape {(N, L)}, got {target.shape}")
+    _validate_token_ids(target, T, "target")
     if influence is not None and influence.shape != (K, N, L):
         raise ValueError(f"influence must have shape {(K, N, L)}, got {influence.shape}")
     return K, N, L, T
+
+
+def _validate_counts(counts: np.ndarray, name: str) -> None:
+    if np.any(counts < 0):
+        raise ValueError(f"{name} must be non-negative")
+
+
+def _validate_token_ids(tokens: np.ndarray, T: int, name: str) -> None:
+    if np.any(tokens < 0) or np.any(tokens >= T):
+        raise ValueError(f"{name} must contain token ids in [0, {T})")
 
 
 def _resolve_validity_args(
@@ -729,7 +746,7 @@ def _optimize_damage_and_extract(
             budget=budget,
             selected_poisoned_shards=[],
             attacked_cells=[],
-            attacked_rows=None if y_row is None else [],
+            attacked_rows=None,
             status=model.status,
             status_name=status_name,
             objective_value=None,

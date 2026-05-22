@@ -10,14 +10,31 @@ plots. The external ``phd_reference/`` tree is not imported or modified here.
 from __future__ import annotations
 
 import argparse
-import csv
 from collections.abc import Iterable
-from itertools import combinations
 from pathlib import Path
 from time import perf_counter
 
 import numpy as np
 
+from .baselines import (
+    aggregate_tpa_sequence_baselines,
+    atomic_phrase_validity_row_budgets as _atomic_phrase_validity_row_budgets,
+    cell_stability_budgets as _cell_stability_budgets,
+    cell_validity_budgets as _cell_validity_budgets,
+    compute_reference_baselines,
+    min_budget_from_contributions as _min_budget_from_contributions,
+    min_budget_satisfying_all as _min_budget_satisfying_all,
+    phd_margin_stability_budgets as _phd_margin_stability_budgets,
+    targeted_partition_radius,
+    targeted_validity_token_budgets as _targeted_validity_token_budgets,
+)
+from .csv_io import (
+    copy_legacy_csv_columns as _copy_legacy_csv_columns,
+    looks_numeric as _looks_numeric,
+    read_optional_csv as _read_optional_csv,
+    read_rows_csv as _read_rows_csv,
+    write_rows_csv as _write_rows_csv,
+)
 from .data import ToyData, generate_toy_votes, stability_margins
 from .milp import (
     CertificateResult,
@@ -247,7 +264,7 @@ def benchmark_scale(
                                 }
                                 for result in results:
                                     metric_name = _csv_metric_name(result.name, N, L)
-                                    row[metric_name] = result.B_star
+                                    _add_certificate_columns(row, metric_name, result)
                                 _fill_degenerate_corner_columns(row)
                                 row.update(compute_reference_baselines(data))
                                 rows.append(row)
@@ -332,19 +349,36 @@ def _csv_metric_name(result_name: str, N: int, L: int) -> str:
     return result_name
 
 
+def _add_certificate_columns(row: dict[str, object], metric_name: str, result: CertificateResult) -> None:
+    row[metric_name] = "" if result.B_star is None else result.B_star
+    row[f"{metric_name}_status"] = result.status_name
+    row[f"{metric_name}_is_optimal"] = result.is_optimal
+    row[f"{metric_name}_lower_bound"] = "" if result.lower_bound is None else result.lower_bound
+    row[f"{metric_name}_upper_bound"] = "" if result.upper_bound is None else result.upper_bound
+    row[f"{metric_name}_mip_gap"] = "" if result.mip_gap is None else result.mip_gap
+
+
 def _fill_degenerate_corner_columns(row: dict[str, object]) -> None:
     if int(row["L"]) == 1:
         if "row_col_stab_q1_r1" in row:
-            row.setdefault("row_col_stab_q1_rL", row["row_col_stab_q1_r1"])
+            _copy_metric_family(row, "row_col_stab_q1_r1", "row_col_stab_q1_rL")
         if "row_col_stab_qN_r1" in row:
-            row.setdefault("row_col_stab_qN_rL", row["row_col_stab_qN_r1"])
+            _copy_metric_family(row, "row_col_stab_qN_r1", "row_col_stab_qN_rL")
     if int(row["N"]) == 1:
         if "row_col_stab_q1_r1" in row:
-            row.setdefault("row_col_stab_qN_r1", row["row_col_stab_q1_r1"])
+            _copy_metric_family(row, "row_col_stab_q1_r1", "row_col_stab_qN_r1")
         if "row_col_stab_q1_rL" in row:
-            row.setdefault("row_col_stab_qN_rL", row["row_col_stab_q1_rL"])
+            _copy_metric_family(row, "row_col_stab_q1_rL", "row_col_stab_qN_rL")
         if "row_col_val_q1" in row:
-            row.setdefault("row_col_val_qN", row["row_col_val_q1"])
+            _copy_metric_family(row, "row_col_val_q1", "row_col_val_qN")
+
+
+def _copy_metric_family(row: dict[str, object], source: str, target: str) -> None:
+    row.setdefault(target, row[source])
+    for suffix in ["_status", "_is_optimal", "_lower_bound", "_upper_bound", "_mip_gap"]:
+        source_key = f"{source}{suffix}"
+        if source_key in row:
+            row.setdefault(f"{target}{suffix}", row[source_key])
 
 
 def plot_benchmark_csv(csv_path: str, save_dir: str | None = None) -> list[dict[str, object]]:
@@ -357,6 +391,75 @@ def plot_benchmark_csv(csv_path: str, save_dir: str | None = None) -> list[dict[
     save_budget_curve_plots(output_dir)
     print(f"Wrote benchmark plots under: {output_dir}")
     return rows
+
+
+AUDIT_CURVE_SELECTIONS: list[tuple[str, str, str, str]] = [
+    ("DPA weakest token, radius-derived", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
+    ("Shared one-token-per-prompt, direct MILP", "Shared MILP", "stability_one_token_per_prompt", "direct_damage_milp"),
+    ("Shared full-sequence-per-prompt, direct MILP", "Shared MILP", "stability_full_sequence_per_prompt", "direct_damage_milp"),
+    ("TPA max-token sequence, radius-derived", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+    ("Shared full sequence, radius-derived", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+    ("Shared full sequence, direct MILP", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "direct_damage_milp"),
+]
+
+
+def audit_curve_csvs(csv_dir: str) -> list[dict[str, object]]:
+    """Print diagnostics for budget, damage, and horizon sidecar CSVs."""
+    base = Path(csv_dir)
+    budget_rows = _read_optional_csv(base / "benchmark_budget_curves.csv")
+    damage_rows = _read_optional_csv(base / "benchmark_damage_curves.csv")
+    horizon_rows = _read_optional_csv(base / "benchmark_horizons.csv")
+    combined = budget_rows + damage_rows
+    diagnostics: list[dict[str, object]] = []
+
+    print(f"Curve audit: {base}")
+    print(f"Rows: budget={len(budget_rows)} damage={len(damage_rows)} horizon={len(horizon_rows)}")
+    print()
+    print("Plotted certified-fraction series")
+    series_by_label: dict[str, dict[float, float]] = {}
+    for label, method, objective, curve_type in AUDIT_CURVE_SELECTIONS:
+        rows = _select_curve_rows(combined, method, objective, curve_type)
+        source = "benchmark_damage_curves.csv" if curve_type == "direct_damage_milp" else "benchmark_budget_curves.csv"
+        exact_rows = rows
+        if curve_type == "direct_damage_milp":
+            exact_rows = [row for row in rows if row.get("certified_fraction_is_exact") is True or row.get("is_optimal") is True]
+        metric_series = _mean_series_by_axis(exact_rows, "budget", "certified_fraction")
+        point_count = 0 if metric_series is None else len(metric_series[0])
+        skipped = len(rows) - len(exact_rows)
+        print(f"- {label}: source={source}, rows={len(rows)}, plotted_points={point_count}, skipped_nonoptimal={skipped}")
+        if metric_series is not None:
+            xs, ys = metric_series
+            series_by_label[label] = {x: y for x, y in zip(xs, ys)}
+        diagnostics.append(
+            {
+                "check": "series_source",
+                "label": label,
+                "source": source,
+                "rows": len(rows),
+                "plotted_points": point_count,
+                "skipped_nonoptimal": skipped,
+            }
+        )
+
+    print()
+    print("Identical plotted series")
+    for left_label, left_series in series_by_label.items():
+        for right_label, right_series in series_by_label.items():
+            if left_label >= right_label:
+                continue
+            shared_budgets = sorted(set(left_series) & set(right_series))
+            if not shared_budgets:
+                continue
+            identical = all(np.isclose(left_series[budget], right_series[budget]) for budget in shared_budgets)
+            if identical and len(left_series) == len(right_series) == len(shared_budgets):
+                print(f"- identical: {left_label} == {right_label} over {len(shared_budgets)} budget point(s)")
+                diagnostics.append({"check": "identical_series", "left_label": left_label, "right_label": right_label, "points": len(shared_budgets)})
+
+    diagnostics.extend(_audit_direct_damage_rows(damage_rows))
+    diagnostics.extend(_audit_horizon_rows(horizon_rows))
+    if not diagnostics:
+        print("No diagnostics produced.")
+    return diagnostics
 
 
 def compare_stability_modes(
@@ -674,8 +777,8 @@ def save_budget_curve_plots(output_dir: Path) -> None:
         "Certified stability by poison budget",
         [
             ("DPA weakest token, radius-derived", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
-            ("Shared one token, direct MILP", "Shared MILP", "stability_one_token_per_prompt", "direct_damage_milp"),
-            ("Shared full sequence, direct MILP", "Shared MILP", "stability_full_sequence_per_prompt", "direct_damage_milp"),
+            ("Shared one-token-per-prompt, direct MILP", "Shared MILP", "stability_one_token_per_prompt", "direct_damage_milp"),
+            ("Shared full-sequence-per-prompt, direct MILP", "Shared MILP", "stability_full_sequence_per_prompt", "direct_damage_milp"),
         ],
     )
     _save_certified_fraction_budget_plot(
@@ -772,72 +875,40 @@ def _solve_benchmark_certificates(data: ToyData, T: int, stability_competitor_mo
     ]
 
 
-def compute_reference_baselines(data: ToyData) -> dict[str, int | float]:
-    """Compute baseline columns for the report-facing taxonomy.
-
-    Metric meanings are intentionally fixed across the repo:
-    - ``dpa_*``: independent token-level DPA-style margins.
-    - ``tpa_*``: targeted token validity radii composed with a max over tokens.
-    - ``phrase_dpa_*``: atomic full-sequence voting diagnostics kept for compatibility.
-    - ``independent_*``: token-cost sums that do not reuse a shared poisoned allocation.
-    """
-    stability_cell_budgets = _cell_stability_budgets(data)
-    validity_cell_budgets = _cell_validity_budgets(data)
-    targeted_validity_cell_budgets = _targeted_validity_token_budgets(data)
-    phrase_row_budgets = _atomic_phrase_validity_row_budgets(data)
-    row_stability_radii = stability_cell_budgets.min(axis=1)
-    row_validity_weak_radii = validity_cell_budgets.min(axis=1)
-    targeted_sequence_baselines = aggregate_tpa_sequence_baselines(targeted_validity_cell_budgets)
-    independent_stability_row_costs = stability_cell_budgets.sum(axis=1)
-    independent_validity_row_costs = validity_cell_budgets.sum(axis=1)
-    return {
-        "raw_dpa_stab_min_cell": int(np.min(_phd_margin_stability_budgets(data))),
-        "dpa_stab_cell_min": int(np.min(stability_cell_budgets)),
-        "dpa_stab_row_radius_q1": int(np.min(row_stability_radii)),
-        "dpa_stab_row_radius_qN": int(np.max(row_stability_radii)),
-        "dpa_val_cell_min": int(np.min(validity_cell_budgets)),
-        "dpa_val_row_weak_q1": int(np.min(row_validity_weak_radii)),
-        "dpa_val_row_weak_qN": int(np.max(row_validity_weak_radii)),
-        "raw_dpa_val_min_cell": int(np.min(validity_cell_budgets)),
-        "tpa_val_cell_min": int(np.min(targeted_validity_cell_budgets)),
-        **targeted_sequence_baselines,
-        "independent_stab_full_row_q1": int(np.min(independent_stability_row_costs)),
-        "independent_stab_full_row_qN": int(independent_stability_row_costs.sum()),
-        "independent_stab_qN_rL": int(independent_stability_row_costs.sum()),
-        "independent_val_sequence_q1": int(np.min(independent_validity_row_costs)),
-        "independent_val_sequence_qN": int(independent_validity_row_costs.sum()),
-        "independent_val_q1": int(np.min(independent_validity_row_costs)),
-        "independent_val_qN": int(independent_validity_row_costs.sum()),
-        "phrase_dpa_val_q1": int(np.min(phrase_row_budgets)),
-        "phrase_dpa_val_qN": int(np.max(phrase_row_budgets)),
-        "phrase_independent_val_q1": int(np.min(phrase_row_budgets)),
-        "phrase_independent_val_qN": int(phrase_row_budgets.sum()),
-    }
-
-
 def certified_fraction_from_radii(radii: np.ndarray, budgets: Iterable[int]) -> list[dict[str, int | float]]:
-    """Compute strict ``B < B*`` certification summaries for each budget."""
+    """Compute strict ``B < B*`` certification summaries for each budget.
+
+    Non-finite radii are unknown. They remain in ``num_total`` but are not
+    counted as certified; summary radius statistics are computed over known
+    finite radii only.
+    """
     radii = np.asarray(radii, dtype=float)
     if radii.ndim != 1:
         raise ValueError("radii must be one-dimensional")
     if radii.size == 0:
         raise ValueError("radii must be non-empty")
+    known = np.isfinite(radii)
+    known_radii = radii[known]
+    num_total = int(radii.size)
+    num_known = int(np.sum(known))
+    num_unknown = num_total - num_known
     rows = []
     for budget in budgets:
-        certified = budget < radii
+        certified = known & (budget < radii)
         num_certified = int(np.sum(certified))
-        num_total = int(radii.size)
         certified_fraction = num_certified / num_total
         rows.append(
             {
                 "budget": int(budget),
                 "certified_fraction": float(certified_fraction),
                 "attacked_fraction": float(1.0 - certified_fraction),
-                "mean_radius": float(np.mean(radii)),
-                "median_radius": float(np.median(radii)),
-                "min_radius": float(np.min(radii)),
-                "max_radius": float(np.max(radii)),
+                "mean_radius": float(np.mean(known_radii)) if num_known else float("nan"),
+                "median_radius": float(np.median(known_radii)) if num_known else float("nan"),
+                "min_radius": float(np.min(known_radii)) if num_known else float("nan"),
+                "max_radius": float(np.max(known_radii)) if num_known else float("nan"),
                 "num_certified": num_certified,
+                "num_known": num_known,
+                "num_unknown": num_unknown,
                 "num_total": num_total,
             }
         )
@@ -1046,126 +1117,9 @@ def compute_validity_q_curve(data: ToyData, T: int) -> list[int]:
     return values
 
 
-def _cell_stability_budgets(data: ToyData) -> np.ndarray:
-    """Compute independent token-level stability budgets for baselines."""
-    K, N, L = data.stab_votes.shape
-    T = data.stab_counts.shape[2]
-    budgets = np.zeros((N, L), dtype=np.int64)
-    for i in range(N):
-        for j in range(L):
-            w = int(data.clean_pred[i, j])
-            competitor_budgets = []
-            for c in range(T):
-                if c == w:
-                    continue
-                deficit = int(data.stab_counts[i, j, w] - data.stab_counts[i, j, c])
-                contributions = [
-                    int(data.influence[k, i, j]) * (int(data.stab_votes[k, i, j] != c) + int(data.stab_votes[k, i, j] == w))
-                    for k in range(K)
-                ]
-                competitor_budgets.append(_min_budget_from_contributions(deficit, contributions))
-            budgets[i, j] = min(competitor_budgets)
-    return budgets
-
-
-def _cell_validity_budgets(data: ToyData) -> np.ndarray:
-    """Compute independent token-level harmful-target validity budgets."""
-    K, N, L = data.val_votes.shape
-    T = data.val_counts.shape[2]
-    budgets = np.zeros((N, L), dtype=np.int64)
-    for i in range(N):
-        for j in range(L):
-            h = int(data.target[i, j])
-            target_count = int(data.val_counts[i, j, h])
-            deficits = np.array([int(data.val_counts[i, j, c]) - target_count if c != h else 0 for c in range(T)], dtype=np.int64)
-            contribs = np.zeros((K, T), dtype=np.int64)
-            for k in range(K):
-                if not int(data.influence[k, i, j]):
-                    continue
-                vote = int(data.val_votes[k, i, j])
-                add_target = int(vote != h)
-                for c in range(T):
-                    if c != h:
-                        contribs[k, c] = add_target + int(vote == c)
-            budgets[i, j] = _min_budget_satisfying_all(deficits, contribs, ignored_class=h)
-    return budgets
-
-
-def targeted_partition_radius(counts: np.ndarray, target: int, *, tie_wins: bool = True) -> int:
-    """Return the TPA-style targeted token validity radius for one vote count vector.
-
-    This is a targeted validity baseline: it estimates how many non-target
-    partition votes must be converted into a specific harmful target token before
-    that target wins. It is not ordinary DPA top-vs-runner-up stability, and it
-    is not phrase aggregation over whole generated sequences.
-
-    By default, ties count as successful attacks, matching the toy MILP
-    convention. If the paper convention being compared against uses strict
-    plurality instead, this helper adapts the targeted-partition idea to the toy
-    tie-wins setting. Set ``tie_wins=False`` to require the target to strictly
-    beat every competitor.
-    """
-    counts = np.asarray(counts, dtype=np.int64)
-    if counts.ndim != 1:
-        raise ValueError("counts must be a one-dimensional token count vector")
-    if not 0 <= target < counts.shape[0]:
-        raise ValueError("target must index counts")
-    if np.any(counts < 0):
-        raise ValueError("counts must be non-negative")
-
-    target_count = int(counts[target])
-    competitor_counts = np.delete(counts, target).astype(np.int64)
-    if competitor_counts.size == 0:
-        return 0
-
-    already_succeeds = target_count >= int(np.max(competitor_counts)) if tie_wins else target_count > int(np.max(competitor_counts))
-    if already_succeeds:
-        return 0
-
-    total_non_target_votes = int(np.sum(competitor_counts))
-    for budget in range(total_non_target_votes + 1):
-        target_after = target_count + budget
-        max_competitor_after = target_after if tie_wins else target_after - 1
-        required_removals = int(np.maximum(0, competitor_counts - max_competitor_after).sum())
-        if required_removals <= budget:
-            return budget
-    return total_non_target_votes
-
-
-def aggregate_tpa_sequence_baselines(token_radii: np.ndarray) -> dict[str, int | float]:
-    """Aggregate token-level targeted radii into sequence-level TPA baselines.
-
-    For a harmful sequence, every target token must be forced. The toy
-    TPA-style sequence baseline therefore takes the maximum targeted radius over
-    token positions for each prompt row: the hardest target token controls the
-    full harmful sequence.
-    """
-    token_radii = np.asarray(token_radii, dtype=np.int64)
-    if token_radii.ndim != 2:
-        raise ValueError("token_radii must have shape (N, L)")
-    if token_radii.size == 0:
-        raise ValueError("token_radii must be non-empty")
-    row_sequence_radii = token_radii.max(axis=1)
-    return {
-        "tpa_val_sequence_q1": int(np.min(row_sequence_radii)),
-        "tpa_val_sequence_qN": int(np.max(row_sequence_radii)),
-        "tpa_val_sequence_mean": float(np.mean(row_sequence_radii)),
-    }
-
-
-def _targeted_validity_token_budgets(data: ToyData) -> np.ndarray:
-    """Compute per-cell TPA-style targeted harmful-token validity radii."""
-    N, L, _ = data.val_counts.shape
-    budgets = np.zeros((N, L), dtype=np.int64)
-    for i in range(N):
-        for j in range(L):
-            budgets[i, j] = targeted_partition_radius(data.val_counts[i, j], int(data.target[i, j]))
-    return budgets
-
-
 def _shared_stability_row_radii(data: ToyData, r_cols: int, competitor_mode: str = "all") -> np.ndarray:
-    K, N, L = data.stab_votes.shape
-    radii = np.zeros(N, dtype=np.int64)
+    _, N, _ = data.stab_votes.shape
+    radii = np.full(N, np.nan, dtype=float)
     for i in range(N):
         row_slice = slice(i, i + 1)
         result = solve_structured_stability(
@@ -1178,14 +1132,15 @@ def _shared_stability_row_radii(data: ToyData, r_cols: int, competitor_mode: str
             r_cols=r_cols,
             competitor_mode=competitor_mode,
         )
-        radii[i] = K + 1 if result.B_star is None else result.B_star
+        if result.is_optimal and result.B_star is not None:
+            radii[i] = float(result.B_star)
     return radii
 
 
 def _shared_validity_row_radii(data: ToyData) -> np.ndarray:
-    K, N, L = data.val_votes.shape
+    _, N, _ = data.val_votes.shape
     T = data.val_counts.shape[2]
-    radii = np.zeros(N, dtype=np.int64)
+    radii = np.full(N, np.nan, dtype=float)
     for i in range(N):
         row_slice = slice(i, i + 1)
         result = solve_row_col_validity(
@@ -1196,7 +1151,8 @@ def _shared_validity_row_radii(data: ToyData) -> np.ndarray:
             data.influence[:, row_slice, :],
             q_rows=1,
         )
-        radii[i] = K + 1 if result.B_star is None else result.B_star
+        if result.is_optimal and result.B_star is not None:
+            radii[i] = float(result.B_star)
     return radii
 
 
@@ -1228,103 +1184,30 @@ def _benchmark_metadata(
 
 def _damage_curve_row(metadata: dict[str, object], result: DamageResult, objective: str, num_rows: int) -> dict[str, object]:
     max_attacked_rows = result.max_attacked_rows
-    if max_attacked_rows is None:
-        max_attacked_rows = int(round(result.objective_value or 0.0))
-    attacked_fraction = max_attacked_rows / num_rows
+    if max_attacked_rows is None and result.objective_value is not None:
+        max_attacked_rows = int(round(result.objective_value))
+    attacked_fraction = None if max_attacked_rows is None else max_attacked_rows / num_rows
+    bound_type = "exact" if result.is_optimal else "feasible_attacked_lower_bound"
     return {
         **metadata,
         "budget": result.budget,
         "method": "Shared MILP",
         "objective": objective,
         "curve_type": "direct_damage_milp",
-        "max_attacked_rows": max_attacked_rows,
+        "max_attacked_rows": "" if max_attacked_rows is None else max_attacked_rows,
         "max_attacked_cells": result.max_attacked_cells,
-        "attacked_fraction": float(attacked_fraction),
-        "certified_fraction": float(1.0 - attacked_fraction),
+        "attacked_fraction": "" if attacked_fraction is None else float(attacked_fraction),
+        "certified_fraction": "" if attacked_fraction is None else float(1.0 - attacked_fraction),
         "status_name": result.status_name,
         "is_optimal": result.is_optimal,
+        "certified_fraction_is_exact": result.is_optimal,
+        "bound_type": bound_type,
         "objective_value": "" if result.objective_value is None else result.objective_value,
         "lower_bound": "" if result.lower_bound is None else result.lower_bound,
         "upper_bound": "" if result.upper_bound is None else result.upper_bound,
         "mip_gap": "" if result.mip_gap is None else result.mip_gap,
         "runtime_sec": "" if result.runtime_sec is None else result.runtime_sec,
     }
-
-
-def _phd_margin_stability_budgets(data: ToyData) -> np.ndarray:
-    margins = stability_margins(data.stab_counts, data.clean_pred, data.runner_up)
-    return ((margins + 1) // 2).astype(np.int64)
-
-
-def _atomic_phrase_validity_row_budgets(data: ToyData) -> np.ndarray:
-    """Compute atomic full-sequence budgets treating each generated sequence as one label."""
-    K, N, L = data.val_votes.shape
-    budgets = np.zeros(N, dtype=np.int64)
-    for i in range(N):
-        target_phrase = tuple(int(x) for x in data.target[i])
-        phrases = [tuple(int(x) for x in data.val_votes[k, i]) for k in range(K)]
-        target_count = sum(phrase == target_phrase for phrase in phrases)
-        competitor_counts: dict[tuple[int, ...], int] = {}
-        for phrase in phrases:
-            if phrase == target_phrase:
-                continue
-            competitor_counts[phrase] = competitor_counts.get(phrase, 0) + 1
-        if not competitor_counts:
-            budgets[i] = 0
-            continue
-        competitor_phrases = list(competitor_counts)
-        deficits = np.array([competitor_counts[phrase] - target_count for phrase in competitor_phrases], dtype=np.int64)
-        contribs = np.zeros((K, len(competitor_phrases)), dtype=np.int64)
-        for k, phrase in enumerate(phrases):
-            add_target = int(phrase != target_phrase)
-            for c_idx, competitor_phrase in enumerate(competitor_phrases):
-                contribs[k, c_idx] = add_target + int(phrase == competitor_phrase)
-        budgets[i] = _min_budget_satisfying_all(deficits, contribs)
-    return budgets
-
-
-def _min_budget_from_contributions(deficit: int, contributions: list[int]) -> int:
-    if deficit <= 0:
-        return 0
-    running = 0
-    for budget, contribution in enumerate(sorted(contributions, reverse=True), start=1):
-        running += contribution
-        if running >= deficit:
-            return budget
-    return len(contributions) + 1
-
-
-def _min_budget_satisfying_all(deficits: np.ndarray, contribs: np.ndarray, ignored_class: int | None = None) -> int:
-    active_deficits = deficits.copy()
-    if ignored_class is not None:
-        active_deficits[ignored_class] = 0
-    if np.all(active_deficits <= 0):
-        return 0
-
-    useful = np.flatnonzero(np.any(contribs > 0, axis=1))
-    if useful.size == 0:
-        return int(contribs.shape[0] + 1)
-
-    for budget in range(1, useful.size + 1):
-        for subset in combinations(useful.tolist(), budget):
-            if np.all(contribs[list(subset)].sum(axis=0) >= active_deficits):
-                return budget
-    return int(contribs.shape[0] + 1)
-
-
-def _write_rows_csv(path: Path, rows: list[dict[str, object]]) -> None:
-    """Write heterogeneous benchmark dictionaries while preserving first-seen column order."""
-    if not rows:
-        return
-    fieldnames = []
-    for row in rows:
-        for key in row:
-            if key not in fieldnames:
-                fieldnames.append(key)
-    with path.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
 
 
 def _save_focused_plot(rows: list[dict[str, object]], path: Path, title: str, axis_name: str, y_label: str, metrics: dict[str, str]) -> None:
@@ -1431,6 +1314,12 @@ def _save_certified_fraction_budget_plot(
             for row in rows
             if row.get("method") == method and row.get("objective") == objective and row.get("curve_type") == curve_type
         ]
+        if curve_type == "direct_damage_milp":
+            exact_rows = [row for row in selected if row.get("certified_fraction_is_exact") is True or row.get("is_optimal") is True]
+            skipped = len(selected) - len(exact_rows)
+            if skipped:
+                print(f"Warning: skipping {skipped} non-optimal direct-damage row(s) for {path.name} curve '{label}'.")
+            selected = exact_rows
         metric_series = _mean_series_by_axis(selected, "budget", "certified_fraction")
         if metric_series is None:
             print(f"Warning: skipping {path.name} curve '{label}' because matching rows are missing.")
@@ -1441,6 +1330,74 @@ def _save_certified_fraction_budget_plot(
         print(f"Warning: skipped {path.name}; none of the requested curves were available.")
         return
     _save_line_plot_svg(path, title, "poison budget B", "Certified prompts (%)", series)
+
+
+def _select_curve_rows(rows: list[dict[str, object]], method: str, objective: str, curve_type: str) -> list[dict[str, object]]:
+    return [row for row in rows if row.get("method") == method and row.get("objective") == objective and row.get("curve_type") == curve_type]
+
+
+def _audit_direct_damage_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    diagnostics: list[dict[str, object]] = []
+    if not rows:
+        return diagnostics
+    print()
+    print("Direct damage checks")
+    grouped: dict[tuple[object, ...], list[dict[str, object]]] = {}
+    for row in rows:
+        key = tuple(row.get(name) for name in ["seed", "K", "N", "L", "T", "delta_stab", "delta_val", "target_bias", "influence_mode", "stability_competitor_mode", "objective"])
+        grouped.setdefault(key, []).append(row)
+        attacked = _numeric_value(row.get("max_attacked_rows"))
+        n_rows = _numeric_value(row.get("N"))
+        if attacked is not None and n_rows is not None and not 0 <= attacked <= n_rows:
+            diagnostic = {"check": "damage_bounds", "objective": row.get("objective"), "budget": row.get("budget"), "max_attacked_rows": attacked, "N": n_rows}
+            diagnostics.append(diagnostic)
+            print(f"- warning: max_attacked_rows outside [0,N]: {diagnostic}")
+    nonoptimal = [row for row in rows if not (row.get("is_optimal") is True or row.get("certified_fraction_is_exact") is True)]
+    if nonoptimal:
+        print(f"- non-optimal direct damage rows: {len(nonoptimal)}; certified_fraction is a bound, not an exact percentage.")
+        diagnostics.append({"check": "nonoptimal_direct_damage", "rows": len(nonoptimal)})
+
+    for key, group_rows in grouped.items():
+        sorted_rows = sorted(group_rows, key=lambda row: _numeric_value(row.get("budget")) or -1)
+        previous_attacked = None
+        previous_certified = None
+        for row in sorted_rows:
+            attacked = _numeric_value(row.get("attacked_fraction"))
+            certified = _numeric_value(row.get("certified_fraction"))
+            if attacked is not None and previous_attacked is not None and attacked + 1e-9 < previous_attacked:
+                diagnostics.append({"check": "attacked_fraction_monotonicity", "key": key, "budget": row.get("budget")})
+            if certified is not None and previous_certified is not None and certified > previous_certified + 1e-9:
+                diagnostics.append({"check": "certified_fraction_monotonicity", "key": key, "budget": row.get("budget")})
+            previous_attacked = attacked if attacked is not None else previous_attacked
+            previous_certified = certified if certified is not None else previous_certified
+    monotone_violations = [item for item in diagnostics if str(item.get("check", "")).endswith("monotonicity")]
+    print(f"- monotonicity violations: {len(monotone_violations)}")
+    return diagnostics
+
+
+def _audit_horizon_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    diagnostics: list[dict[str, object]] = []
+    if not rows:
+        return diagnostics
+    print()
+    print("Horizon checks")
+    for row in rows:
+        min_horizon = _numeric_value(row.get("min_horizon"))
+        max_horizon = _numeric_value(row.get("max_horizon"))
+        max_possible = _numeric_value(row.get("max_possible_horizon"))
+        full_fraction = _numeric_value(row.get("certified_fraction_full_horizon"))
+        if (
+            min_horizon is not None
+            and max_horizon is not None
+            and max_possible is not None
+            and not (0 <= min_horizon <= max_horizon <= max_possible)
+        ):
+            diagnostics.append({"check": "horizon_bounds", "method": row.get("method"), "budget": row.get("budget")})
+        if full_fraction is not None and not 0 <= full_fraction <= 1:
+            diagnostics.append({"check": "horizon_full_fraction_bounds", "method": row.get("method"), "budget": row.get("budget")})
+    violations = [item for item in diagnostics if str(item.get("check", "")).startswith("horizon")]
+    print(f"- horizon bound violations: {len(violations)}")
+    return diagnostics
 
 
 def _save_certified_fraction_by_length_plot(
@@ -1460,6 +1417,12 @@ def _save_certified_fraction_by_length_plot(
         and row.get("curve_type") == curve_type
         and int(_numeric_value(row.get("budget")) or -1) in selected_budgets
     ]
+    if curve_type == "direct_damage_milp":
+        exact_rows = [row for row in selected if row.get("certified_fraction_is_exact") is True or row.get("is_optimal") is True]
+        skipped = len(selected) - len(exact_rows)
+        if skipped:
+            print(f"Warning: skipping {skipped} non-optimal direct-damage row(s) for {path.name}.")
+        selected = exact_rows
     if not selected:
         print(f"Warning: skipped {path.name}; no matching fixed-budget rows were available.")
         return
@@ -1631,68 +1594,6 @@ def check_monotonicity_diagnostics(rows: list[dict[str, object]], output_dir: Pa
         _write_rows_csv(path, violations)
         print(f"Wrote monotonicity violations: {path}")
     return violations
-
-
-def _read_rows_csv(path: Path) -> list[dict[str, object]]:
-    """Read benchmark rows and normalize legacy column aliases."""
-    with path.open(newline="") as f:
-        reader = csv.DictReader(f)
-        rows = []
-        for row in reader:
-            parsed = {}
-            for key, value in row.items():
-                if key in {"K", "N", "L", "T", "seed"}:
-                    parsed[key] = int(value)
-                elif key == "delta" or _looks_numeric(value):
-                    parsed[key] = float(value) if "." in value else int(value)
-                else:
-                    parsed[key] = value
-            _copy_legacy_csv_columns(parsed)
-            rows.append(parsed)
-    return rows
-
-
-def _read_optional_csv(path: Path) -> list[dict[str, object]]:
-    if not path.exists():
-        print(f"Warning: optional CSV not found, skipping: {path}")
-        return []
-    return _read_rows_csv(path)
-
-
-def _copy_legacy_csv_columns(row: dict[str, object]) -> None:
-    legacy_map = {
-        "row_col_stability_any_cell": "row_col_stab_q1_r1",
-        "row_col_stability_full_row": "row_col_stab_q1_rL",
-        "row_col_validity_q1": "row_col_val_q1",
-        "row_col_validity_qN": "row_col_val_qN",
-        "naive_dpa_stability_full_row": "independent_stab_full_row_q1",
-        "naive_dpa_validity_q1": "independent_val_q1",
-        "naive_dpa_validity_qN": "independent_val_qN",
-        "phd_ref_stability_any_cell": "raw_dpa_stab_min_cell",
-        "phd_ref_validity_any_cell": "raw_dpa_val_min_cell",
-        "independent_stab_qN_rL": "independent_stab_full_row_qN",
-        "independent_val_q1": "independent_val_sequence_q1",
-        "independent_val_qN": "independent_val_sequence_qN",
-    }
-    for old_key, new_key in legacy_map.items():
-        if old_key in row and new_key not in row:
-            row[new_key] = row[old_key]
-    if "raw_dpa_stab_min_cell" in row:
-        row.setdefault("dpa_stab_cell_min", row["raw_dpa_stab_min_cell"])
-        row.setdefault("dpa_stab_row_radius_q1", row["raw_dpa_stab_min_cell"])
-    if "raw_dpa_val_min_cell" in row:
-        row.setdefault("dpa_val_cell_min", row["raw_dpa_val_min_cell"])
-        row.setdefault("dpa_val_row_weak_q1", row["raw_dpa_val_min_cell"])
-
-
-def _looks_numeric(value: object) -> bool:
-    if value is None:
-        return False
-    try:
-        float(value)
-    except ValueError:
-        return False
-    return True
 
 
 def _save_heatmap_svg(
@@ -1889,9 +1790,9 @@ def _parse_int_list(value: str) -> list[int]:
 
 BENCHMARK_PRESETS: dict[str, dict[str, list[float] | list[int]]] = {
     "smoke": {
-        "Ks": [4],
+        "Ks": [8],
         "Ns": [2],
-        "lengths": [2],
+        "lengths": [6],
         "Ts": [4],
         "delta_stabs": [0.2],
         "delta_vals": [0.2],
@@ -1938,7 +1839,18 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the command-line parser for toy experiment workflows."""
     parser = argparse.ArgumentParser(description="Toy row/column certificate experiments.")
     parser.add_argument(
-        "command", choices=["sanity", "visualize", "benchmark", "plot-csv", "sweep-delta", "sweep-length", "sweep-prompts", "compare-stability-modes"]
+        "command",
+        choices=[
+            "sanity",
+            "visualize",
+            "benchmark",
+            "plot-csv",
+            "audit-curves",
+            "sweep-delta",
+            "sweep-length",
+            "sweep-prompts",
+            "compare-stability-modes",
+        ],
     )
     parser.add_argument("--K", type=int, default=7)
     parser.add_argument("--N", type=int, default=3)
@@ -1963,6 +1875,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--Ts", type=_parse_int_list, default=None)
     parser.add_argument("--save-dir", default=None)
     parser.add_argument("--csv", default="toy_results/small_benchmark/benchmark_results.csv")
+    parser.add_argument("--csv-dir", default="toy_results/small_benchmark")
     parser.add_argument("--show-grid", action="store_true")
     parser.add_argument("--make-plots", action="store_true", help="Also render benchmark plots after running Gurobi.")
     parser.add_argument("--budget-max", type=int, default=15, help="Maximum poisoned-shard budget for fixed-budget curve CSVs.")
@@ -2046,6 +1959,8 @@ def main() -> None:
         )
     elif args.command == "plot-csv":
         plot_benchmark_csv(args.csv, save_dir=args.save_dir)
+    elif args.command == "audit-curves":
+        audit_curve_csvs(args.csv_dir)
     elif args.command == "sweep-delta":
         sweep_delta(
             K=args.K,

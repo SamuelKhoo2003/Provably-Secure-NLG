@@ -31,6 +31,12 @@ damage-at-budget MILPs fix `B` and maximize attacked rows using one shared
 poisoned-shard allocation. Horizon metrics fix `B` and measure the longest
 certified prefix per prompt row.
 
+Certified percentage is always a strict-radius statement. For per-row radius
+`B*_i`, row `i` is certified at poison budget `B` exactly when `B < B*_i`.
+If `B == B*_i`, the attack is feasible at that budget, so the row is no longer
+certified. Unknown or non-finite radii should be recorded as unknown and treated
+as not certified in percentages.
+
 The main modelling requirement is that the MILPs use one shared poisoning allocation:
 
 ```text
@@ -307,10 +313,13 @@ Plotting should be a separate step from benchmark data generation.
 
 `benchmark_results.csv` preserves the existing radius-style `B*` columns.
 `benchmark_budget_curves.csv` stores cheap radius-derived certified and attacked
-fractions. `benchmark_damage_curves.csv` stores fixed-budget shared-MILP damage
-maximization results and solver metadata; non-optimal rows are feasible damage
-bounds rather than exact maxima. `benchmark_horizons.csv` stores average,
-median, minimum, and maximum certified prefix horizons.
+fractions. Radius-derived coverage computes per-row radii first, then counts
+rows satisfying `B < B*_row`; it does not directly optimize one shared
+allocation across all rows at budget `B`. `benchmark_damage_curves.csv` stores
+fixed-budget shared-MILP damage maximization results and solver metadata;
+non-optimal rows are feasible damage bounds rather than exact maxima.
+`benchmark_horizons.csv` stores average, median, minimum, and maximum certified
+prefix horizons.
 
 Report-facing plots should be separated by attack objective:
 

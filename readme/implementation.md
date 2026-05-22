@@ -17,7 +17,6 @@ scripts/check.sh                compile/test/visualization check run
 scripts/data.sh                 benchmark CSV generation
 scripts/plot.sh                 plot refresh from existing CSV
 scripts/benchmark.sh            data generation followed by plotting
-scripts/visualize.sh            one visualization instance
 ```
 
 ## Setup
@@ -56,12 +55,6 @@ Generate benchmark data and then refresh plots:
 
 ```bash
 ./scripts/benchmark.sh
-```
-
-Generate one visualization instance:
-
-```bash
-./scripts/visualize.sh
 ```
 
 `check.sh` runs compile checks, unit tests, and a small visualization smoke
@@ -457,6 +450,10 @@ OUT_DIR=toy_results/small_benchmark \
 ./scripts/plot.sh
 ```
 
+By default `plot.sh` discovers every
+`toy_results/*/benchmark_results.csv` file and refreshes plots in the matching
+folder. Set `CSV_PATH` only when you want to replot one specific benchmark.
+
 Presets:
 
 ```text
@@ -499,8 +496,16 @@ as `dpa_*`, `tpa_*`, `phrase_dpa_*`, and `independent_*`.
 Long format: one row per method/objective/budget/instance. Main columns include
 the benchmark metadata, `budget`, `method`, `objective`, `curve_type`,
 `certified_fraction`, `attacked_fraction`, `mean_radius`, `median_radius`,
-`min_radius`, `max_radius`, `num_certified`, and `num_total`. These are
-radius-derived summaries using the rule `B < B*_row`.
+`min_radius`, `max_radius`, `num_certified`, `num_known`, `num_unknown`, and
+`num_total`. These are radius-derived summaries using the strict rule
+`B < B*_row`. If `B == B*_row`, the attack is feasible and the row is not
+certified. Unknown or non-finite radii remain in `num_total`, are counted in
+`num_unknown`, and are treated as not certified; radius summary statistics use
+only known finite radii.
+
+Radius-derived coverage computes each row's radius first and then counts rows
+at each budget. It is cheap and useful, but it does not directly optimize one
+shared poisoned-shard allocation across all rows at the fixed budget.
 
 ### `benchmark_damage_curves.csv`
 
@@ -508,12 +513,14 @@ Long format: one row per direct shared-MILP damage objective, budget, and
 instance. Main columns include benchmark metadata, `budget`, `method`,
 `objective`, `curve_type`, `max_attacked_rows`, `max_attacked_cells`,
 `attacked_fraction`, `certified_fraction`, `objective_value`, `runtime_sec`,
-and solver metadata.
+`certified_fraction_is_exact`, `bound_type`, and solver metadata.
 
 For direct damage maximization, `lower_bound` is the best feasible damage found
 and `upper_bound` is Gurobi's objective bound. If `is_optimal=True`, the damage
 value is exact. If status is `TIME_LIMIT` or `SUBOPTIMAL`, the returned damage
-is feasible but not necessarily maximal.
+is feasible but not necessarily maximal. In that case, `certified_fraction` is
+an upper bound derived from feasible attacked rows, not an exact certified
+percentage, and budget plots skip those non-exact direct rows.
 
 ### `benchmark_horizons.csv`
 
@@ -521,9 +528,25 @@ Long format: one row per horizon method, budget, and instance. Main columns
 include benchmark metadata, `budget`, `method`, `mean_horizon`,
 `median_horizon`, `min_horizon`, `max_horizon`, `max_possible_horizon`, and
 `certified_fraction_full_horizon`. Horizon metrics measure how many initial
-token positions remain certified on average at fixed budget `B`.
+token positions remain certified on average at fixed budget `B`. They use prefix
+semantics: a row's horizon is the longest prefix for which every token position
+in that prefix satisfies `B < radius[i, l]`; certified tokens after the first
+uncertified token do not extend the prefix. Stability horizon uses DPA token
+stability radii, and validity horizon uses TPA targeted token validity radii.
 
-Solver metadata fields include `is_optimal`, `status_name`, `mip_gap`,
+Solver metadata fields include `is_optimal`, `status_name`, `lower_bound`,
+`upper_bound`, `mip_gap`, and `runtime_sec`.
+
+Audit sidecar curves with:
+
+```bash
+.venv/bin/python -m toy_certificate.experiments audit-curves --csv-dir toy_results/small_benchmark
+```
+
+The audit prints which CSV each plotted series comes from, reports exactly
+identical plotted series, checks direct-damage monotonicity and bounds, and
+warns when non-optimal direct damage rows make certified percentages bounds
+rather than exact values.
 `lower_bound`, and `upper_bound` where relevant. If `is_optimal=True`, the value
 is an exact optimum. If status is `TIME_LIMIT` or `SUBOPTIMAL`, the returned
 value is a feasible bound, not necessarily the exact optimum.
@@ -553,13 +576,13 @@ poisoning than all-competitor mode.
 
 ## Plots
 
-Refresh plots from an existing CSV:
+Refresh plots for every benchmark folder under `toy_results`:
 
 ```bash
-CSV_PATH=toy_results/small_benchmark/benchmark_results.csv \
-OUT_DIR=toy_results/small_benchmark \
 ./scripts/plot.sh
 ```
+
+To refresh one specific benchmark, set `CSV_PATH` and optionally `OUT_DIR`.
 
 Report-facing benchmark SVGs:
 
@@ -772,13 +795,7 @@ The plotter prints the number of violations. If any are found, it writes `monoto
 
 ## Visualization Outputs
 
-The visualization command:
-
-```bash
-./scripts/visualize.sh
-```
-
-Writes:
+The visualization step in `check.sh` writes:
 
 ```text
 clean_predictions.svg

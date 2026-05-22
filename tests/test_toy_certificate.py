@@ -114,6 +114,17 @@ class BudgetCurveHelperTests(unittest.TestCase):
         self.assertEqual(fractions[3], 1 / 3)
         self.assertEqual(fractions[5], 0.0)
 
+    def test_certified_fraction_treats_zero_and_unknown_radii_conservatively(self):
+        rows = certified_fraction_from_radii(np.array([0, np.nan, np.inf, 2]), budgets=[0, 1, 2])
+
+        by_budget = {row["budget"]: row for row in rows}
+        self.assertEqual(by_budget[0]["certified_fraction"], 1 / 4)
+        self.assertEqual(by_budget[1]["certified_fraction"], 1 / 4)
+        self.assertEqual(by_budget[2]["certified_fraction"], 0.0)
+        self.assertEqual(by_budget[0]["num_known"], 2)
+        self.assertEqual(by_budget[0]["num_unknown"], 2)
+        self.assertEqual(by_budget[0]["num_total"], 4)
+
     def test_prefix_horizon_stops_at_first_uncertified_token(self):
         token_radii = np.array([[2, 4, 1]])
 
@@ -167,6 +178,8 @@ class BudgetCurveHelperTests(unittest.TestCase):
                 "min_radius",
                 "max_radius",
                 "num_certified",
+                "num_known",
+                "num_unknown",
                 "num_total",
             }.issubset(budget_rows[0])
         )
@@ -226,6 +239,13 @@ class BudgetCurveHelperTests(unittest.TestCase):
 
         self.assertIn("certified_fraction", budget_header)
         self.assertIn("curve_type", damage_header)
+        self.assertIn("status_name", damage_header)
+        self.assertIn("is_optimal", damage_header)
+        self.assertIn("lower_bound", damage_header)
+        self.assertIn("upper_bound", damage_header)
+        self.assertIn("mip_gap", damage_header)
+        self.assertIn("runtime_sec", damage_header)
+        self.assertIn("certified_fraction_is_exact", damage_header)
         self.assertIn("mean_horizon", horizon_header)
 
 
@@ -247,15 +267,19 @@ class ExperimentCliTests(unittest.TestCase):
         self.assertEqual(args.budget_max, 3)
         self.assertFalse(args.make_damage_curves)
 
+        args = parser.parse_args(["audit-curves", "--csv-dir", "toy_results/medium_benchmark"])
+        self.assertEqual(args.command, "audit-curves")
+        self.assertEqual(args.csv_dir, "toy_results/medium_benchmark")
+
     def test_small_benchmark_preset_is_bounded(self):
         preset = experiments._benchmark_preset("small")
 
         instance_count = len(preset["Ks"]) * len(preset["Ns"]) * len(preset["lengths"]) * len(preset["Ts"]) * len(preset["delta_stabs"]) * len(preset["delta_vals"]) * len(preset["target_biases"])
 
         self.assertEqual(instance_count, 36)
-        self.assertEqual(experiments._benchmark_preset("smoke")["Ks"], [4])
+        self.assertEqual(experiments._benchmark_preset("smoke")["Ks"], [8])
         self.assertEqual(experiments._benchmark_preset("smoke")["Ns"], [2])
-        self.assertEqual(experiments._benchmark_preset("smoke")["lengths"], [2])
+        self.assertEqual(experiments._benchmark_preset("smoke")["lengths"], [6])
         self.assertEqual(experiments._benchmark_preset("smoke")["Ts"], [4])
 
     def test_metric_names_use_qN_and_rL_aliases_for_current_shape(self):
@@ -295,6 +319,112 @@ class ExperimentCliTests(unittest.TestCase):
         self.assertEqual(row["row_col_val_qN"], 6)
         self.assertEqual(row["dpa_val_cell_min"], 1)
         self.assertEqual(row["dpa_val_row_weak_q1"], 1)
+
+    def test_csv_reader_handles_scientific_notation(self):
+        with TemporaryDirectory() as tmp_dir:
+            csv_path = Path(tmp_dir) / "benchmark_results.csv"
+            csv_path.write_text("K,N,L,T,seed,runtime_gurobi_total,mip_gap\n5,2,3,4,0,1e-06,2E-05\n")
+
+            rows = experiments._read_rows_csv(csv_path)
+
+        self.assertEqual(rows[0]["runtime_gurobi_total"], 1e-06)
+        self.assertEqual(rows[0]["mip_gap"], 2e-05)
+
+    def test_csv_reader_parses_boolean_solver_metadata(self):
+        with TemporaryDirectory() as tmp_dir:
+            csv_path = Path(tmp_dir) / "benchmark_damage_curves.csv"
+            csv_path.write_text("is_optimal,certified_fraction_is_exact,certified_fraction\nTrue,False,0.5\n")
+
+            rows = experiments._read_rows_csv(csv_path)
+
+        self.assertIs(rows[0]["is_optimal"], True)
+        self.assertIs(rows[0]["certified_fraction_is_exact"], False)
+        self.assertEqual(rows[0]["certified_fraction"], 0.5)
+
+    def test_damage_curve_failed_solve_keeps_unknown_fractions_blank(self):
+        result = experiments.DamageResult(
+            name="failed",
+            budget=2,
+            selected_poisoned_shards=[],
+            attacked_cells=[],
+            attacked_rows=None,
+            status=0,
+            status_name="NO_SOLUTION",
+            objective_value=None,
+        )
+
+        row = experiments._damage_curve_row({}, result, objective="stability_one_token_per_prompt", num_rows=4)
+
+        self.assertEqual(row["max_attacked_rows"], "")
+        self.assertEqual(row["attacked_fraction"], "")
+        self.assertEqual(row["certified_fraction"], "")
+        self.assertIs(row["certified_fraction_is_exact"], False)
+
+    def test_damage_curve_nonoptimal_feasible_row_is_marked_as_bound(self):
+        result = experiments.DamageResult(
+            name="feasible",
+            budget=2,
+            selected_poisoned_shards=[0, 1],
+            attacked_cells=[(0, 0)],
+            attacked_rows=[0],
+            status=0,
+            status_name="TIME_LIMIT",
+            objective_value=1.0,
+            is_optimal=False,
+        )
+
+        row = experiments._damage_curve_row({}, result, objective="stability_one_token_per_prompt", num_rows=4)
+
+        self.assertEqual(row["certified_fraction"], 0.75)
+        self.assertIs(row["certified_fraction_is_exact"], False)
+        self.assertEqual(row["bound_type"], "feasible_attacked_lower_bound")
+
+    def test_direct_damage_rows_use_damage_solver_source(self):
+        calls = []
+
+        def fake_stability(*args, budget, row_requirement, competitor_mode):
+            calls.append(("stability", budget, row_requirement, competitor_mode))
+            return experiments.DamageResult(
+                name="fake",
+                budget=budget,
+                selected_poisoned_shards=[],
+                attacked_cells=[],
+                attacked_rows=[0],
+                status=0,
+                status_name="OPTIMAL",
+                objective_value=1.0,
+                is_optimal=True,
+            )
+
+        def fake_validity(*args, budget, row_requirement):
+            calls.append(("validity", budget, row_requirement))
+            return experiments.DamageResult(
+                name="fake",
+                budget=budget,
+                selected_poisoned_shards=[],
+                attacked_cells=[],
+                attacked_rows=[0],
+                status=0,
+                status_name="OPTIMAL",
+                objective_value=1.0,
+                is_optimal=True,
+            )
+
+        old_stability = experiments.maximize_attacked_rows_stability
+        old_validity = experiments.maximize_attacked_rows_validity
+        try:
+            experiments.maximize_attacked_rows_stability = fake_stability
+            experiments.maximize_attacked_rows_validity = fake_validity
+            data = generate_toy_votes(K=4, N=2, L=2, T=3, seed=0)
+            rows = experiments.compute_direct_damage_curve_rows(data, T=3, budgets=[0, 1], metadata={}, stability_competitor_mode="runner_up")
+        finally:
+            experiments.maximize_attacked_rows_stability = old_stability
+            experiments.maximize_attacked_rows_validity = old_validity
+
+        self.assertEqual(len(rows), 6)
+        self.assertTrue(all(row["curve_type"] == "direct_damage_milp" for row in rows))
+        self.assertTrue(all(row["method"] == "Shared MILP" for row in rows))
+        self.assertEqual(len(calls), 6)
 
     def test_plot_csv_regenerates_expected_svg_files_from_existing_rows(self):
         with TemporaryDirectory() as tmp_dir:
@@ -340,6 +470,44 @@ class ExperimentCliTests(unittest.TestCase):
             self.assertIn("independent overestimate factor", diagnostic_svg)
             self.assertFalse((base / "monotonicity_violations.csv").exists())
 
+    def test_budget_curve_plot_labels_and_audit_sources(self):
+        with TemporaryDirectory() as tmp_dir:
+            base = Path(tmp_dir)
+            (base / "benchmark_budget_curves.csv").write_text(
+                "seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competitor_mode,budget,method,objective,curve_type,certified_fraction,attacked_fraction,mean_radius,median_radius,min_radius,max_radius,num_certified,num_known,num_unknown,num_total\n"
+                "0,4,2,2,3,0.2,0.2,0.3,dense,runner_up,0,DPA token margin,full_response_stable_against_any_token_change,radius_derived,1.0,0.0,2,2,2,2,2,2,0,2\n"
+                "0,4,2,2,3,0.2,0.2,0.3,dense,runner_up,0,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived,0.5,0.5,1,1,1,1,1,2,0,2\n"
+                "0,4,2,2,3,0.2,0.2,0.3,dense,runner_up,0,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived,0.5,0.5,1,1,1,1,1,2,0,2\n"
+            )
+            (base / "benchmark_damage_curves.csv").write_text(
+                "seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competitor_mode,budget,method,objective,curve_type,max_attacked_rows,max_attacked_cells,attacked_fraction,certified_fraction,status_name,is_optimal,certified_fraction_is_exact,bound_type,objective_value,lower_bound,upper_bound,mip_gap,runtime_sec\n"
+                "0,4,2,2,3,0.2,0.2,0.3,dense,runner_up,0,Shared MILP,stability_one_token_per_prompt,direct_damage_milp,0,0,0.0,1.0,OPTIMAL,True,True,exact,0,0,0,0,0.01\n"
+                "0,4,2,2,3,0.2,0.2,0.3,dense,runner_up,0,Shared MILP,stability_full_sequence_per_prompt,direct_damage_milp,0,0,0.0,1.0,OPTIMAL,True,True,exact,0,0,0,0,0.01\n"
+                "0,4,2,2,3,0.2,0.2,0.3,dense,runner_up,0,Shared MILP,validity_full_harmful_sequence_per_prompt,direct_damage_milp,1,2,0.5,0.5,OPTIMAL,True,True,exact,1,1,1,0,0.01\n"
+            )
+            (base / "benchmark_horizons.csv").write_text(
+                "seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competitor_mode,budget,method,mean_horizon,median_horizon,min_horizon,max_horizon,max_possible_horizon,certified_fraction_full_horizon\n"
+                "0,4,2,2,3,0.2,0.2,0.3,dense,runner_up,0,DPA stability horizon,2,2,2,2,2,1.0\n"
+                "0,4,2,2,3,0.2,0.2,0.3,dense,runner_up,0,TPA validity horizon,1,1,1,1,2,0.0\n"
+            )
+
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                experiments.save_budget_curve_plots(base)
+                diagnostics = experiments.audit_curve_csvs(str(base))
+
+            stability_svg = (base / "certified_fraction_stability_by_budget.svg").read_text()
+            validity_svg = (base / "certified_fraction_validity_by_budget.svg").read_text()
+            self.assertIn("DPA weakest token, radius-derived", stability_svg)
+            self.assertIn("Shared one-token-per-prompt, direct MILP", stability_svg)
+            self.assertIn("Shared full-sequence-per-prompt, direct MILP", stability_svg)
+            self.assertIn("TPA max-token sequence, radius-derived", validity_svg)
+            self.assertIn("Shared full sequence, radius-derived", validity_svg)
+            self.assertIn("Shared full sequence, direct MILP", validity_svg)
+            self.assertIn("source=benchmark_budget_curves.csv", stdout.getvalue())
+            self.assertIn("source=benchmark_damage_curves.csv", stdout.getvalue())
+            self.assertTrue(any(item["check"] == "identical_series" for item in diagnostics))
+
     def test_check_script_does_not_run_benchmark_or_plot_csv(self):
         script = Path("scripts/check.sh").read_text()
 
@@ -350,12 +518,13 @@ class ExperimentCliTests(unittest.TestCase):
         self.assertNotIn("toy_certificate.experiments plot-csv", script)
         self.assertIn("toy_results/smoke/instance", script)
         self.assertIn("runner_up", script)
+        self.assertIn('--N "${VIS_N:-8}"', script)
+        self.assertIn('--L "${VIS_L:-8}"', script)
 
     def test_short_scripts_have_expected_roles(self):
         data_script = Path("scripts/data.sh").read_text()
         plot_script = Path("scripts/plot.sh").read_text()
         benchmark_script = Path("scripts/benchmark.sh").read_text()
-        visualize_script = Path("scripts/visualize.sh").read_text()
 
         self.assertIn("toy_certificate.experiments benchmark", data_script)
         self.assertIn("toy_certificate.experiments plot-csv", plot_script)
@@ -370,9 +539,9 @@ class ExperimentCliTests(unittest.TestCase):
         self.assertIn("MAKE_BUDGET_CURVES", data_script)
         self.assertIn("MAKE_DAMAGE_CURVES", data_script)
         self.assertIn("MAKE_HORIZON_CURVES", data_script)
-        self.assertIn("toy_results/small_benchmark", plot_script)
+        self.assertIn("TOY_RESULTS_DIR", plot_script)
+        self.assertIn("find \"$TOY_RESULTS_DIR\"", plot_script)
         self.assertIn("toy_results/small_benchmark", benchmark_script)
-        self.assertIn("toy_results/smoke/instance", visualize_script)
 
 
 class GurobiBackedTests(unittest.TestCase):
@@ -501,6 +670,10 @@ class GurobiBackedTests(unittest.TestCase):
             raise
 
         attacked = [b0.max_attacked_rows, b1.max_attacked_rows, b2.max_attacked_rows]
+        for value in attacked:
+            self.assertIsNotNone(value)
+            self.assertGreaterEqual(value, 0)
+            self.assertLessEqual(value, 2)
         self.assertLessEqual(attacked[0], attacked[1])
         self.assertLessEqual(attacked[1], attacked[2])
         certified = [1 - value / 2 for value in attacked]

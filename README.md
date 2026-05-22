@@ -81,11 +81,13 @@ Or choose a preset explicitly:
 PRESET=large ./scripts/data.sh
 ```
 
-Refresh plots from an existing benchmark CSV:
+Refresh plots for every benchmark folder under `toy_results`:
 
 ```bash
 ./scripts/plot.sh
 ```
+
+For one explicit CSV, set `CSV_PATH` and optionally `OUT_DIR`.
 
 Run data generation followed by plotting:
 
@@ -96,12 +98,6 @@ Run data generation followed by plotting:
 This uses the small preset by default. Larger sweeps remain available through
 `PRESET=medium`, `PRESET=large`, or direct CLI arguments. Current defaults are
 intentionally small for quick plotting and debugging.
-
-Generate one visualization instance:
-
-```bash
-./scripts/visualize.sh
-```
 
 ## Experiment Taxonomy
 
@@ -128,7 +124,12 @@ initial token positions remain certified on average, producing long-format
 The radius-derived curves are cheap summaries of per-row certificates. The
 direct damage-at-budget curves are more faithful to the shared-allocation threat
 model because they solve a new MILP for each budget and maximise adversarial
-damage under that budget.
+damage directly. A certified percentage should therefore decrease as `B`
+increases. Radius-derived and direct damage curves may differ because the
+radius-derived path solves per-row radii first, while direct damage optimizes one
+shared allocation across all rows at the fixed budget. Identical curves are not
+automatically wrong in small dense toy settings, but `audit-curves` reports when
+plotted series are exactly identical.
 
 The MILP uses one shared poisoned-shard allocation `a[k] in {0,1}`. The same
 selected shards are reused across all required prompt rows and token positions;
@@ -222,15 +223,22 @@ include extra feasible cells. The certified quantity is `B_star`.
 - `benchmark_results.csv`: wide-format radius-style `B*` metrics, benchmark
   parameters, baseline radii, proposed-method radii, and runtime totals.
 - `benchmark_budget_curves.csv`: long-format radius-derived certified and
-  attacked fractions by fixed budget, method, and objective.
+  attacked fractions by fixed budget, method, and objective. A row is certified
+  exactly when `B < B*_row`; `B == B*_row` means the attack is feasible and the
+  row is not certified. Unknown/non-finite radii are counted in `num_total`,
+  marked through `num_unknown`, and treated as not certified.
 - `benchmark_damage_curves.csv`: long-format direct shared-MILP
   damage-at-budget results, including `max_attacked_rows`,
-  `max_attacked_cells`, `certified_fraction`, and solver metadata.
+  `max_attacked_cells`, `certified_fraction`, `certified_fraction_is_exact`,
+  `bound_type`, and solver metadata.
 - `benchmark_horizons.csv`: long-format stability/validity prefix horizon
   summaries by budget, including mean/median/min/max horizon and full-horizon
   certified fraction.
 
-Solver metadata includes `is_optimal`, `status_name`, `mip_gap`,
+Solver metadata includes `is_optimal`, `status_name`, `lower_bound`,
+`upper_bound`, `mip_gap`, and `runtime_sec`. If a direct damage row is not
+optimal, its attacked fraction is a feasible lower bound on attack damage and
+its certified fraction is an upper bound, not an exact certified percentage.
 `lower_bound`, and `upper_bound` where relevant. If `is_optimal=True`, the value
 is an exact optimum. If status is `TIME_LIMIT` or `SUBOPTIMAL`, the returned
 value is a feasible bound, not necessarily the exact optimum.
@@ -308,6 +316,5 @@ Run tests directly:
 - `phd_reference/`: external read-only reference package.
 - `scripts/plot.sh`: plot refresh from an existing CSV without rerunning Gurobi.
 - `scripts/benchmark.sh`: small benchmark data-generation plus plotting workflow.
-- `scripts/visualize.sh`: one tiny visualization instance.
 - `past_runs/`: saved historical benchmark outputs.
 - `toy_results/`: generated outputs, ignored by git.

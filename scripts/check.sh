@@ -26,8 +26,8 @@ echo
 echo "== 3/3 Instance visualization =="
 "$PYTHON_BIN" -m toy_certificate.experiments visualize \
   --K "${VIS_K:-4}" \
-  --N "${VIS_N:-2}" \
-  --L "${VIS_L:-3}" \
+  --N "${VIS_N:-8}" \
+  --L "${VIS_L:-8}" \
   --T "${VIS_T:-4}" \
   --delta-stab "${VIS_DELTA_STAB:-${VIS_DELTA:-0.2}}" \
   --delta-val "${VIS_DELTA_VAL:-${VIS_DELTA:-0.2}}" \
