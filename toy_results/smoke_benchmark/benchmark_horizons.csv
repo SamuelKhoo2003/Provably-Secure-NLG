@@ -1,0 +1,19 @@
+seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competitor_mode,budget,method,mean_horizon,median_horizon,min_horizon,max_horizon,max_possible_horizon,certified_fraction_full_horizon
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,0,DPA stability horizon,6.0,6.0,6,6,6,1.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,1,DPA stability horizon,6.0,6.0,6,6,6,1.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,2,DPA stability horizon,5.5,5.5,5,6,6,0.5
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,3,DPA stability horizon,0.0,0.0,0,0,6,0.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,4,DPA stability horizon,0.0,0.0,0,0,6,0.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,5,DPA stability horizon,0.0,0.0,0,0,6,0.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,6,DPA stability horizon,0.0,0.0,0,0,6,0.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,7,DPA stability horizon,0.0,0.0,0,0,6,0.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,8,DPA stability horizon,0.0,0.0,0,0,6,0.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,0,TPA validity horizon,4.5,4.5,4,5,6,0.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,1,TPA validity horizon,1.0,1.0,0,2,6,0.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,2,TPA validity horizon,0.5,0.5,0,1,6,0.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,3,TPA validity horizon,0.5,0.5,0,1,6,0.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,4,TPA validity horizon,0.0,0.0,0,0,6,0.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,5,TPA validity horizon,0.0,0.0,0,0,6,0.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,6,TPA validity horizon,0.0,0.0,0,0,6,0.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,7,TPA validity horizon,0.0,0.0,0,0,6,0.0
+0,8,2,6,4,0.2,0.2,0.3,dense,runner_up,8,TPA validity horizon,0.0,0.0,0,0,6,0.0
