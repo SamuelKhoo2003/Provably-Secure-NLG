@@ -7,10 +7,10 @@ cd "$ROOT_DIR"
 . "${ROOT_DIR}/scripts/_python.sh"
 . "${ROOT_DIR}/scripts/_config.sh"
 PYTHON_BIN="$(resolve_python_bin)"
-CONFIG="${CONFIG:-configs/small.yaml}"
+CONFIG="${CONFIG:-configs/medium.yaml}"
 OUT_DIR="${OUT_DIR:-$(config_value output_dir outputs/results)}"
 CSV_PATH="${CSV_PATH:-$OUT_DIR/benchmark_results.csv}"
-PRESET="${PRESET:-$(config_value preset small)}"
+PRESET="${PRESET:-$(config_value preset medium)}"
 STABILITY_COMPETITOR_MODE="${STABILITY_COMPETITOR_MODE:-$(config_value stability_competitor_mode all)}"
 BUDGET_MAX="${BUDGET_MAX:-$(config_value budget_max 15)}"
 MAKE_BUDGET_CURVES="${MAKE_BUDGET_CURVES:-1}"
@@ -20,7 +20,7 @@ MAKE_HORIZON_CURVES="${MAKE_HORIZON_CURVES:-1}"
 echo "Writing benchmark data to: $OUT_DIR"
 echo "Config: $CONFIG"
 echo "Stability competitor mode: $STABILITY_COMPETITOR_MODE"
-mkdir -p "$OUT_DIR" outputs/logs
+mkdir -p "$OUT_DIR"
 
 args=(--preset "$PRESET" --influence-mode "${INFLUENCE_MODE:-$(config_value influence_mode dense)}" --stability-competitor-mode "$STABILITY_COMPETITOR_MODE" --seed "${SEED:-$(config_value seed 0)}" --save-dir "$OUT_DIR" --budget-max "$BUDGET_MAX")
 

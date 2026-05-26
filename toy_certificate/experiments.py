@@ -2123,7 +2123,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _resolve_benchmark_grid(args: argparse.Namespace) -> dict[str, list[float] | list[int]]:
-    preset_name = args.preset or "small"
+    preset_name = args.preset or "medium"
     preset = _benchmark_preset(preset_name)
     target_bias_values = args.target_biases if args.target_biases is not None else preset["target_biases"]
     if args.target_bias is not None:
