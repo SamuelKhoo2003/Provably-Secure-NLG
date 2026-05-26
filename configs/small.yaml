@@ -10,4 +10,4 @@ seed: 0
 budget_max: 15
 influence_mode: dense
 stability_competitor_mode: all
-output_dir: outputs/results
+output_dir: outputs/small
