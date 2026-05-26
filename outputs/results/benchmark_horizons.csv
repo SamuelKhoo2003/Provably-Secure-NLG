@@ -1,0 +1,13 @@
+seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competitor_mode,budget,method,objective,mean_horizon,median_horizon,min_horizon,max_horizon,mean_horizon_fraction,median_horizon_fraction,min_horizon_fraction,max_horizon_fraction,max_possible_horizon,full_horizon_certified_fraction,certified_fraction_full_horizon
+0,4,2,2,4,0.2,0.2,0.3,dense,all,0,DPA stability horizon,stability_clean_prefix,2.0,2.0,2,2,1.0,1.0,1.0,1.0,2,1.0,1.0
+0,4,2,2,4,0.2,0.2,0.3,dense,all,1,DPA stability horizon,stability_clean_prefix,0.5,0.5,0,1,0.25,0.25,0.0,0.5,2,0.0,0.0
+0,4,2,2,4,0.2,0.2,0.3,dense,all,2,DPA stability horizon,stability_clean_prefix,0.0,0.0,0,0,0.0,0.0,0.0,0.0,2,0.0,0.0
+0,4,2,2,4,0.2,0.2,0.3,dense,all,0,TPA validity horizon,validity_harmful_target_prefix,2.0,2.0,2,2,1.0,1.0,1.0,1.0,2,1.0,1.0
+0,4,2,2,4,0.2,0.2,0.3,dense,all,1,TPA validity horizon,validity_harmful_target_prefix,1.0,1.0,0,2,0.5,0.5,0.0,1.0,2,0.5,0.5
+0,4,2,2,4,0.2,0.2,0.3,dense,all,2,TPA validity horizon,validity_harmful_target_prefix,0.0,0.0,0,0,0.0,0.0,0.0,0.0,2,0.0,0.0
+0,4,2,3,4,0.2,0.2,0.3,dense,all,0,DPA stability horizon,stability_clean_prefix,3.0,3.0,3,3,1.0,1.0,1.0,1.0,3,1.0,1.0
+0,4,2,3,4,0.2,0.2,0.3,dense,all,1,DPA stability horizon,stability_clean_prefix,0.0,0.0,0,0,0.0,0.0,0.0,0.0,3,0.0,0.0
+0,4,2,3,4,0.2,0.2,0.3,dense,all,2,DPA stability horizon,stability_clean_prefix,0.0,0.0,0,0,0.0,0.0,0.0,0.0,3,0.0,0.0
+0,4,2,3,4,0.2,0.2,0.3,dense,all,0,TPA validity horizon,validity_harmful_target_prefix,3.0,3.0,3,3,1.0,1.0,1.0,1.0,3,1.0,1.0
+0,4,2,3,4,0.2,0.2,0.3,dense,all,1,TPA validity horizon,validity_harmful_target_prefix,3.0,3.0,3,3,1.0,1.0,1.0,1.0,3,1.0,1.0
+0,4,2,3,4,0.2,0.2,0.3,dense,all,2,TPA validity horizon,validity_harmful_target_prefix,0.0,0.0,0,0,0.0,0.0,0.0,0.0,3,0.0,0.0

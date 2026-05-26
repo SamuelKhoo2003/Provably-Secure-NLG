@@ -1,0 +1,3 @@
+seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competitor_mode,objective,joint_method,phd_method,joint_label,phd_label,num_shared_budgets,exactly_identical,differs_at_any_budget,num_different_budgets,first_different_budget,joint_value_at_first_difference,phd_value_at_first_difference,joint_curve,phd_curve
+0,4,2,2,4,0.2,0.2,0.3,dense,all,validity_full_harmful_sequence_per_prompt,Shared MILP,TPA max-token sequence,Joint row-column MILP,TPA sequence baseline,3,True,False,0,,,,0:1;1:0.5;2:0,0:1;1:0.5;2:0
+0,4,2,3,4,0.2,0.2,0.3,dense,all,validity_full_harmful_sequence_per_prompt,Shared MILP,TPA max-token sequence,Joint row-column MILP,TPA sequence baseline,3,True,False,0,,,,0:1;1:1;2:0,0:1;1:1;2:0

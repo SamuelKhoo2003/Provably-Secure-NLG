@@ -21,7 +21,7 @@ plot_one() {
     --save-dir "$out_dir"
 
   echo
-  echo "Plots: $out_dir/*.png"
+  echo "Plots: $out_dir/*.png and $out_dir/*.svg"
 }
 
 if [[ -n "${CSV_PATH:-}" ]]; then

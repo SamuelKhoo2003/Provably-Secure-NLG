@@ -1,0 +1,94 @@
+Baseline vs shared-MILP plot mapping
+
+Plot: stability_one_sequence_main_comparison.png
+Generated: True
+CSV: outputs/results/benchmark_results.csv
+X-axis: L
+Stability all-competitor filter: used 2/2 row(s) with stability_competitor_mode=all
+External baselines:
+- DPA weakest-token stability: dpa_stab_row_radius_q1 (external baseline)
+Proposed methods:
+- Joint row-column shared MILP: row_col_stab_q1_rL (proposed method)
+Diagnostics:
+- none
+Skipped series:
+- none
+Notes: row_stability is not plotted here because it certifies any-token row destabilisation, while row_col_stab_q1_rL is the clearer one-full-sequence stability objective.
+
+Plot: stability_full_matrix_main_comparison.png
+Generated: True
+CSV: outputs/results/benchmark_results.csv
+X-axis: L
+Stability all-competitor filter: used 2/2 row(s) with stability_competitor_mode=all
+External baselines:
+- DPA all-row weakest-token stability: dpa_stab_row_radius_qN (external baseline)
+Proposed methods:
+- Joint row-column shared MILP: row_col_stab_qN_rL (proposed method)
+Diagnostics:
+- none
+Skipped series:
+- none
+Notes: column_stability and row_col_stab_qN_r1 are omitted from the main plot because they are column/one-token objectives rather than full-matrix stability certificates.
+
+Plot: validity_one_sequence_main_comparison.png
+Generated: True
+CSV: outputs/results/benchmark_results.csv
+X-axis: L
+Stability all-competitor filter: not applicable
+External baselines:
+- TPA sequence baseline: tpa_val_sequence_q1 (external baseline)
+Proposed methods:
+- Row-only shared MILP: row_validity (proposed method)
+- Joint row-column shared MILP: row_col_val_q1 (proposed method)
+Diagnostics:
+- DPA weakest harmful-token diagnostic: dpa_val_row_weak_q1 (diagnostic)
+Skipped series:
+- none
+Notes: independent_val_sequence_q1 and phrase_dpa_val_q1 are diagnostic references and are kept out of this main comparison.
+
+Plot: validity_all_prompts_main_comparison.png
+Generated: True
+CSV: outputs/results/benchmark_results.csv
+X-axis: L
+Stability all-competitor filter: not applicable
+External baselines:
+- TPA sequence baseline: tpa_val_sequence_qN (external baseline)
+Proposed methods:
+- Joint row-column shared MILP: row_col_val_qN (proposed method)
+- Column-only shared MILP: column_validity_full_column (proposed method)
+Diagnostics:
+- DPA weakest harmful-token diagnostic: dpa_val_row_weak_qN (diagnostic)
+Skipped series:
+- none
+Notes: independent_val_sequence_qN and phrase_dpa_val_qN are diagnostic references and are kept out of this main comparison.
+
+Plot: stability_diagnostic_references.png
+Generated: True
+CSV: outputs/results/benchmark_results.csv
+X-axis: L
+Stability all-competitor filter: used 2/2 row(s) with stability_competitor_mode=all
+External baselines:
+- DPA weakest-token stability: dpa_stab_row_radius_qN (external baseline)
+Proposed methods:
+- Joint row-column shared MILP: row_col_stab_qN_rL (proposed method)
+Diagnostics:
+- Independent composition diagnostic: independent_stab_full_row_qN (diagnostic)
+Skipped series:
+- none
+Notes: Independent composition is diagnostic because it does not model shared poisoned-shard reuse.
+
+Plot: validity_diagnostic_references.png
+Generated: True
+CSV: outputs/results/benchmark_results.csv
+X-axis: L
+Stability all-competitor filter: not applicable
+External baselines:
+- TPA sequence baseline: tpa_val_sequence_qN (external baseline)
+Proposed methods:
+- Joint row-column shared MILP: row_col_val_qN (proposed method)
+Diagnostics:
+- Independent composition diagnostic: independent_val_sequence_qN (diagnostic)
+- Atomic phrase diagnostic: phrase_dpa_val_qN (diagnostic)
+Skipped series:
+- none
+Notes: Independent composition and atomic phrase aggregation are diagnostics, not main baselines.

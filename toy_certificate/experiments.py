@@ -389,7 +389,9 @@ def plot_benchmark_csv(csv_path: str, save_dir: str | None = None) -> list[dict[
     output_dir.mkdir(parents=True, exist_ok=True)
     rows = _read_rows_csv(path)
     save_benchmark_plots(rows, output_dir)
+    save_main_comparison_plots(rows, output_dir, csv_path=path)
     save_budget_curve_plots(output_dir, source_dir=path.parent)
+    save_horizon_plots(output_dir, source_dir=path.parent)
     audit_rows = audit_milp_vs_phd_equivalence(output_dir, source_dir=path.parent, result_rows=rows)
     print_plot_mapping_summary(path.parent, rows, audit_rows)
     print(f"Wrote benchmark plots under: {output_dir}")
@@ -744,6 +746,229 @@ def save_benchmark_plots(rows: list[dict[str, object]], output_dir: Path) -> Non
     check_monotonicity_diagnostics(rows, output_dir)
 
 
+MAIN_COMPARISON_PLOTS: tuple[dict[str, object], ...] = (
+    {
+        "filename": "stability_one_sequence_main_comparison.png",
+        "title": "One-sequence stability comparison",
+        "objective": "stability",
+        "series": (
+            ("DPA weakest-token stability", "dpa_stab_row_radius_q1", "external baseline"),
+            ("Joint row-column shared MILP", "row_col_stab_q1_rL", "proposed method"),
+        ),
+        "notes": (
+            "row_stability is not plotted here because it certifies any-token row destabilisation, "
+            "while row_col_stab_q1_rL is the clearer one-full-sequence stability objective."
+        ),
+    },
+    {
+        "filename": "stability_full_matrix_main_comparison.png",
+        "title": "Full prompt-token stability comparison",
+        "objective": "stability",
+        "series": (
+            ("DPA all-row weakest-token stability", "dpa_stab_row_radius_qN", "external baseline"),
+            ("Joint row-column shared MILP", "row_col_stab_qN_rL", "proposed method"),
+        ),
+        "notes": (
+            "column_stability and row_col_stab_qN_r1 are omitted from the main plot because they are "
+            "column/one-token objectives rather than full-matrix stability certificates."
+        ),
+    },
+    {
+        "filename": "validity_one_sequence_main_comparison.png",
+        "title": "One harmful-sequence validity comparison",
+        "objective": "validity",
+        "series": (
+            ("TPA sequence baseline", "tpa_val_sequence_q1", "external baseline"),
+            ("Row-only shared MILP", "row_validity", "proposed method"),
+            ("Joint row-column shared MILP", "row_col_val_q1", "proposed method"),
+            ("DPA weakest harmful-token diagnostic", "dpa_val_row_weak_q1", "diagnostic"),
+        ),
+        "notes": (
+            "independent_val_sequence_q1 and phrase_dpa_val_q1 are diagnostic references and are "
+            "kept out of this main comparison."
+        ),
+    },
+    {
+        "filename": "validity_all_prompts_main_comparison.png",
+        "title": "All-prompts harmful-sequence validity comparison",
+        "objective": "validity",
+        "series": (
+            ("TPA sequence baseline", "tpa_val_sequence_qN", "external baseline"),
+            ("Joint row-column shared MILP", "row_col_val_qN", "proposed method"),
+            ("Column-only shared MILP", "column_validity_full_column", "proposed method"),
+            ("DPA weakest harmful-token diagnostic", "dpa_val_row_weak_qN", "diagnostic"),
+        ),
+        "notes": (
+            "independent_val_sequence_qN and phrase_dpa_val_qN are diagnostic references and are "
+            "kept out of this main comparison."
+        ),
+    },
+)
+
+
+DIAGNOSTIC_COMPARISON_PLOTS: tuple[dict[str, object], ...] = (
+    {
+        "filename": "stability_diagnostic_references.png",
+        "title": "Stability diagnostic references",
+        "objective": "stability",
+        "series": (
+            ("Joint row-column shared MILP", "row_col_stab_qN_rL", "proposed method"),
+            ("Independent composition diagnostic", "independent_stab_full_row_qN", "diagnostic"),
+            ("DPA weakest-token stability", "dpa_stab_row_radius_qN", "external baseline"),
+        ),
+        "notes": "Independent composition is diagnostic because it does not model shared poisoned-shard reuse.",
+    },
+    {
+        "filename": "validity_diagnostic_references.png",
+        "title": "Validity diagnostic references",
+        "objective": "validity",
+        "series": (
+            ("Joint row-column shared MILP", "row_col_val_qN", "proposed method"),
+            ("TPA sequence baseline", "tpa_val_sequence_qN", "external baseline"),
+            ("Independent composition diagnostic", "independent_val_sequence_qN", "diagnostic"),
+            ("Atomic phrase diagnostic", "phrase_dpa_val_qN", "diagnostic"),
+        ),
+        "notes": "Independent composition and atomic phrase aggregation are diagnostics, not main baselines.",
+    },
+)
+
+
+def save_main_comparison_plots(rows: list[dict[str, object]], output_dir: Path, csv_path: Path) -> list[dict[str, object]]:
+    """Write report-facing baseline-vs-MILP comparison plots and an audit file."""
+    audit_rows: list[dict[str, object]] = []
+    if not rows:
+        return audit_rows
+    for spec in MAIN_COMPARISON_PLOTS + DIAGNOSTIC_COMPARISON_PLOTS:
+        audit_rows.append(_save_comparison_plot(rows, output_dir, csv_path, spec))
+    _write_baseline_mapping_audit(output_dir / "audit_baseline_vs_milp_mapping.txt", audit_rows)
+    return audit_rows
+
+
+def _save_comparison_plot(rows: list[dict[str, object]], output_dir: Path, csv_path: Path, spec: dict[str, object]) -> dict[str, object]:
+    objective = str(spec["objective"])
+    filtered_rows = list(rows)
+    stability_filter_applied = False
+    stability_filter_note = "not applicable"
+    if objective == "stability" and any("stability_competitor_mode" in row for row in rows):
+        all_rows = [row for row in rows if row.get("stability_competitor_mode") == "all"]
+        stability_filter_applied = True
+        if all_rows:
+            filtered_rows = all_rows
+            stability_filter_note = f"used {len(all_rows)}/{len(rows)} row(s) with stability_competitor_mode=all"
+        else:
+            stability_filter_note = "no rows with stability_competitor_mode=all; skipped report-facing stability plot"
+
+    axis_name = _choose_comparison_axis(filtered_rows)
+    plotted: list[tuple[str, str, str]] = []
+    skipped: list[tuple[str, str, str]] = []
+    series: dict[str, tuple[list[float], list[float]]] = {}
+    if objective == "stability" and stability_filter_applied and not any(row.get("stability_competitor_mode") == "all" for row in rows):
+        for label, column, role in spec["series"]:  # type: ignore[index]
+            skipped.append((str(label), str(column), "no all-competitor stability rows"))
+    else:
+        for label, column, role in spec["series"]:  # type: ignore[index]
+            column = str(column)
+            label = str(label)
+            role = str(role)
+            if not any(_numeric_value(row.get(column)) is not None for row in filtered_rows):
+                skipped.append((label, column, "missing or non-numeric column"))
+                print(f"Warning: skipping {spec['filename']} series '{label}' because column '{column}' is missing or empty.")
+                continue
+            metric_series = _mean_series_by_axis_or_index(filtered_rows, axis_name, column)
+            if metric_series is None:
+                skipped.append((label, column, "no plottable values"))
+                print(f"Warning: skipping {spec['filename']} series '{label}' because it has no plottable values.")
+                continue
+            series[label] = metric_series
+            plotted.append((label, column, role))
+
+    output_path = output_dir / str(spec["filename"])
+    generated = False
+    if len(series) >= 2:
+        _save_line_plot(output_path, str(spec["title"]), _comparison_axis_label(axis_name), "Mean certified budget B*", series)
+        generated = True
+    else:
+        print(f"Warning: skipped {output_path.name}; need at least two plottable series, got {len(series)}.")
+
+    return {
+        "filename": output_path.name,
+        "generated": generated,
+        "csv_path": str(csv_path),
+        "x_axis": axis_name,
+        "plotted": plotted,
+        "skipped": skipped,
+        "stability_filter_applied": stability_filter_applied,
+        "stability_filter_note": stability_filter_note,
+        "notes": spec.get("notes", ""),
+    }
+
+
+def _choose_comparison_axis(rows: list[dict[str, object]]) -> str:
+    for axis_name in ["L", "K", "N", "target_bias"]:
+        values = {_numeric_value(row.get(axis_name)) for row in rows}
+        values.discard(None)
+        if len(values) > 1:
+            return axis_name
+    return "row_index"
+
+
+def _mean_series_by_axis_or_index(rows: list[dict[str, object]], axis_name: str, metric: str) -> tuple[list[float], list[float]] | None:
+    if axis_name != "row_index":
+        return _mean_series_by_axis(rows, axis_name, metric)
+    xs, ys = [], []
+    for idx, row in enumerate(rows):
+        y_value = _numeric_value(row.get(metric))
+        if y_value is None:
+            continue
+        xs.append(float(idx))
+        ys.append(y_value)
+    if not xs:
+        return None
+    return xs, ys
+
+
+def _comparison_axis_label(axis_name: str) -> str:
+    if axis_name == "row_index":
+        return "benchmark row index"
+    return _axis_label(axis_name)
+
+
+def _write_baseline_mapping_audit(path: Path, audit_rows: list[dict[str, object]]) -> None:
+    lines = ["Baseline vs shared-MILP plot mapping", ""]
+    for item in audit_rows:
+        lines.extend(
+            [
+                f"Plot: {item['filename']}",
+                f"Generated: {item['generated']}",
+                f"CSV: {item['csv_path']}",
+                f"X-axis: {item['x_axis']}",
+                f"Stability all-competitor filter: {item['stability_filter_note']}",
+                "External baselines:",
+            ]
+        )
+        external = [entry for entry in item["plotted"] if entry[2] == "external baseline"]
+        lines.extend(_format_audit_entries(external))
+        lines.append("Proposed methods:")
+        proposed = [entry for entry in item["plotted"] if entry[2] == "proposed method"]
+        lines.extend(_format_audit_entries(proposed))
+        lines.append("Diagnostics:")
+        diagnostics = [entry for entry in item["plotted"] if entry[2] == "diagnostic"]
+        lines.extend(_format_audit_entries(diagnostics))
+        lines.append("Skipped series:")
+        skipped = [(label, column, reason) for label, column, reason in item["skipped"]]
+        lines.extend(_format_audit_entries(skipped))
+        if item["notes"]:
+            lines.append(f"Notes: {item['notes']}")
+        lines.append("")
+    path.write_text("\n".join(lines))
+
+
+def _format_audit_entries(entries: list[tuple[str, str, str]]) -> list[str]:
+    if not entries:
+        return ["- none"]
+    return [f"- {label}: {column} ({detail})" for label, column, detail in entries]
+
+
 def save_budget_curve_plots(output_dir: Path, source_dir: Path | None = None) -> None:
     """Write cleaned main budget and direct-damage PNG plots."""
     csv_dir = source_dir if source_dir is not None else output_dir
@@ -775,6 +1000,46 @@ def save_budget_curve_plots(output_dir: Path, source_dir: Path | None = None) ->
         "Direct shared-budget damage curve",
         method="Shared MILP",
         objective="validity_full_harmful_sequence_per_prompt",
+    )
+
+
+def save_horizon_plots(output_dir: Path, source_dir: Path | None = None) -> None:
+    """Write report-facing horizon plots from existing benchmark_horizons.csv rows."""
+    csv_dir = source_dir if source_dir is not None else output_dir
+    horizon_rows = _read_optional_csv(csv_dir / "benchmark_horizons.csv")
+    _save_horizon_plot(
+        horizon_rows,
+        output_dir / "stability_horizon_by_budget.svg",
+        method="DPA stability horizon",
+        title="Stability horizon by budget",
+        metric="mean_horizon",
+        y_label="Mean certified prefix horizon",
+    )
+    _save_horizon_plot(
+        horizon_rows,
+        output_dir / "validity_horizon_by_budget.svg",
+        method="TPA validity horizon",
+        title="Validity horizon by budget",
+        metric="mean_horizon",
+        y_label="Mean certified prefix horizon",
+    )
+    _save_horizon_plot(
+        horizon_rows,
+        output_dir / "stability_horizon_fraction_by_budget.svg",
+        method="DPA stability horizon",
+        title="Stability horizon fraction by budget",
+        metric="mean_horizon_fraction",
+        y_label="Mean certified prefix fraction",
+        scale=100.0,
+    )
+    _save_horizon_plot(
+        horizon_rows,
+        output_dir / "validity_horizon_fraction_by_budget.svg",
+        method="TPA validity horizon",
+        title="Validity horizon fraction by budget",
+        metric="mean_horizon_fraction",
+        y_label="Mean certified prefix fraction",
+        scale=100.0,
     )
 
 
@@ -1103,6 +1368,25 @@ def prefix_horizons_from_token_radii(token_radii: np.ndarray, budget: int) -> np
     return horizons
 
 
+def targeted_validity_prefix_horizons_from_token_radii(token_radii: np.ndarray, budget: int) -> np.ndarray:
+    """Return TPA-style harmful-prefix validity horizons for each row.
+
+    For a harmful prefix to be forced, every target token in that prefix must be
+    forced. The prefix is therefore certified impossible whenever at least one
+    token in the prefix has radius greater than the attack budget.
+    """
+    token_radii = np.asarray(token_radii, dtype=float)
+    if token_radii.ndim != 2:
+        raise ValueError("token_radii must have shape (N, L)")
+    horizons = np.zeros(token_radii.shape[0], dtype=np.int64)
+    for i in range(token_radii.shape[0]):
+        prefix_radii = np.maximum.accumulate(token_radii[i])
+        certified_prefixes = np.flatnonzero(budget < prefix_radii)
+        if certified_prefixes.size:
+            horizons[i] = int(certified_prefixes[-1] + 1)
+    return horizons
+
+
 def compute_radius_derived_budget_curve_rows(
     data: ToyData,
     T: int,
@@ -1233,25 +1517,42 @@ def compute_direct_damage_curve_rows(
 def compute_horizon_curve_rows(data: ToyData, budgets: Iterable[int], metadata: dict[str, object]) -> list[dict[str, object]]:
     """Build long-format prefix horizon summaries for fixed budgets."""
     curves = [
-        ("DPA stability horizon", _cell_stability_budgets(data)),
-        ("TPA validity horizon", _targeted_validity_token_budgets(data)),
+        (
+            "DPA stability horizon",
+            "stability_clean_prefix",
+            _cell_stability_budgets(data),
+            prefix_horizons_from_token_radii,
+        ),
+        (
+            "TPA validity horizon",
+            "validity_harmful_target_prefix",
+            _targeted_validity_token_budgets(data),
+            targeted_validity_prefix_horizons_from_token_radii,
+        ),
     ]
     rows: list[dict[str, object]] = []
-    for method, token_radii in curves:
+    for method, objective, token_radii, horizon_fn in curves:
         for budget in budgets:
-            horizons = prefix_horizons_from_token_radii(token_radii, int(budget))
+            horizons = horizon_fn(token_radii, int(budget))
             full_horizon = int(token_radii.shape[1])
+            full_horizon_fraction = float(np.mean(horizons == full_horizon))
             rows.append(
                 {
                     **metadata,
                     "budget": int(budget),
                     "method": method,
+                    "objective": objective,
                     "mean_horizon": float(np.mean(horizons)),
                     "median_horizon": float(np.median(horizons)),
                     "min_horizon": int(np.min(horizons)),
                     "max_horizon": int(np.max(horizons)),
+                    "mean_horizon_fraction": float(np.mean(horizons) / full_horizon),
+                    "median_horizon_fraction": float(np.median(horizons) / full_horizon),
+                    "min_horizon_fraction": float(np.min(horizons) / full_horizon),
+                    "max_horizon_fraction": float(np.max(horizons) / full_horizon),
                     "max_possible_horizon": full_horizon,
-                    "certified_fraction_full_horizon": float(np.mean(horizons == full_horizon)),
+                    "full_horizon_certified_fraction": full_horizon_fraction,
+                    "certified_fraction_full_horizon": full_horizon_fraction,
                 }
             )
     return rows
@@ -1580,7 +1881,9 @@ def _audit_horizon_rows(rows: list[dict[str, object]]) -> list[dict[str, object]
         min_horizon = _numeric_value(row.get("min_horizon"))
         max_horizon = _numeric_value(row.get("max_horizon"))
         max_possible = _numeric_value(row.get("max_possible_horizon"))
-        full_fraction = _numeric_value(row.get("certified_fraction_full_horizon"))
+        full_fraction = _numeric_value(row.get("full_horizon_certified_fraction"))
+        if full_fraction is None:
+            full_fraction = _numeric_value(row.get("certified_fraction_full_horizon"))
         if (
             min_horizon is not None
             and max_horizon is not None
@@ -1635,16 +1938,58 @@ def _save_certified_fraction_by_length_plot(
     _save_line_plot_svg(path, title, _axis_label("L"), "Certified prompts (%)", series)
 
 
-def _save_horizon_plot(rows: list[dict[str, object]], path: Path, method: str, title: str) -> None:
+def _save_horizon_plot(
+    rows: list[dict[str, object]],
+    path: Path,
+    method: str,
+    title: str,
+    metric: str,
+    y_label: str,
+    scale: float = 1.0,
+) -> None:
     selected = [row for row in rows if row.get("method") == method]
     if not selected:
         print(f"Warning: skipped {path.name}; no horizon rows for '{method}' were available.")
         return
-    metric_series = _mean_series_by_axis(selected, "budget", "mean_horizon")
+    metric_series = _mean_horizon_series_by_budget(selected, metric)
     if metric_series is None:
-        print(f"Warning: skipped {path.name}; horizon rows had no numeric values.")
+        print(f"Warning: skipped {path.name}; horizon rows had no numeric values for '{metric}'.")
         return
-    _save_line_plot_svg(path, title, "poison budget B", "Average certified horizon", {method: metric_series})
+    xs, ys = metric_series
+    _save_line_plot(path, title, "Poisoned shard budget B", y_label, {method: (xs, [scale * y for y in ys])})
+
+
+def _mean_horizon_series_by_budget(rows: list[dict[str, object]], metric: str) -> tuple[list[float], list[float]] | None:
+    grouped: dict[float, list[float]] = {}
+    for row in rows:
+        budget = _numeric_value(row.get("budget"))
+        value = _horizon_metric_value(row, metric)
+        if budget is None or value is None:
+            continue
+        grouped.setdefault(budget, []).append(value)
+    if not grouped:
+        return None
+    xs, ys = [], []
+    for budget in sorted(grouped):
+        xs.append(budget)
+        ys.append(float(np.mean(grouped[budget])))
+    return xs, ys
+
+
+def _horizon_metric_value(row: dict[str, object], metric: str) -> float | None:
+    value = _numeric_value(row.get(metric))
+    if value is not None:
+        return value
+    if not metric.endswith("_fraction"):
+        return None
+    base_metric = metric.removesuffix("_fraction")
+    numerator = _numeric_value(row.get(base_metric))
+    denominator = _numeric_value(row.get("max_possible_horizon"))
+    if denominator is None:
+        denominator = _numeric_value(row.get("L"))
+    if numerator is None or denominator is None or denominator <= 0:
+        return None
+    return numerator / denominator
 
 
 def _print_stability_mode_comparison_summary(rows: list[dict[str, object]]) -> None:
