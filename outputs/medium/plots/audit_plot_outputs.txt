@@ -1,0 +1,42 @@
+Default report plot audit
+
+CSV file used: outputs/medium/results/benchmark_results.csv
+plot.sh reruns Gurobi: no
+
+Certified fraction definition:
+certified_fraction(B) = 100 * mean[ B < B_star ]
+B_star is the minimum attack budget returned by the corresponding baseline or MILP certificate.
+If B equals B_star, the attack is feasible, so the region is not certified at that budget.
+For stability, this is the percentage of evaluated stability regions where the clean output is guaranteed not to change under budget B.
+For validity, this is the percentage of evaluated validity regions where the harmful target output is guaranteed not to be forceable under budget B.
+
+Plots generated:
+- main_stability_budget_curve.svg
+- main_validity_budget_curve.svg
+- stability_certificate_vs_K.svg
+- validity_certificate_vs_K.svg
+
+Plot series:
+- main_stability_budget_curve.svg: Joint row-column MILP, DPA weakest-token stability baseline
+- main_validity_budget_curve.svg: Joint row-column MILP, TPA sequence baseline, DPA weakest harmful-token diagnostic
+- stability_certificate_vs_K.svg: Joint row-column MILP, DPA weakest-token stability baseline
+- validity_certificate_vs_K.svg: Joint row-column MILP, DPA weakest harmful-token diagnostic, TPA sequence baseline
+
+Plots intentionally disabled in the default workflow:
+- ablation_stability_row_column_joint
+- ablation_validity_row_column_joint
+- direct_damage_curve_joint_milp
+- stability_diagnostic_references
+- validity_diagnostic_references
+- stability_full_matrix_main_comparison
+- stability_one_sequence_main_comparison
+- validity_all_prompts_main_comparison
+- validity_one_sequence_main_comparison
+- stability_horizon_by_budget
+- stability_horizon_fraction_by_budget
+- validity_horizon_by_budget
+- validity_horizon_fraction_by_budget
+- validity_sensitivity_target_bias
+
+Removed paths:
+- No plotting helpers were deleted; the default plot-csv path no longer calls the old ablation, diagnostic, main-comparison, direct-damage, or horizon plot generators.

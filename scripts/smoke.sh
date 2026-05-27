@@ -28,10 +28,10 @@ read_config_first() {
   config_first_value "$list_key" "$default_value"
 }
 
-K_VALUE="${VIS_K:-$(read_config_first K K_values 6)}"
-N_VALUE="${VIS_N:-$(read_config_first N N_values 3)}"
-L_VALUE="${VIS_L:-$(read_config_first L L_values 3)}"
-T_VALUE="${VIS_T:-$(read_config_first T T_values 6)}"
+K_VALUE="${VIS_K:-$(read_config_first K K_values 12)}"
+N_VALUE="${VIS_N:-$(read_config_first N N_values 6)}"
+L_VALUE="${VIS_L:-$(read_config_first L L_values 6)}"
+T_VALUE="${VIS_T:-$(read_config_first T T_values 10)}"
 DELTA_STAB_VALUE="${VIS_DELTA_STAB:-${VIS_DELTA:-$(config_value delta_stab 0.2)}}"
 DELTA_VAL_VALUE="${VIS_DELTA_VAL:-${VIS_DELTA:-$(config_value delta_val 0.2)}}"
 TARGET_BIAS_VALUE="${TARGET_BIAS:-$(config_value target_bias 0.3)}"

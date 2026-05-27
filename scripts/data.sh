@@ -9,7 +9,7 @@ cd "$ROOT_DIR"
 PYTHON_BIN="$(resolve_python_bin)"
 CONFIG="${CONFIG:-configs/medium.yaml}"
 PRESET="${PRESET:-$(config_value preset medium)}"
-OUT_DIR="${OUT_DIR:-$(config_value output_dir outputs/$PRESET)}"
+OUT_DIR="${OUT_DIR:-$(config_value output_dir outputs/$PRESET/results)}"
 CSV_PATH="${CSV_PATH:-$OUT_DIR/benchmark_results.csv}"
 STABILITY_COMPETITOR_MODE="${STABILITY_COMPETITOR_MODE:-$(config_value stability_competitor_mode all)}"
 BUDGET_MAX="${BUDGET_MAX:-$(config_value budget_max 15)}"
@@ -78,3 +78,4 @@ fi
 
 echo
 echo "CSV: $CSV_PATH"
+echo "Generate plots with: ./scripts/plot.sh"

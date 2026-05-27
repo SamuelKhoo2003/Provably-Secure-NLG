@@ -21,18 +21,25 @@ the existing CSVs only and writes:
 
 ## Main Comparison Plots
 
-`./scripts/plot.sh` also writes report-facing comparisons between the external
-DPA stability baseline, the TPA sequence validity baseline, DPA validity
-diagnostics, and shared-MILP methods:
+`./scripts/plot.sh` writes the simplified default report plot set to
+`outputs/plots/`:
 
-- `stability_one_sequence_main_comparison.png`
-- `stability_full_matrix_main_comparison.png`
-- `validity_one_sequence_main_comparison.png`
-- `validity_all_prompts_main_comparison.png`
+- `main_stability_budget_curve.svg`
+- `main_validity_budget_curve.svg`
+- `stability_certificate_vs_K.svg`
+- `validity_certificate_vs_K.svg`
 
-Independent composition and atomic phrase aggregation are diagnostic references,
-not main baselines. When present, they are kept in diagnostic plots and described
-in `audit_baseline_vs_milp_mapping.txt`.
+Certified fraction at poisoned shard budget `B` is
+`100 * mean[B < B_star]`, where `B_star` is the minimum attack budget returned by
+the corresponding baseline or MILP certificate. The inequality is strict:
+if `B == B_star`, the attack is feasible and the region is not certified at that
+budget.
+
+Stability and validity are plotted separately. TPA appears only as the sequence
+validity baseline. DPA weakest harmful-token validity is labelled as a
+diagnostic, not a full-sequence validity baseline. Independent composition,
+atomic phrase aggregation, row-only MILP, and column-only MILP are not included
+in the default plot set.
 
 ## validity_demo
 

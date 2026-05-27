@@ -355,7 +355,7 @@ def benchmark_scale(
         save_budget_curve_plots(output_dir)
         print(f"Wrote benchmark plots under: {output_dir}")
     else:
-        print(f"Skipped plots. Replot later with: python -m toy_certificate.experiments plot-csv --csv {csv_path}")
+        print("Skipped plots. Generate plots with: ./scripts/plot.sh")
     return rows
 
 
@@ -421,20 +421,179 @@ def _add_validity_demo_gap_columns(row: dict[str, object]) -> None:
 
 
 def plot_benchmark_csv(csv_path: str, save_dir: str | None = None) -> list[dict[str, object]]:
-    """Read a benchmark CSV and regenerate the cleaned thesis plotting bundle."""
+    """Read a benchmark CSV and regenerate the default report-facing plots."""
     path = Path(csv_path)
     output_dir = Path(save_dir) if save_dir is not None else path.parent
     output_dir.mkdir(parents=True, exist_ok=True)
     rows = _read_rows_csv(path)
-    save_benchmark_plots(rows, output_dir)
-    save_main_comparison_plots(rows, output_dir, csv_path=path)
-    save_validity_demo_plot(rows, output_dir, csv_path=path, generator="validity_demo")
-    save_budget_curve_plots(output_dir, source_dir=path.parent)
-    save_horizon_plots(output_dir, source_dir=path.parent)
-    audit_rows = audit_milp_vs_phd_equivalence(output_dir, source_dir=path.parent, result_rows=rows)
-    print_plot_mapping_summary(path.parent, rows, audit_rows)
+    save_default_report_plots(rows, output_dir, csv_path=path)
     print(f"Wrote benchmark plots under: {output_dir}")
     return rows
+
+
+DEFAULT_REPORT_PLOT_FILENAMES = (
+    "main_stability_budget_curve.svg",
+    "main_validity_budget_curve.svg",
+    "stability_certificate_vs_K.svg",
+    "validity_certificate_vs_K.svg",
+)
+
+DISABLED_DEFAULT_PLOTS = (
+    "ablation_stability_row_column_joint",
+    "ablation_validity_row_column_joint",
+    "direct_damage_curve_joint_milp",
+    "stability_diagnostic_references",
+    "validity_diagnostic_references",
+    "stability_full_matrix_main_comparison",
+    "stability_one_sequence_main_comparison",
+    "validity_all_prompts_main_comparison",
+    "validity_one_sequence_main_comparison",
+    "stability_horizon_by_budget",
+    "stability_horizon_fraction_by_budget",
+    "validity_horizon_by_budget",
+    "validity_horizon_fraction_by_budget",
+    "validity_sensitivity_target_bias",
+)
+
+
+def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, csv_path: Path) -> None:
+    """Write only the simplified default report plot set."""
+    _clean_default_plot_dir(output_dir)
+    budget_rows = _read_optional_csv(csv_path.parent / "benchmark_budget_curves.csv")
+    audit: list[dict[str, object]] = []
+
+    budget_specs = [
+        (
+            "main_stability_budget_curve.svg",
+            "Main stability budget curve",
+            [
+                ("Joint row-column MILP", "Shared MILP", "stability_full_sequence_per_prompt", "radius_derived"),
+                ("DPA weakest-token stability baseline", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
+            ],
+        ),
+        (
+            "main_validity_budget_curve.svg",
+            "Main validity budget curve",
+            [
+                ("Joint row-column MILP", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+                ("TPA sequence baseline", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+                ("DPA weakest harmful-token diagnostic", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
+            ],
+        ),
+    ]
+    for filename, title, selections in budget_specs:
+        series, skipped = _budget_curve_series(budget_rows, selections)
+        if series:
+            _save_line_plot(output_dir / filename, title, "Poisoned shard budget B", "Certified fraction (%)", series)
+        else:
+            print(f"Warning: skipped {filename}; no requested budget-curve series were available.")
+        audit.append({"plot": filename, "series": list(series), "skipped": skipped})
+
+    metric_specs = [
+        (
+            "stability_certificate_vs_K.svg",
+            "Stability certificate vs K",
+            MAIN_STABILITY_METRICS,
+        ),
+        (
+            "validity_certificate_vs_K.svg",
+            "Validity certificate vs K",
+            MAIN_VALIDITY_METRICS,
+        ),
+    ]
+    for filename, title, metrics in metric_specs:
+        series, skipped = _metric_series(rows, "K", metrics)
+        if series:
+            _save_line_plot(output_dir / filename, title, _axis_label("K"), "Mean certified budget B*", series)
+        else:
+            print(f"Warning: skipped {filename}; no requested benchmark-result series were available.")
+        audit.append({"plot": filename, "series": list(series), "skipped": skipped})
+
+    _write_default_plot_audit(output_dir / "audit_plot_outputs.txt", csv_path, audit)
+
+
+def _clean_default_plot_dir(output_dir: Path) -> None:
+    """Remove old generated plot artifacts from the default plot directory."""
+    for child in output_dir.iterdir():
+        if child.is_file() and (child.suffix in {".png", ".svg"} or child.name.startswith("audit_")):
+            child.unlink()
+
+
+def _budget_curve_series(
+    rows: list[dict[str, object]],
+    selections: list[tuple[str, str, str, str]],
+) -> tuple[dict[str, tuple[list[float], list[float]]], list[str]]:
+    series: dict[str, tuple[list[float], list[float]]] = {}
+    skipped: list[str] = []
+    if not rows:
+        return series, ["benchmark_budget_curves.csv missing or empty"]
+    for label, method, objective, curve_type in selections:
+        selected = [
+            row
+            for row in rows
+            if row.get("method") == method and row.get("objective") == objective and row.get("curve_type") == curve_type
+        ]
+        metric_series = _mean_series_by_axis(selected, "budget", "certified_fraction")
+        if metric_series is None:
+            skipped.append(f"{label}: missing method={method}, objective={objective}, curve_type={curve_type}")
+            continue
+        xs, ys = metric_series
+        series[label] = (xs, [100.0 * y for y in ys])
+    return series, skipped
+
+
+def _metric_series(
+    rows: list[dict[str, object]],
+    axis_name: str,
+    metrics: dict[str, str],
+) -> tuple[dict[str, tuple[list[float], list[float]]], list[str]]:
+    series: dict[str, tuple[list[float], list[float]]] = {}
+    skipped: list[str] = []
+    for label, metric in metrics.items():
+        metric_series = _mean_series_by_axis(rows, axis_name, metric)
+        if metric_series is None:
+            skipped.append(f"{label}: missing or empty column {metric}")
+            continue
+        series[label] = metric_series
+    return series, skipped
+
+
+def _write_default_plot_audit(path: Path, csv_path: Path, audit: list[dict[str, object]]) -> None:
+    generated = [item["plot"] for item in audit if (path.parent / str(item["plot"])).exists()]
+    lines = [
+        "Default report plot audit",
+        "",
+        f"CSV file used: {csv_path}",
+        "plot.sh reruns Gurobi: no",
+        "",
+        "Certified fraction definition:",
+        "certified_fraction(B) = 100 * mean[ B < B_star ]",
+        "B_star is the minimum attack budget returned by the corresponding baseline or MILP certificate.",
+        "If B equals B_star, the attack is feasible, so the region is not certified at that budget.",
+        "For stability, this is the percentage of evaluated stability regions where the clean output is guaranteed not to change under budget B.",
+        "For validity, this is the percentage of evaluated validity regions where the harmful target output is guaranteed not to be forceable under budget B.",
+        "",
+        "Plots generated:",
+        *[f"- {name}" for name in generated],
+        "",
+        "Plot series:",
+    ]
+    for item in audit:
+        lines.append(f"- {item['plot']}: {', '.join(item['series']) if item['series'] else 'none'}")
+        skipped = item["skipped"]
+        if skipped:
+            lines.append(f"  skipped: {'; '.join(skipped)}")
+    lines.extend(
+        [
+            "",
+            "Plots intentionally disabled in the default workflow:",
+            *[f"- {name}" for name in DISABLED_DEFAULT_PLOTS],
+            "",
+            "Removed paths:",
+            "- No plotting helpers were deleted; the default plot-csv path no longer calls the old ablation, diagnostic, main-comparison, direct-damage, or horizon plot generators.",
+        ]
+    )
+    path.write_text("\n".join(lines))
 
 
 AUDIT_CURVE_SELECTIONS: list[tuple[str, str, str, str]] = [
@@ -2387,12 +2546,13 @@ def _save_heatmap_svg(
     rows, cols = matrix.shape
     cell = 54
     left = 70
-    title_lines = _wrap_svg_text(title, max_chars=92)
+    right = 96 if colorbar_label else 40
+    width = left + cols * cell + right
+    title_lines = _wrap_svg_text(title, max_chars=max(36, int((width - 56) / 7.2)))
     title_font_size = 13
     title_line_height = 17
-    top = 46 + title_line_height * len(title_lines)
-    right = 96 if colorbar_label else 24
-    width = left + cols * cell + right
+    title_start_y = 26
+    top = title_start_y + title_line_height * len(title_lines) + 22
     height = top + rows * cell + 56
     values = matrix.astype(float)
     vmin = float(np.min(values))
@@ -2405,7 +2565,7 @@ def _save_heatmap_svg(
         f'<text x="16" y="{top + rows * cell / 2:.1f}" transform="rotate(-90 16 {top + rows * cell / 2:.1f})" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#374151">{_xml_escape(y_label)}</text>',
     ]
     for idx, line in enumerate(title_lines):
-        y = 24 + idx * title_line_height
+        y = title_start_y + idx * title_line_height
         svg.insert(
             2 + idx,
             f'<text x="{width / 2:.1f}" y="{y}" text-anchor="middle" font-family="Arial, sans-serif" font-size="{title_font_size}" fill="#111827">{_xml_escape(line)}</text>',
@@ -2488,10 +2648,11 @@ def _save_line_plot(path: Path, title: str, x_label: str, y_label: str, series: 
 def _save_line_plot_svg(path: Path, title: str, x_label: str, y_label: str, series: dict[str, tuple[list[float], list[float]]]) -> None:
     """Save a lightweight multi-series SVG line plot."""
     width = 1160
-    title_lines = _wrap_svg_text(title, max_chars=105)
+    title_lines = _wrap_svg_text(title, max_chars=max(48, int((width - 80) / 7.5)))
     title_font_size = 14
     title_line_height = 18
-    top = 36 + title_line_height * len(title_lines)
+    title_start_y = 28
+    top = title_start_y + title_line_height * len(title_lines) + 24
     height = max(540 + title_line_height * max(0, len(title_lines) - 1), 430 + 22 * len(series) + title_line_height * max(0, len(title_lines) - 1))
     left, right, bottom = 72, 360, 70
     plot_w = width - left - right
@@ -2524,7 +2685,7 @@ def _save_line_plot_svg(path: Path, title: str, x_label: str, y_label: str, seri
         f'<text x="18" y="{top + plot_h / 2}" transform="rotate(-90 18 {top + plot_h / 2})" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#374151">{_xml_escape(y_label)}</text>',
     ]
     for idx, line in enumerate(title_lines):
-        y = 26 + idx * title_line_height
+        y = title_start_y + idx * title_line_height
         svg.insert(
             2 + idx,
             f'<text x="{width / 2}" y="{y}" text-anchor="middle" font-family="Arial, sans-serif" font-size="{title_font_size}" fill="#111827">{_xml_escape(line)}</text>',
