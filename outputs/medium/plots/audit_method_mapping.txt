@@ -26,8 +26,8 @@ Ablation methods:
 - summary CSV: column_validity_full_column -> Column-only MILP ablation
 
 Implementation audit notes:
-- Summary columns row_col_val_q1 and tpa_val_sequence_q1: exactly identical on 2 comparable rows.
-- Summary columns row_col_val_qN and tpa_val_sequence_qN: exactly identical on 2 comparable rows.
+- Summary columns row_col_val_q1 and tpa_val_sequence_q1: 8/1152 rows differ.
+- Summary columns row_col_val_qN and tpa_val_sequence_qN: 17/1152 rows differ.
 - No exported TPA sequence stability summary column was detected in benchmark_results.csv.
 - TPA sequence baseline columns are produced by aggregate_tpa_sequence_baselines(targeted_validity_token_budgets(data)) in toy_certificate/baselines.py.
 - Joint row-column MILP validity columns are produced by solve_row_col_validity(...) in toy_certificate/milp.py through _solve_benchmark_certificates(...).

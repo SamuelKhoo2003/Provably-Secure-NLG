@@ -4,7 +4,7 @@ Plot: stability_one_sequence_main_comparison.png
 Generated: True
 CSV: outputs/results/benchmark_results.csv
 X-axis: L
-Stability all-competitor filter: used 2/2 row(s) with stability_competitor_mode=all
+Stability all-competitor filter: used 1152/1152 row(s) with stability_competitor_mode=all
 External baselines:
 - DPA weakest-token stability: dpa_stab_row_radius_q1 (external baseline)
 Proposed methods:
@@ -19,7 +19,7 @@ Plot: stability_full_matrix_main_comparison.png
 Generated: True
 CSV: outputs/results/benchmark_results.csv
 X-axis: L
-Stability all-competitor filter: used 2/2 row(s) with stability_competitor_mode=all
+Stability all-competitor filter: used 1152/1152 row(s) with stability_competitor_mode=all
 External baselines:
 - DPA all-row weakest-token stability: dpa_stab_row_radius_qN (external baseline)
 Proposed methods:
@@ -66,7 +66,7 @@ Plot: stability_diagnostic_references.png
 Generated: True
 CSV: outputs/results/benchmark_results.csv
 X-axis: L
-Stability all-competitor filter: used 2/2 row(s) with stability_competitor_mode=all
+Stability all-competitor filter: used 1152/1152 row(s) with stability_competitor_mode=all
 External baselines:
 - DPA weakest-token stability: dpa_stab_row_radius_qN (external baseline)
 Proposed methods:
