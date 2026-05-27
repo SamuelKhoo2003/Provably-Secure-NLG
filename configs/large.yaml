@@ -1,6 +1,6 @@
 preset: large
 
-K_values: [25, 40, 50]
+K_values: [20, 40]
 N_values: [6, 10]
 L_values: [10, 15]
 T_values: [12]

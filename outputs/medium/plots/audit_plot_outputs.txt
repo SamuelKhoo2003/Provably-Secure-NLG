@@ -39,4 +39,5 @@ Plots intentionally disabled in the default workflow:
 - validity_sensitivity_target_bias
 
 Removed paths:
-- No plotting helpers were deleted; the default plot-csv path no longer calls the old ablation, diagnostic, main-comparison, direct-damage, or horizon plot generators.
+- Removed old ablation, diagnostic-reference, main-comparison, direct-damage plot, and horizon plot generator paths that were no longer used by plot.sh.
+- Kept shared SVG/line/heatmap helpers used by smoke visualization and validity_demo plotting.
