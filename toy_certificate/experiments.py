@@ -36,7 +36,7 @@ from .csv_io import (
     read_rows_csv as _read_rows_csv,
     write_rows_csv as _write_rows_csv,
 )
-from .data import ToyData, generate_toy_votes, stability_margins
+from .data import ToyData, generate_toy_votes, generate_validity_demo_votes, stability_margins
 from .milp import (
     CertificateResult,
     DamageResult,
@@ -215,6 +215,10 @@ def benchmark_scale(
     make_budget_curves: bool = True,
     make_damage_curves: bool = True,
     make_horizon_curves: bool = True,
+    generator: str = "toy",
+    group_size: int = 3,
+    target_gap: int = 1,
+    overlap: int = 0,
 ) -> list[dict[str, object]]:
     """Generate benchmark CSV rows for the configured parameter grid.
 
@@ -236,25 +240,42 @@ def benchmark_scale(
                     for delta_stab in delta_stabs:
                         for delta_val in delta_vals:
                             for target_bias in target_biases:
-                                data = generate_toy_votes(
-                                    K=K,
-                                    N=N,
-                                    L=L,
-                                    T=T,
-                                    delta_stab=delta_stab,
-                                    delta_val=delta_val,
-                                    target_bias=target_bias,
-                                    seed=seed,
-                                    influence_mode=influence_mode,
-                                )
+                                if generator == "validity_demo":
+                                    data = generate_validity_demo_votes(
+                                        L=L,
+                                        group_size=group_size,
+                                        target_gap=target_gap,
+                                        overlap=overlap,
+                                        N=N,
+                                        T=T,
+                                        seed=seed,
+                                        K=K,
+                                    )
+                                    K_actual = int(data.val_votes.shape[0])
+                                elif generator == "toy":
+                                    data = generate_toy_votes(
+                                        K=K,
+                                        N=N,
+                                        L=L,
+                                        T=T,
+                                        delta_stab=delta_stab,
+                                        delta_val=delta_val,
+                                        target_bias=target_bias,
+                                        seed=seed,
+                                        influence_mode=influence_mode,
+                                    )
+                                    K_actual = K
+                                else:
+                                    raise ValueError(f"Unknown generator: {generator}")
                                 start = perf_counter()
                                 results = _solve_benchmark_certificates(data, T, stability_competitor_mode=stability_competitor_mode)
                                 runtime_total = perf_counter() - start
                                 row = {
-                                    "K": K,
+                                    "K": K_actual,
                                     "N": N,
                                     "L": L,
                                     "T": T,
+                                    "generator": generator,
                                     "delta_stab": delta_stab,
                                     "delta_val": delta_val,
                                     "target_bias": target_bias,
@@ -263,16 +284,19 @@ def benchmark_scale(
                                     "stability_competitor_mode": stability_competitor_mode,
                                     "runtime_gurobi_total": f"{runtime_total:.6f}",
                                 }
+                                if generator == "validity_demo":
+                                    row.update({"group_size": group_size, "target_gap": target_gap, "overlap": overlap})
                                 for result in results:
                                     metric_name = _csv_metric_name(result.name, N, L)
                                     _add_certificate_columns(row, metric_name, result)
                                 _fill_degenerate_corner_columns(row)
                                 row.update(compute_reference_baselines(data))
+                                _add_validity_demo_gap_columns(row)
                                 rows.append(row)
-                                budgets = list(range(0, min(K, budget_max) + 1))
+                                budgets = list(range(0, min(K_actual, budget_max) + 1))
                                 metadata = _benchmark_metadata(
                                     seed=seed,
-                                    K=K,
+                                    K=K_actual,
                                     N=N,
                                     L=L,
                                     T=T,
@@ -306,7 +330,7 @@ def benchmark_scale(
                                     horizon_rows.extend(compute_horizon_curve_rows(data, budgets=budgets, metadata=metadata))
                                 print(
                                     "bench "
-                                    f"K={K} N={N} L={L} T={T} delta_stab={delta_stab} delta_val={delta_val} target_bias={target_bias}: "
+                                    f"K={K_actual} N={N} L={L} T={T} delta_stab={delta_stab} delta_val={delta_val} target_bias={target_bias}: "
                                     + ", ".join(f"{result.name}={result.B_star}" for result in results)
                                 )
 
@@ -382,6 +406,20 @@ def _copy_metric_family(row: dict[str, object], source: str, target: str) -> Non
             row.setdefault(f"{target}{suffix}", row[source_key])
 
 
+def _add_validity_demo_gap_columns(row: dict[str, object]) -> None:
+    """Add validity-demo comparison columns when the needed values are present."""
+    joint = _numeric_value(row.get("row_col_val_q1"))
+    row_milp = _numeric_value(row.get("row_validity"))
+    tpa = _numeric_value(row.get("tpa_val_sequence_q1"))
+    row["validity_gap_joint_minus_tpa_q1"] = _safe_difference(joint, tpa)
+    row["validity_ratio_joint_over_tpa_q1"] = _safe_ratio(joint, tpa)
+    row["validity_gap_row_minus_tpa_q1"] = _safe_difference(row_milp, tpa)
+    row["validity_ratio_row_over_tpa_q1"] = _safe_ratio(row_milp, tpa)
+    dpa_weak = _numeric_value(row.get("dpa_val_row_weak_q1"))
+    row["validity_gap_tpa_minus_dpa_weak_q1"] = _safe_difference(tpa, dpa_weak)
+    row["validity_gap_joint_minus_dpa_weak_q1"] = _safe_difference(joint, dpa_weak)
+
+
 def plot_benchmark_csv(csv_path: str, save_dir: str | None = None) -> list[dict[str, object]]:
     """Read a benchmark CSV and regenerate the cleaned thesis plotting bundle."""
     path = Path(csv_path)
@@ -390,6 +428,7 @@ def plot_benchmark_csv(csv_path: str, save_dir: str | None = None) -> list[dict[
     rows = _read_rows_csv(path)
     save_benchmark_plots(rows, output_dir)
     save_main_comparison_plots(rows, output_dir, csv_path=path)
+    save_validity_demo_plot(rows, output_dir, csv_path=path, generator="validity_demo")
     save_budget_curve_plots(output_dir, source_dir=path.parent)
     save_horizon_plots(output_dir, source_dir=path.parent)
     audit_rows = audit_milp_vs_phd_equivalence(output_dir, source_dir=path.parent, result_rows=rows)
@@ -573,6 +612,30 @@ def compare_stability_modes(
     return rows
 
 
+def _safe_difference(left: float | None, right: float | None) -> float | str:
+    if left is None or right is None:
+        return ""
+    return float(left - right)
+
+
+def _safe_ratio(numerator: float | None, denominator: float | None) -> float | str:
+    if numerator is None or denominator is None or denominator == 0:
+        return ""
+    return float(numerator / denominator)
+
+
+def _sorted_unique_values(rows: list[dict[str, object]], key: str) -> list[object]:
+    return sorted({row.get(key) for row in rows if row.get(key) not in {None, ""}})
+
+
+def _format_mean_series(rows: list[dict[str, object]], metric: str) -> list[str]:
+    series = _mean_series_by_axis(rows, "L", metric)
+    if series is None:
+        return ["- no numeric rows"]
+    xs, ys = series
+    return [f"- L={x:g}: {y:.6g}" for x, y in zip(xs, ys)]
+
+
 def print_console_grid(data: ToyData) -> None:
     """Print a compact per-cell grid and shard vote layers."""
     margins = stability_margins(data.stab_counts, data.clean_pred, data.runner_up)
@@ -662,13 +725,14 @@ def save_instance_plots(
 
 CANONICAL_METHODS = (
     "Joint row-column MILP",
-    "DPA weakest-token baseline",
+    "DPA weakest-token stability baseline",
     "TPA sequence baseline",
 )
 
 CANONICAL_COLORS = {
     "Joint row-column MILP": "#1f77b4",
-    "DPA weakest-token baseline": "#d62728",
+    "DPA weakest-token stability baseline": "#d62728",
+    "DPA weakest harmful-token diagnostic": "#8c564b",
     "TPA sequence baseline": "#2ca02c",
     "Row-only MILP ablation": "#9467bd",
     "Column-only MILP ablation": "#ff7f0e",
@@ -676,12 +740,12 @@ CANONICAL_COLORS = {
 
 MAIN_STABILITY_METRICS = {
     "Joint row-column MILP": "row_col_stab_qN_rL",
-    "DPA weakest-token baseline": "dpa_stab_row_radius_qN",
+    "DPA weakest-token stability baseline": "dpa_stab_row_radius_qN",
 }
 
 MAIN_VALIDITY_METRICS = {
     "Joint row-column MILP": "row_col_val_qN",
-    "DPA weakest-token baseline": "dpa_val_row_weak_qN",
+    "DPA weakest harmful-token diagnostic": "dpa_val_row_weak_qN",
     "TPA sequence baseline": "tpa_val_sequence_qN",
 }
 
@@ -844,6 +908,173 @@ def save_main_comparison_plots(rows: list[dict[str, object]], output_dir: Path, 
     return audit_rows
 
 
+def save_validity_demo_plot(rows: list[dict[str, object]], output_dir: Path, csv_path: Path, generator: str) -> None:
+    """Write the controlled validity demo plot when matching rows are present."""
+    demo_rows = [row for row in rows if row.get("generator") == generator]
+    if not demo_rows:
+        return
+    series_specs = [
+        ("TPA sequence baseline", "tpa_val_sequence_q1"),
+        ("Row-only shared MILP", "row_validity"),
+        ("Joint row-column shared MILP", "row_col_val_q1"),
+        ("DPA weakest harmful-token diagnostic", "dpa_val_row_weak_q1"),
+    ]
+    series: dict[str, tuple[list[float], list[float]]] = {}
+    skipped: list[str] = []
+    for label, column in series_specs:
+        metric_series = _mean_series_by_axis(demo_rows, "L", column)
+        if metric_series is None:
+            skipped.append(f"{label}: {column}")
+            print(f"Warning: skipping validity_demo series '{label}' because column '{column}' is missing or empty.")
+            continue
+        series[label] = metric_series
+    plot_name = f"{generator}_baseline_vs_milp.svg"
+    if len(series) >= 2:
+        _save_line_plot(
+            output_dir / plot_name,
+            f"{generator} baseline vs shard-aware MILP",
+            "sequence length L",
+            "Mean certified budget B*",
+            series,
+        )
+    else:
+        print(f"Warning: skipped {plot_name}; fewer than two plottable series.")
+    write_validity_demo_audit(output_dir / f"audit_{generator}.txt", demo_rows, csv_path=csv_path, plotted=list(series), skipped=skipped, generator=generator)
+
+
+def plot_validity_demo_csv(csv_path: str, save_dir: str | None = None) -> list[dict[str, object]]:
+    """Read a validity_demo benchmark CSV and write only validity_demo SVG plots."""
+    path = Path(csv_path)
+    output_dir = Path(save_dir) if save_dir is not None else path.parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+    rows = _read_rows_csv(path)
+    save_validity_demo_plot(rows, output_dir, csv_path=path, generator="validity_demo")
+    save_validity_demo_budget_curve_plots(output_dir, source_dir=path.parent)
+    print(f"Wrote validity_demo plots under: {output_dir}")
+    return rows
+
+
+def save_validity_demo_budget_curve_plots(output_dir: Path, source_dir: Path | None = None) -> None:
+    csv_dir = source_dir if source_dir is not None else output_dir
+    budget_rows = _read_optional_csv(csv_dir / "benchmark_budget_curves.csv")
+    _save_certified_fraction_budget_plot(
+        budget_rows,
+        output_dir / "validity_demo_budget_curve.svg",
+        "validity_demo certified fraction by budget",
+        [
+            ("Joint row-column shared MILP", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("TPA sequence baseline", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("DPA weakest harmful-token diagnostic", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
+        ],
+    )
+    result_rows = _read_optional_csv(csv_dir / "benchmark_results.csv")
+    _save_focused_plot(
+        result_rows,
+        output_dir / "validity_demo_certificate_vs_K.svg",
+        title="validity_demo certificate vs K",
+        axis_name="K",
+        y_label="Mean certified budget B*",
+        metrics={
+            "DPA weakest harmful-token diagnostic": "dpa_val_row_weak_q1",
+            "TPA sequence baseline": "tpa_val_sequence_q1",
+            "Row-only shared MILP": "row_validity",
+            "Joint row-column shared MILP": "row_col_val_q1",
+        },
+    )
+
+
+def write_validity_demo_audit(path: Path, rows: list[dict[str, object]], csv_path: Path, plotted: list[str], skipped: list[str], generator: str) -> None:
+    gap_series = _mean_series_by_axis(rows, "L", "validity_gap_joint_minus_tpa_q1")
+    if gap_series is None:
+        gap_series = _computed_gap_series(rows, "row_col_val_q1", "tpa_val_sequence_q1")
+    tpa_minus_dpa_series = _mean_series_by_axis(rows, "L", "validity_gap_tpa_minus_dpa_weak_q1")
+    if tpa_minus_dpa_series is None:
+        tpa_minus_dpa_series = _computed_gap_series(rows, "tpa_val_sequence_q1", "dpa_val_row_weak_q1")
+    gap_observed = any((_numeric_value(row.get("validity_gap_joint_minus_tpa_q1")) or 0) > 0 for row in rows)
+    if not gap_observed:
+        gap_observed = any((_safe_numeric_difference(row.get("row_col_val_q1"), row.get("tpa_val_sequence_q1")) or 0) > 0 for row in rows)
+    gap_grows = False
+    if gap_series is not None and len(gap_series[1]) >= 2:
+        gap_grows = gap_series[1][-1] > gap_series[1][0]
+    ordering_observed = all(
+        (_numeric_value(row.get("dpa_val_row_weak_q1")) or float("inf"))
+        < (_numeric_value(row.get("tpa_val_sequence_q1")) or -float("inf"))
+        < (_numeric_value(row.get("row_col_val_q1")) or -float("inf"))
+        for row in rows
+    )
+    lines = [
+        f"{generator} audit",
+        "",
+        f"CSV used: {csv_path}",
+        f"Generator: {generator}",
+        f"K values: {_sorted_unique_values(rows, 'K')}",
+        f"N values: {_sorted_unique_values(rows, 'N')}",
+        f"L values: {_sorted_unique_values(rows, 'L')}",
+        f"T values: {_sorted_unique_values(rows, 'T')}",
+        f"Series plotted: {plotted}",
+        f"Series skipped: {skipped or ['none']}",
+        "",
+        "TPA sequence values by L:",
+        *_format_mean_series(rows, "tpa_val_sequence_q1"),
+        "",
+        "DPA weakest harmful-token diagnostic values by L:",
+        *_format_mean_series(rows, "dpa_val_row_weak_q1"),
+        "",
+        "Row-only shared MILP values by L:",
+        *_format_mean_series(rows, "row_validity"),
+        "",
+        "Joint row-column shared MILP values by L:",
+        *_format_mean_series(rows, "row_col_val_q1"),
+        "",
+        "Joint minus TPA gap by L:",
+        *(_format_series(gap_series) if gap_series is not None else ["- no numeric rows"]),
+        "",
+        "TPA minus DPA weakest-token diagnostic gap by L:",
+        *(_format_series(tpa_minus_dpa_series) if tpa_minus_dpa_series is not None else ["- no numeric rows"]),
+        "",
+        f"Expected DPA < TPA < joint ordering observed: {ordering_observed}",
+        f"Expected gap observed: {gap_observed}",
+        f"Gap grows with L: {gap_grows}",
+        "",
+        "Explanation:",
+        f"{generator} is artificial and controlled. It is not intended to model a natural language distribution.",
+        "TPA is count-based and sees each harmful target token as individually cheap from aggregate counts.",
+        "The joint row-column shared MILP is shard-aware and must use one shared poisoned-shard allocation across target positions.",
+        "The demo assigns cheap target-token attacks to different shard groups, so the full harmful sequence requires more shared poisoned shards than TPA's count-only sequence baseline suggests.",
+    ]
+    path.write_text("\n".join(lines))
+
+
+def _computed_gap_series(rows: list[dict[str, object]], left_metric: str, right_metric: str) -> tuple[list[float], list[float]] | None:
+    grouped: dict[float, list[float]] = {}
+    for row in rows:
+        x_value = _numeric_value(row.get("L"))
+        diff = _safe_numeric_difference(row.get(left_metric), row.get(right_metric))
+        if x_value is None or diff is None:
+            continue
+        grouped.setdefault(x_value, []).append(diff)
+    if not grouped:
+        return None
+    xs, ys = [], []
+    for x in sorted(grouped):
+        xs.append(x)
+        ys.append(float(np.mean(grouped[x])))
+    return xs, ys
+
+
+def _safe_numeric_difference(left: object, right: object) -> float | None:
+    left_value = _numeric_value(left)
+    right_value = _numeric_value(right)
+    if left_value is None or right_value is None:
+        return None
+    return left_value - right_value
+
+
+def _format_series(series: tuple[list[float], list[float]]) -> list[str]:
+    xs, ys = series
+    return [f"- L={x:g}: {y:.6g}" for x, y in zip(xs, ys)]
+
+
 def _save_comparison_plot(rows: list[dict[str, object]], output_dir: Path, csv_path: Path, spec: dict[str, object]) -> dict[str, object]:
     objective = str(spec["objective"])
     filtered_rows = list(rows)
@@ -981,7 +1212,7 @@ def save_budget_curve_plots(output_dir: Path, source_dir: Path | None = None) ->
         "Main stability budget curve",
         [
             ("Joint row-column MILP", "Shared MILP", "stability_full_sequence_per_prompt", "radius_derived"),
-            ("DPA weakest-token baseline", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
+            ("DPA weakest-token stability baseline", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
         ],
     )
     _save_certified_fraction_budget_plot(
@@ -990,7 +1221,7 @@ def save_budget_curve_plots(output_dir: Path, source_dir: Path | None = None) ->
         "Main validity budget curve",
         [
             ("Joint row-column MILP", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-            ("DPA weakest-token baseline", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
+            ("DPA weakest harmful-token diagnostic", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
             ("TPA sequence baseline", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
         ],
     )
@@ -1067,10 +1298,14 @@ def build_method_mapping_report(rows: list[dict[str, object]], budget_rows: list
             "summary CSV: row_col_stab_qN_rL and row_col_val_qN",
             "direct damage: method='Shared MILP', objective='validity_full_harmful_sequence_per_prompt'",
         ],
-        "DPA weakest-token baseline": [
+        "DPA weakest-token stability baseline": [
             "budget curves: method='DPA token margin' for stability",
-            "budget curves: method='DPA weakest harmful token' for validity",
-            "summary CSV: dpa_stab_row_radius_qN and dpa_val_row_weak_qN",
+            "summary CSV: dpa_stab_row_radius_qN",
+        ],
+        "DPA target-token validity diagnostic": [
+            "budget curves: method='DPA weakest harmful token' for validity diagnostics",
+            "summary CSV: dpa_val_row_weak_qN",
+            "not a full-sequence validity baseline",
         ],
         "TPA sequence baseline": [
             "budget curves: method='TPA max-token sequence' with objective='validity_full_harmful_sequence_per_prompt'",
@@ -1106,8 +1341,11 @@ def write_method_mapping_report(output_dir: Path, rows: list[dict[str, object]],
         "Mapped to Joint row-column MILP:",
         *[f"- {item}" for item in report["Joint row-column MILP"]],
         "",
-        "Mapped to DPA weakest-token baseline:",
-        *[f"- {item}" for item in report["DPA weakest-token baseline"]],
+        "Mapped to DPA weakest-token stability baseline:",
+        *[f"- {item}" for item in report["DPA weakest-token stability baseline"]],
+        "",
+        "Mapped to DPA target-token validity diagnostic:",
+        *[f"- {item}" for item in report["DPA target-token validity diagnostic"]],
         "",
         "Mapped to TPA sequence baseline:",
         *[f"- {item}" for item in report["TPA sequence baseline"]],
@@ -2427,6 +2665,7 @@ def build_parser() -> argparse.ArgumentParser:
             "visualize",
             "benchmark",
             "plot-csv",
+            "plot-validity-demo",
             "audit-curves",
             "sweep-delta",
             "sweep-length",
@@ -2445,7 +2684,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--delta-vals", type=_parse_float_list, default=None)
     parser.add_argument("--target-bias", type=float, default=None)
     parser.add_argument("--target-biases", type=_parse_float_list, default=None)
-    parser.add_argument("--influence-mode", choices=["dense", "row-local", "column-local"], default="dense")
+    parser.add_argument("--generator", choices=["toy", "validity_demo"], default="toy")
+    parser.add_argument("--group-size", type=int, default=3)
+    parser.add_argument("--target-gap", type=int, default=1)
+    parser.add_argument("--overlap", type=int, default=0)
+    parser.add_argument("--influence-mode", choices=["dense", "row-local", "column-local", "validity_demo"], default="dense")
     parser.add_argument("--stability-competitor-mode", choices=["all", "runner_up"], default="all")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--preset", choices=sorted(BENCHMARK_PRESETS), default=None, help="Benchmark preset used when explicit grid ranges are omitted.")
@@ -2538,9 +2781,15 @@ def main() -> None:
             make_budget_curves=args.make_budget_curves,
             make_damage_curves=args.make_damage_curves,
             make_horizon_curves=args.make_horizon_curves,
+            generator=args.generator,
+            group_size=args.group_size,
+            target_gap=args.target_gap,
+            overlap=args.overlap,
         )
     elif args.command == "plot-csv":
         plot_benchmark_csv(args.csv, save_dir=args.save_dir)
+    elif args.command == "plot-validity-demo":
+        plot_validity_demo_csv(args.csv, save_dir=args.save_dir)
     elif args.command == "audit-curves":
         audit_curve_csvs(args.csv_dir)
     elif args.command == "sweep-delta":

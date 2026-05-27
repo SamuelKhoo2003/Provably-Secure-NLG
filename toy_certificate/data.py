@@ -114,6 +114,136 @@ def generate_toy_votes(
     )
 
 
+def generate_validity_demo_votes(
+    L: int,
+    group_size: int,
+    target_gap: int,
+    overlap: int = 0,
+    N: int = 1,
+    T: int = 4,
+    seed: int = 0,
+    K: int | None = None,
+) -> ToyData:
+    """Generate an artificial controlled validity-demo instance.
+
+    Each token position has a cheap harmful-target attack supported by its own
+    shard group. Groups are disjoint when ``overlap=0`` and share adjacent
+    boundary shards when ``overlap>0``. Token-level counts therefore make each
+    target look individually cheap, while a full harmful sequence requires a
+    common poisoned-shard allocation spanning several mostly different groups.
+    """
+    gap_pattern = [max(target_gap, 1 + 2 * ((j + 1) // 2)) for j in range(L)]
+    return _generate_validity_demo_votes_from_gaps(
+        L=L,
+        group_size=group_size,
+        target_gaps=gap_pattern,
+        overlap=overlap,
+        N=N,
+        T=T,
+        seed=seed,
+        K=K,
+        generator_name="validity_demo",
+    )
+
+
+def _generate_validity_demo_votes_from_gaps(
+    L: int,
+    group_size: int,
+    target_gaps: list[int],
+    overlap: int = 0,
+    N: int = 1,
+    T: int = 4,
+    seed: int = 0,
+    K: int | None = None,
+    generator_name: str = "validity_demo",
+) -> ToyData:
+    if L < 1:
+        raise ValueError("L must be at least 1")
+    if N < 1:
+        raise ValueError("N must be at least 1")
+    if T < 4:
+        raise ValueError(f"T must be at least 4 for {generator_name} instances")
+    if group_size < 1:
+        raise ValueError("group_size must be at least 1")
+    if len(target_gaps) != L:
+        raise ValueError("target_gaps must have length L")
+    if any(gap < 1 for gap in target_gaps):
+        raise ValueError("all target gaps must be at least 1")
+    if overlap < 0 or overlap >= group_size:
+        raise ValueError("overlap must be in [0, group_size)")
+
+    stride = group_size - overlap
+    min_required_shards = group_size + (L - 1) * stride
+    K = max(min_required_shards, min_required_shards if K is None else K)
+    rng = np.random.default_rng(seed)
+    groups = [np.arange(j * stride, j * stride + group_size, dtype=np.int64) for j in range(L)]
+
+    base_token = np.zeros((N, L), dtype=np.int64)
+    for j in range(L):
+        base_token[:, j] = j % T
+    clean_pred = base_token.copy()
+    target = ((base_token + 1) % T).astype(np.int64)
+    val_base = ((target + 1) % T).astype(np.int64)
+
+    stab_votes = np.repeat(base_token[None, :, :], K, axis=0).astype(np.int64)
+    val_votes = np.empty((K, N, L), dtype=np.int64)
+    influence = np.zeros((K, N, L), dtype=np.int64)
+    all_shards = np.arange(K, dtype=np.int64)
+    for i in range(N):
+        for j in range(L):
+            group = groups[j]
+            influence[group, i, j] = 1
+            runner = int((base_token[i, j] + 2) % T)
+            non_group_for_stability = np.array([k for k in all_shards if k not in set(group.tolist())], dtype=np.int64)
+            runner_count = min(len(non_group_for_stability), max(1, (K - 1) // 2))
+            stab_votes[non_group_for_stability[:runner_count], i, j] = runner
+
+            h = int(target[i, j])
+            main_competitor = int(val_base[i, j])
+            other_tokens = [token for token in range(T) if token not in {h, main_competitor}]
+            target_gap = int(target_gaps[j])
+
+            target_count = int(np.ceil((K - target_gap) / T))
+            main_count = min(K - target_count, target_count + target_gap)
+            remaining = K - target_count - main_count
+
+            votes = np.empty(K, dtype=np.int64)
+            votes[:] = other_tokens[0]
+            ordered_group = group.copy()
+            rng.shuffle(ordered_group)
+            main_group = ordered_group[: min(group_size, main_count)]
+            votes[main_group] = main_competitor
+
+            non_group = np.array([k for k in all_shards if k not in set(group.tolist())], dtype=np.int64)
+            rng.shuffle(non_group)
+            cursor = 0
+            remaining_main = main_count - len(main_group)
+            if remaining_main > 0:
+                votes[non_group[cursor : cursor + remaining_main]] = main_competitor
+                cursor += remaining_main
+            votes[non_group[cursor : cursor + target_count]] = h
+            cursor += target_count
+            for offset, k in enumerate(non_group[cursor : cursor + remaining]):
+                votes[k] = other_tokens[offset % len(other_tokens)]
+            val_votes[:, i, j] = votes
+
+    stab_counts = compute_counts(stab_votes, T)
+    runner_up = runner_up_tokens(stab_counts, clean_pred)
+    val_counts = compute_counts(val_votes, T)
+    return ToyData(
+        stab_votes=stab_votes,
+        val_votes=val_votes,
+        stab_counts=stab_counts,
+        val_counts=val_counts,
+        clean_pred=clean_pred,
+        runner_up=runner_up,
+        target=target,
+        base_token=base_token,
+        val_base=val_base,
+        influence=influence,
+    )
+
+
 def compute_counts(votes: np.ndarray, T: int) -> np.ndarray:
     """Count token votes per prompt row and token position.
 

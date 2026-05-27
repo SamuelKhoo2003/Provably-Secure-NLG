@@ -13,16 +13,21 @@ OUT_DIR="${OUT_DIR:-$(config_value output_dir outputs/$PRESET)}"
 CSV_PATH="${CSV_PATH:-$OUT_DIR/benchmark_results.csv}"
 STABILITY_COMPETITOR_MODE="${STABILITY_COMPETITOR_MODE:-$(config_value stability_competitor_mode all)}"
 BUDGET_MAX="${BUDGET_MAX:-$(config_value budget_max 15)}"
-MAKE_BUDGET_CURVES="${MAKE_BUDGET_CURVES:-1}"
-MAKE_DAMAGE_CURVES="${MAKE_DAMAGE_CURVES:-1}"
-MAKE_HORIZON_CURVES="${MAKE_HORIZON_CURVES:-1}"
+MAKE_BUDGET_CURVES="${MAKE_BUDGET_CURVES:-$(config_value make_budget_curves 1)}"
+MAKE_DAMAGE_CURVES="${MAKE_DAMAGE_CURVES:-$(config_value make_damage_curves 1)}"
+MAKE_HORIZON_CURVES="${MAKE_HORIZON_CURVES:-$(config_value make_horizon_curves 1)}"
+GENERATOR="${GENERATOR:-$(config_value generator toy)}"
+GROUP_SIZE="${GROUP_SIZE:-$(config_value group_size 3)}"
+TARGET_GAP="${TARGET_GAP:-$(config_value target_gap 1)}"
+OVERLAP="${OVERLAP:-$(config_value overlap 0)}"
 
 echo "Writing benchmark data to: $OUT_DIR"
 echo "Config: $CONFIG"
+echo "Generator: $GENERATOR"
 echo "Stability competitor mode: $STABILITY_COMPETITOR_MODE"
 mkdir -p "$OUT_DIR"
 
-args=(--preset "$PRESET" --influence-mode "${INFLUENCE_MODE:-$(config_value influence_mode dense)}" --stability-competitor-mode "$STABILITY_COMPETITOR_MODE" --seed "${SEED:-$(config_value seed 0)}" --save-dir "$OUT_DIR" --budget-max "$BUDGET_MAX")
+args=(--preset "$PRESET" --generator "$GENERATOR" --group-size "$GROUP_SIZE" --target-gap "$TARGET_GAP" --overlap "$OVERLAP" --influence-mode "${INFLUENCE_MODE:-$(config_value influence_mode dense)}" --stability-competitor-mode "$STABILITY_COMPETITOR_MODE" --seed "${SEED:-$(config_value seed 0)}" --save-dir "$OUT_DIR" --budget-max "$BUDGET_MAX")
 
 KS="${KS:-$(config_value K_values "")}"
 NS="${NS:-$(config_value N_values "")}"
