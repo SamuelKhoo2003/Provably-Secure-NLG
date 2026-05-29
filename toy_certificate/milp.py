@@ -1,16 +1,4 @@
-"""Gurobi MILP solvers for shared row/column poisoning certificates.
-
-The solvers in this module all optimize the same core quantity:
-``B_star = min sum_k a[k]``, where ``a[k]`` is a binary poisoned-shard
-allocation. The same allocation is reused across all required prompt rows and
-token positions, which is the shared row-column MILP coupling.
-
-Stability objectives change outputs away from the clean winner. Validity
-objectives force harmful target tokens or full harmful target sequences. Report
-figures should prefer :func:`solve_structured_stability` and
-:func:`solve_row_col_validity`; older row/column functions remain as
-legacy debugging helpers and are not part of the report-facing comparisons.
-"""
+"""Gurobi MILP solvers for shared poisoning certificates."""
 
 from __future__ import annotations
 
@@ -24,14 +12,7 @@ from gurobipy import GRB
 
 @dataclass(frozen=True)
 class CertificateResult:
-    """Result returned by a certificate MILP solve.
-
-    ``B_star`` is the poisoned-shard budget. If ``is_optimal`` is false and a
-    feasible solution exists, ``B_star`` is the best feasible upper bound found
-    by Gurobi rather than a certified optimum. ``attacked_cells`` is diagnostic:
-    attacked-cell indicators are not secondarily minimized, so the list may
-    contain extra feasible cells beyond those required by the objective.
-    """
+    """Result returned by a certificate MILP solve."""
 
     name: str
     B_star: int | None
@@ -41,7 +22,6 @@ class CertificateResult:
     status_name: str
     objective: float | None
     y_row: list[int] | None = None
-    y_col: list[int] | None = None
     is_optimal: bool = False
     mip_gap: float | None = None
     lower_bound: float | None = None
@@ -57,149 +37,11 @@ class CertificateResult:
             "status_name": self.status_name,
             "objective": self.objective,
             "y_row": self.y_row,
-            "y_col": self.y_col,
             "is_optimal": self.is_optimal,
             "mip_gap": self.mip_gap,
             "lower_bound": self.lower_bound,
             "upper_bound": self.upper_bound,
         }
-
-
-@dataclass(frozen=True)
-class DamageResult:
-    """Result returned by a fixed-budget damage maximization MILP.
-
-    ``objective_value`` is the maximum feasible damage found under
-    ``sum_k a[k] <= budget``. For maximization models, ``lower_bound`` is the
-    best feasible objective value and ``upper_bound`` is Gurobi's objective
-    bound. If the solve is non-optimal, the feasible value is a lower bound on
-    attack damage, not an exact maximum.
-    """
-
-    name: str
-    budget: int
-    selected_poisoned_shards: list[int]
-    attacked_cells: list[tuple[int, int]]
-    attacked_rows: list[int] | None
-    status: int
-    status_name: str
-    objective_value: float | None
-    is_optimal: bool = False
-    mip_gap: float | None = None
-    lower_bound: float | None = None
-    upper_bound: float | None = None
-    runtime_sec: float | None = None
-
-    @property
-    def max_attacked_rows(self) -> int | None:
-        if self.attacked_rows is None:
-            return None
-        return len(self.attacked_rows)
-
-    @property
-    def max_attacked_cells(self) -> int:
-        return len(self.attacked_cells)
-
-    def as_dict(self) -> dict[str, Any]:
-        return {
-            "name": self.name,
-            "budget": self.budget,
-            "a": self.selected_poisoned_shards,
-            "z": self.attacked_cells,
-            "y_row": self.attacked_rows,
-            "status": self.status,
-            "status_name": self.status_name,
-            "objective_value": self.objective_value,
-            "is_optimal": self.is_optimal,
-            "mip_gap": self.mip_gap,
-            "lower_bound": self.lower_bound,
-            "upper_bound": self.upper_bound,
-            "runtime_sec": self.runtime_sec,
-        }
-
-
-def solve_row_stability(
-    votes: np.ndarray,
-    clean_counts: np.ndarray,
-    clean_pred: np.ndarray,
-    runner_up: np.ndarray,
-    influence: np.ndarray | None = None,
-    competitor_mode: str = "all",
-) -> CertificateResult:
-    """Compatibility stability objective requiring at least one attacked prompt row.
-
-    ``votes`` has shape ``(K, N, L)`` and ``clean_counts`` has shape
-    ``(N, L, T)``. Report-facing stability experiments should generally use
-    :func:`solve_structured_stability`.
-    """
-    K, N, L, _ = _validate_stability_shapes(votes, clean_counts, clean_pred, runner_up, influence)
-    model, a = _make_model(K, "row_stability")
-    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up, influence, competitor_mode=competitor_mode)
-    y = model.addVars(N, vtype=GRB.BINARY, name="y_row")
-    for i in range(N):
-        model.addConstr(y[i] <= gp.quicksum(z[i, j] for j in range(L)), name=f"row_upper_{i}")
-        for j in range(L):
-            model.addConstr(y[i] >= z[i, j], name=f"row_lower_{i}_{j}")
-    model.addConstr(gp.quicksum(y[i] for i in range(N)) >= 1, name="attack_at_least_one_row")
-    return _optimize_and_extract("row_stability", model, a, z, y_row=y)
-
-
-def solve_col_stability(
-    votes: np.ndarray,
-    clean_counts: np.ndarray,
-    clean_pred: np.ndarray,
-    runner_up: np.ndarray,
-    influence: np.ndarray | None = None,
-    competitor_mode: str = "all",
-) -> CertificateResult:
-    """Compatibility stability objective requiring at least one attacked token column."""
-    K, N, L, _ = _validate_stability_shapes(votes, clean_counts, clean_pred, runner_up, influence)
-    model, a = _make_model(K, "column_stability")
-    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up, influence, competitor_mode=competitor_mode)
-    y = model.addVars(L, vtype=GRB.BINARY, name="y_col")
-    for j in range(L):
-        model.addConstr(y[j] <= gp.quicksum(z[i, j] for i in range(N)), name=f"col_upper_{j}")
-        for i in range(N):
-            model.addConstr(y[j] >= z[i, j], name=f"col_lower_{i}_{j}")
-    model.addConstr(gp.quicksum(y[j] for j in range(L)) >= 1, name="attack_at_least_one_col")
-    return _optimize_and_extract("column_stability", model, a, z, y_col=y)
-
-
-def solve_row_col_stability(
-    votes: np.ndarray,
-    clean_counts: np.ndarray,
-    clean_pred: np.ndarray,
-    runner_up: np.ndarray,
-    influence: np.ndarray | None = None,
-    definition: str = "any_cell",
-    competitor_mode: str = "all",
-) -> CertificateResult:
-    """Compatibility row/column stability wrapper for older named objectives.
-
-    ``definition`` selects legacy objectives such as any cell, full row, full
-    column, or full matrix. New report-facing code should use
-    :func:`solve_structured_stability` with explicit ``q_rows`` and ``r_cols``.
-    """
-    K, N, L, _ = _validate_stability_shapes(votes, clean_counts, clean_pred, runner_up, influence)
-    model, a = _make_model(K, f"row_col_stability_{definition}")
-    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up, influence, competitor_mode=competitor_mode)
-    y_row = None
-    y_col = None
-
-    if definition == "any_cell":
-        model.addConstr(gp.quicksum(z[i, j] for i in range(N) for j in range(L)) >= 1, name="any_cell")
-    elif definition == "full_row":
-        y_row = model.addVars(N, vtype=GRB.BINARY, name="y_full_row")
-        _add_full_row_constraints(model, z, y_row, N, L, q_rows=1)
-    elif definition == "full_col":
-        y_col = model.addVars(L, vtype=GRB.BINARY, name="y_full_col")
-        _add_full_col_constraints(model, z, y_col, N, L)
-    elif definition == "full_matrix":
-        model.addConstr(gp.quicksum(z[i, j] for i in range(N) for j in range(L)) >= N * L, name="full_matrix")
-    else:
-        raise ValueError(f"Unknown row/column stability definition: {definition}")
-
-    return _optimize_and_extract(f"row_col_stability_{definition}", model, a, z, y_row=y_row, y_col=y_col)
 
 
 def solve_structured_stability(
@@ -212,17 +54,7 @@ def solve_structured_stability(
     r_cols: int = 1,
     competitor_mode: str = "all",
 ) -> CertificateResult:
-    """Preferred report-facing structured stability solver.
-
-    The same poisoned-shard variables a[k] are reused across every cell. Use
-    q_rows=1,r_cols=1 for one prompt/one token; q_rows=1,r_cols=L for one
-    prompt/full sequence; q_rows=N,r_cols=1 for all prompts/one token each; and
-    q_rows=N,r_cols=L for the full prompt-token matrix.
-
-    ``competitor_mode="all"`` is exact and checks every non-clean token.
-    ``competitor_mode="runner_up"`` is a cheaper DPA-style approximation that
-    checks only the original runner-up and may overestimate robustness.
-    """
+    """Minimize poisoned shards needed to destabilize q rows by r token positions."""
     K, N, L, _ = _validate_stability_shapes(votes, clean_counts, clean_pred, runner_up, influence)
     if q_rows < 1 or q_rows > N:
         raise ValueError(f"q_rows must be in [1, {N}]")
@@ -230,62 +62,10 @@ def solve_structured_stability(
         raise ValueError(f"r_cols must be in [1, {L}]")
 
     model, a = _make_model(K, f"row_col_stability_q{q_rows}_r{r_cols}")
-    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up, influence, competitor_mode=competitor_mode)
+    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up, influence, competitor_mode)
     y_row = model.addVars(N, vtype=GRB.BINARY, name="y_row")
     _add_at_least_r_row_constraints(model, z, y_row, N, L, q_rows=q_rows, r_cols=r_cols)
     return _optimize_and_extract(f"row_col_stability_q{q_rows}_r{r_cols}", model, a, z, y_row=y_row)
-
-
-def solve_row_validity(
-    votes: np.ndarray,
-    counts: np.ndarray | None = None,
-    target: np.ndarray | None = None,
-    T: int | None = None,
-    influence: np.ndarray | None = None,
-    *,
-    clean_counts: np.ndarray | None = None,
-) -> CertificateResult:
-    """Compatibility validity objective requiring one full harmful prompt row.
-
-    ``votes`` has shape ``(K, N, L)`` and ``counts`` has shape ``(N, L, T)``.
-    ``clean_counts`` is accepted as a legacy keyword alias, but validity counts
-    need not come from the clean prefix.
-    """
-    counts, target, T = _resolve_validity_args(counts, clean_counts, target, T)
-    K, N, L, T = _validate_validity_shapes(votes, counts, target, T, influence)
-    model, a = _make_model(K, "row_validity")
-    z = _add_validity_cell_constraints(model, a, votes, counts, target, T, influence)
-    y = model.addVars(N, vtype=GRB.BINARY, name="y_row")
-    _add_full_row_constraints(model, z, y, N, L, q_rows=1)
-    return _optimize_and_extract("row_validity", model, a, z, y_row=y)
-
-
-def solve_col_validity(
-    votes: np.ndarray,
-    counts: np.ndarray | None = None,
-    target: np.ndarray | None = None,
-    T: int | None = None,
-    influence: np.ndarray | None = None,
-    definition: str = "full_column",
-    *,
-    clean_counts: np.ndarray | None = None,
-) -> CertificateResult:
-    """Compatibility validity objective over token columns or any valid cell."""
-    counts, target, T = _resolve_validity_args(counts, clean_counts, target, T)
-    K, N, L, T = _validate_validity_shapes(votes, counts, target, T, influence)
-    model, a = _make_model(K, f"column_validity_{definition}")
-    z = _add_validity_cell_constraints(model, a, votes, counts, target, T, influence)
-    y_col = None
-
-    if definition == "full_column":
-        y_col = model.addVars(L, vtype=GRB.BINARY, name="y_col")
-        _add_full_col_constraints(model, z, y_col, N, L)
-    elif definition == "any_cell":
-        model.addConstr(gp.quicksum(z[i, j] for i in range(N) for j in range(L)) >= 1, name="any_valid_cell")
-    else:
-        raise ValueError(f"Unknown column validity definition: {definition}")
-
-    return _optimize_and_extract(f"column_validity_{definition}", model, a, z, y_col=y_col)
 
 
 def solve_row_col_validity(
@@ -299,20 +79,15 @@ def solve_row_col_validity(
     *,
     clean_counts: np.ndarray | None = None,
 ) -> CertificateResult:
-    """Preferred report-facing shared-allocation validity solver.
-
-    q_rows=1 asks for one full harmful target sequence. q_rows=N asks for full
-    harmful target sequences for all prompts. A validity cell succeeds only when
-    the harmful target token ties or beats every competitor.
-    """
+    """Minimize poisoned shards needed to force harmful target sequences."""
     counts, target, T = _resolve_validity_args(counts, clean_counts, target, T)
-    K, N, L, T = _validate_validity_shapes(votes, counts, target, T, influence)
+    K, N, L, _ = _validate_validity_shapes(votes, counts, target, T, influence)
     if q_rows < 1 or q_rows > N:
         raise ValueError(f"q_rows must be in [1, {N}]")
+
     model, a = _make_model(K, f"row_col_validity_{definition}")
     z = _add_validity_cell_constraints(model, a, votes, counts, target, T, influence)
     y_row = None
-
     if definition == "at_least_q_rows":
         y_row = model.addVars(N, vtype=GRB.BINARY, name="y_row")
         _add_full_row_constraints(model, z, y_row, N, L, q_rows=q_rows)
@@ -322,112 +97,10 @@ def solve_row_col_validity(
         result_name = "row_col_validity_full_matrix"
     else:
         raise ValueError(f"Unknown row/column validity definition: {definition}")
-
     return _optimize_and_extract(result_name, model, a, z, y_row=y_row)
 
 
-def maximize_attacked_rows_stability(
-    votes: np.ndarray,
-    clean_counts: np.ndarray,
-    clean_pred: np.ndarray,
-    runner_up: np.ndarray,
-    influence: np.ndarray | None = None,
-    budget: int = 0,
-    row_requirement: str = "any_token",
-    competitor_mode: str = "all",
-) -> DamageResult:
-    """Maximize attacked prompt rows for a fixed stability poison budget.
-
-    ``row_requirement="any_token"`` counts a row when at least one token cell is
-    destabilised. ``row_requirement="full_sequence"`` counts a row only when
-    all token cells in that row are destabilised. In both cases the same
-    poisoned-shard allocation ``a[k]`` is shared across every row and cell.
-    """
-    K, N, L, _ = _validate_stability_shapes(votes, clean_counts, clean_pred, runner_up, influence)
-    model, a = _make_budget_model(K, f"damage_stability_rows_{row_requirement}", budget)
-    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up, influence, competitor_mode=competitor_mode)
-    y_row = model.addVars(N, vtype=GRB.BINARY, name="y_row")
-    if row_requirement == "any_token":
-        for i in range(N):
-            model.addConstr(y_row[i] <= gp.quicksum(z[i, j] for j in range(L)), name=f"row_any_{i}")
-    elif row_requirement == "full_sequence":
-        for i in range(N):
-            for j in range(L):
-                model.addConstr(z[i, j] >= y_row[i], name=f"row_full_{i}_{j}")
-    else:
-        raise ValueError("row_requirement must be 'any_token' or 'full_sequence'")
-    model.setObjective(gp.quicksum(y_row[i] for i in range(N)), GRB.MAXIMIZE)
-    return _optimize_damage_and_extract(f"damage_stability_rows_{row_requirement}", model, a, z, budget, y_row=y_row)
-
-
-def maximize_attacked_rows_validity(
-    votes: np.ndarray,
-    counts: np.ndarray | None = None,
-    target: np.ndarray | None = None,
-    T: int | None = None,
-    influence: np.ndarray | None = None,
-    budget: int = 0,
-    row_requirement: str = "full_sequence",
-    *,
-    clean_counts: np.ndarray | None = None,
-) -> DamageResult:
-    """Maximize harmful target sequences forced under a fixed poison budget."""
-    counts, target, T = _resolve_validity_args(counts, clean_counts, target, T)
-    K, N, L, T = _validate_validity_shapes(votes, counts, target, T, influence)
-    model, a = _make_budget_model(K, f"damage_validity_rows_{row_requirement}", budget)
-    z = _add_validity_cell_constraints(model, a, votes, counts, target, T, influence)
-    y_row = model.addVars(N, vtype=GRB.BINARY, name="y_row")
-    if row_requirement == "any_token":
-        for i in range(N):
-            model.addConstr(y_row[i] <= gp.quicksum(z[i, j] for j in range(L)), name=f"row_any_{i}")
-    elif row_requirement == "full_sequence":
-        for i in range(N):
-            for j in range(L):
-                model.addConstr(z[i, j] >= y_row[i], name=f"row_full_{i}_{j}")
-    else:
-        raise ValueError("row_requirement must be 'any_token' or 'full_sequence'")
-    model.setObjective(gp.quicksum(y_row[i] for i in range(N)), GRB.MAXIMIZE)
-    return _optimize_damage_and_extract(f"damage_validity_rows_{row_requirement}", model, a, z, budget, y_row=y_row)
-
-
-def maximize_attacked_cells_stability(
-    votes: np.ndarray,
-    clean_counts: np.ndarray,
-    clean_pred: np.ndarray,
-    runner_up: np.ndarray,
-    influence: np.ndarray | None = None,
-    budget: int = 0,
-    competitor_mode: str = "all",
-) -> DamageResult:
-    """Maximize destabilised cells under a fixed shared poison budget."""
-    K, N, L, _ = _validate_stability_shapes(votes, clean_counts, clean_pred, runner_up, influence)
-    model, a = _make_budget_model(K, "damage_stability_cells", budget)
-    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up, influence, competitor_mode=competitor_mode)
-    model.setObjective(gp.quicksum(z[i, j] for i in range(N) for j in range(L)), GRB.MAXIMIZE)
-    return _optimize_damage_and_extract("damage_stability_cells", model, a, z, budget)
-
-
-def maximize_attacked_cells_validity(
-    votes: np.ndarray,
-    counts: np.ndarray | None = None,
-    target: np.ndarray | None = None,
-    T: int | None = None,
-    influence: np.ndarray | None = None,
-    budget: int = 0,
-    *,
-    clean_counts: np.ndarray | None = None,
-) -> DamageResult:
-    """Maximize harmful target cells under a fixed shared poison budget."""
-    counts, target, T = _resolve_validity_args(counts, clean_counts, target, T)
-    K, N, L, T = _validate_validity_shapes(votes, counts, target, T, influence)
-    model, a = _make_budget_model(K, "damage_validity_cells", budget)
-    z = _add_validity_cell_constraints(model, a, votes, counts, target, T, influence)
-    model.setObjective(gp.quicksum(z[i, j] for i in range(N) for j in range(L)), GRB.MAXIMIZE)
-    return _optimize_damage_and_extract("damage_validity_cells", model, a, z, budget)
-
-
 def _make_model(K: int, name: str) -> tuple[gp.Model, gp.tupledict]:
-    """Create a silent Gurobi model with binary poisoned-shard variables."""
     env = gp.Env(empty=True)
     env.setParam("OutputFlag", 0)
     env.start()
@@ -438,19 +111,6 @@ def _make_model(K: int, name: str) -> tuple[gp.Model, gp.tupledict]:
     return model, a
 
 
-def _make_budget_model(K: int, name: str, budget: int) -> tuple[gp.Model, gp.tupledict]:
-    if budget < 0 or budget > K:
-        raise ValueError(f"budget must be in [0, {K}]")
-    env = gp.Env(empty=True)
-    env.setParam("OutputFlag", 0)
-    env.start()
-    model = gp.Model(name, env=env)
-    model._env = env
-    a = model.addVars(K, vtype=GRB.BINARY, name="a")
-    model.addConstr(gp.quicksum(a[k] for k in range(K)) <= budget, name="poison_budget")
-    return model, a
-
-
 def _add_stability_cell_constraints(
     model: gp.Model,
     a: gp.tupledict,
@@ -458,57 +118,45 @@ def _add_stability_cell_constraints(
     clean_counts: np.ndarray,
     clean_pred: np.ndarray,
     runner_up: np.ndarray,
-    influence: np.ndarray | None = None,
-    competitor_mode: str = "all",
+    influence: np.ndarray | None,
+    competitor_mode: str,
 ) -> gp.tupledict:
-    """Add per-cell stability attack constraints.
-
-    A stability cell is destabilised if any token other than the clean winner can
-    tie or beat the clean winner after poisoning. This checks all competitors,
-    not only the original runner-up. The shared a[k] variables are reused across
-    all cells, which is the core row/column coupling.
-
-    ``competitor_mode="runner_up"`` restores the cheaper top-vs-second
-    simplification for diagnostics.
-    """
     K, N, L = votes.shape
     T = clean_counts.shape[-1]
     _validate_competitor_mode(competitor_mode)
     influence = _dense_influence_if_none(influence, K, N, L)
-    M = 2 * K + 10
+    big_m = 2 * K + 10
     z = model.addVars(N, L, vtype=GRB.BINARY, name="z_stab")
     u = {}
 
     for i in range(N):
         for j in range(L):
-            w = int(clean_pred[i, j])
+            winner = int(clean_pred[i, j])
             if competitor_mode == "runner_up":
-                # DPA-style top-vs-runner-up simplification. This is cheaper but
-                # may overestimate robustness if a non-runner-up competitor is
-                # easier to promote after poisoning.
-                c = int(runner_up[i, j])
-                lhs = int(clean_counts[i, j, c]) + gp.quicksum(
-                    a[k] * int(influence[k, i, j]) * int(votes[k, i, j] != c) for k in range(K)
+                competitor = int(runner_up[i, j])
+                lhs = int(clean_counts[i, j, competitor]) + gp.quicksum(
+                    a[k] * int(influence[k, i, j]) * int(votes[k, i, j] != competitor) for k in range(K)
                 )
-                rhs = int(clean_counts[i, j, w]) - gp.quicksum(
-                    a[k] * int(influence[k, i, j]) * int(votes[k, i, j] == w) for k in range(K)
+                rhs = int(clean_counts[i, j, winner]) - gp.quicksum(
+                    a[k] * int(influence[k, i, j]) * int(votes[k, i, j] == winner) for k in range(K)
                 )
-                model.addConstr(lhs >= rhs - M * (1 - z[i, j]), name=f"stability_cell_runner_up_{i}_{j}")
+                model.addConstr(lhs >= rhs - big_m * (1 - z[i, j]), name=f"stability_cell_runner_up_{i}_{j}")
                 continue
+
             competitor_vars = []
-            for c in range(T):
-                if c == w:
+            for competitor in range(T):
+                if competitor == winner:
                     continue
-                u[i, j, c] = model.addVar(vtype=GRB.BINARY, name=f"u_stab_{i}_{j}_{c}")
-                competitor_vars.append(u[i, j, c])
-                lhs = int(clean_counts[i, j, c]) + gp.quicksum(
-                    a[k] * int(influence[k, i, j]) * int(votes[k, i, j] != c) for k in range(K)
+                u[i, j, competitor] = model.addVar(vtype=GRB.BINARY, name=f"u_stab_{i}_{j}_{competitor}")
+                competitor_vars.append(u[i, j, competitor])
+                lhs = int(clean_counts[i, j, competitor]) + gp.quicksum(
+                    a[k] * int(influence[k, i, j]) * int(votes[k, i, j] != competitor) for k in range(K)
                 )
-                rhs = int(clean_counts[i, j, w]) - gp.quicksum(
-                    a[k] * int(influence[k, i, j]) * int(votes[k, i, j] == w) for k in range(K)
+                rhs = int(clean_counts[i, j, winner]) - gp.quicksum(
+                    a[k] * int(influence[k, i, j]) * int(votes[k, i, j] == winner) for k in range(K)
                 )
-                model.addConstr(lhs >= rhs - M * (1 - u[i, j, c]), name=f"stability_cell_{i}_{j}_{c}")
-                model.addConstr(u[i, j, c] <= z[i, j], name=f"stability_link_upper_{i}_{j}_{c}")
+                model.addConstr(lhs >= rhs - big_m * (1 - u[i, j, competitor]), name=f"stability_cell_{i}_{j}_{competitor}")
+                model.addConstr(u[i, j, competitor] <= z[i, j], name=f"stability_link_upper_{i}_{j}_{competitor}")
             model.addConstr(z[i, j] <= gp.quicksum(competitor_vars), name=f"stability_link_lower_{i}_{j}")
     return z
 
@@ -520,33 +168,128 @@ def _add_validity_cell_constraints(
     counts: np.ndarray,
     target: np.ndarray,
     T: int,
-    influence: np.ndarray | None = None,
+    influence: np.ndarray | None,
 ) -> gp.tupledict:
-    """Add per-cell validity attack constraints.
-
-    A validity cell is attacked when the harmful target token ties or beats every
-    competitor under the shared poisoned-shard allocation. These counts are the
-    validity/harmful-prefix counts, not necessarily clean-prefix counts.
-    """
     K, N, L = votes.shape
     influence = _dense_influence_if_none(influence, K, N, L)
-    M = 2 * K + 10
+    big_m = 2 * K + 10
     z = model.addVars(N, L, vtype=GRB.BINARY, name="z_val")
 
     for i in range(N):
         for j in range(L):
-            h = int(target[i, j])
-            target_count = int(counts[i, j, h]) + gp.quicksum(
-                a[k] * int(influence[k, i, j]) * int(votes[k, i, j] != h) for k in range(K)
+            harmful = int(target[i, j])
+            target_count = int(counts[i, j, harmful]) + gp.quicksum(
+                a[k] * int(influence[k, i, j]) * int(votes[k, i, j] != harmful) for k in range(K)
             )
-            for c in range(T):
-                if c == h:
+            for competitor in range(T):
+                if competitor == harmful:
                     continue
-                competitor_count = int(counts[i, j, c]) - gp.quicksum(
-                    a[k] * int(influence[k, i, j]) * int(votes[k, i, j] == c) for k in range(K)
+                competitor_count = int(counts[i, j, competitor]) - gp.quicksum(
+                    a[k] * int(influence[k, i, j]) * int(votes[k, i, j] == competitor) for k in range(K)
                 )
-                model.addConstr(target_count >= competitor_count - M * (1 - z[i, j]), name=f"validity_cell_{i}_{j}_{c}")
+                model.addConstr(target_count >= competitor_count - big_m * (1 - z[i, j]), name=f"validity_cell_{i}_{j}_{competitor}")
     return z
+
+
+def _add_full_row_constraints(model: gp.Model, z: gp.tupledict, y_row: gp.tupledict, N: int, L: int, q_rows: int) -> None:
+    for i in range(N):
+        model.addConstr(gp.quicksum(z[i, j] for j in range(L)) >= L * y_row[i], name=f"full_row_sum_{i}")
+        for j in range(L):
+            model.addConstr(z[i, j] >= y_row[i], name=f"full_row_cell_{i}_{j}")
+    model.addConstr(gp.quicksum(y_row[i] for i in range(N)) >= q_rows, name=f"at_least_{q_rows}_rows")
+
+
+def _add_at_least_r_row_constraints(
+    model: gp.Model,
+    z: gp.tupledict,
+    y_row: gp.tupledict,
+    N: int,
+    L: int,
+    q_rows: int,
+    r_cols: int,
+) -> None:
+    for i in range(N):
+        changed_in_row = gp.quicksum(z[i, j] for j in range(L))
+        model.addConstr(changed_in_row >= r_cols * y_row[i], name=f"row_{i}_at_least_{r_cols}_lower")
+        model.addConstr(changed_in_row <= (r_cols - 1) + (L - r_cols + 1) * y_row[i], name=f"row_{i}_at_least_{r_cols}_upper")
+    model.addConstr(gp.quicksum(y_row[i] for i in range(N)) >= q_rows, name=f"at_least_{q_rows}_rows")
+
+
+def _optimize_and_extract(
+    name: str,
+    model: gp.Model,
+    a: gp.tupledict,
+    z: gp.tupledict,
+    y_row: gp.tupledict | None = None,
+) -> CertificateResult:
+    model.optimize()
+    status_name = _status_name(model.status)
+    if model.status not in {GRB.OPTIMAL, GRB.SUBOPTIMAL, GRB.TIME_LIMIT} or model.SolCount == 0:
+        return CertificateResult(
+            name=name,
+            B_star=None,
+            selected_poisoned_shards=[],
+            attacked_cells=[],
+            status=model.status,
+            status_name=status_name,
+            objective=None,
+            is_optimal=False,
+            mip_gap=_safe_model_attr(model, "MIPGap"),
+            lower_bound=_safe_model_attr(model, "ObjBound"),
+            upper_bound=None,
+        )
+
+    selected = [k for k in a.keys() if a[k].X > 0.5]
+    attacked = [(i, j) for i, j in z.keys() if z[i, j].X > 0.5]
+    y_row_values = None if y_row is None else [i for i in y_row.keys() if y_row[i].X > 0.5]
+    objective = float(sum(a[k].X for k in a.keys()))
+    return CertificateResult(
+        name=name,
+        B_star=int(round(objective)),
+        selected_poisoned_shards=selected,
+        attacked_cells=attacked,
+        status=model.status,
+        status_name=status_name,
+        objective=objective,
+        y_row=y_row_values,
+        is_optimal=model.status == GRB.OPTIMAL,
+        mip_gap=_safe_model_attr(model, "MIPGap"),
+        lower_bound=_safe_model_attr(model, "ObjBound"),
+        upper_bound=_safe_model_attr(model, "ObjVal"),
+    )
+
+
+def _safe_model_attr(model: gp.Model, attr_name: str) -> float | None:
+    try:
+        value = getattr(model, attr_name)
+    except (gp.GurobiError, AttributeError):
+        return None
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not np.isfinite(numeric):
+        return None
+    return numeric
+
+
+def _status_name(status: int) -> str:
+    status_map = {
+        GRB.LOADED: "LOADED",
+        GRB.OPTIMAL: "OPTIMAL",
+        GRB.INFEASIBLE: "INFEASIBLE",
+        GRB.INF_OR_UNBD: "INF_OR_UNBD",
+        GRB.UNBOUNDED: "UNBOUNDED",
+        GRB.CUTOFF: "CUTOFF",
+        GRB.ITERATION_LIMIT: "ITERATION_LIMIT",
+        GRB.NODE_LIMIT: "NODE_LIMIT",
+        GRB.TIME_LIMIT: "TIME_LIMIT",
+        GRB.SOLUTION_LIMIT: "SOLUTION_LIMIT",
+        GRB.INTERRUPTED: "INTERRUPTED",
+        GRB.NUMERIC: "NUMERIC",
+        GRB.SUBOPTIMAL: "SUBOPTIMAL",
+    }
+    return status_map.get(status, f"STATUS_{status}")
 
 
 def _dense_influence_if_none(influence: np.ndarray | None, K: int, N: int, L: int) -> np.ndarray:
@@ -643,169 +386,3 @@ def _resolve_validity_args(
     if T is None:
         raise ValueError("T is required for validity solvers.")
     return counts, target, T
-
-
-def _add_full_row_constraints(model: gp.Model, z: gp.tupledict, y_row: gp.tupledict, N: int, L: int, q_rows: int) -> None:
-    """Require at least ``q_rows`` prompt rows with all ``L`` token positions attacked."""
-    for i in range(N):
-        model.addConstr(gp.quicksum(z[i, j] for j in range(L)) >= L * y_row[i], name=f"full_row_sum_{i}")
-        for j in range(L):
-            model.addConstr(z[i, j] >= y_row[i], name=f"full_row_cell_{i}_{j}")
-    model.addConstr(gp.quicksum(y_row[i] for i in range(N)) >= q_rows, name=f"at_least_{q_rows}_rows")
-
-
-def _add_at_least_r_row_constraints(
-    model: gp.Model, z: gp.tupledict, y_row: gp.tupledict, N: int, L: int, q_rows: int, r_cols: int
-) -> None:
-    """Require at least ``q_rows`` prompt rows, each with at least ``r_cols`` attacked cells."""
-    for i in range(N):
-        changed_in_row = gp.quicksum(z[i, j] for j in range(L))
-        model.addConstr(changed_in_row >= r_cols * y_row[i], name=f"row_{i}_at_least_{r_cols}_lower")
-        model.addConstr(changed_in_row <= (r_cols - 1) + (L - r_cols + 1) * y_row[i], name=f"row_{i}_at_least_{r_cols}_upper")
-    model.addConstr(gp.quicksum(y_row[i] for i in range(N)) >= q_rows, name=f"at_least_{q_rows}_rows")
-
-
-def _add_full_col_constraints(model: gp.Model, z: gp.tupledict, y_col: gp.tupledict, N: int, L: int) -> None:
-    """Require at least one token position to be attacked for every prompt row."""
-    for j in range(L):
-        model.addConstr(gp.quicksum(z[i, j] for i in range(N)) >= N * y_col[j], name=f"full_col_sum_{j}")
-        for i in range(N):
-            model.addConstr(z[i, j] >= y_col[j], name=f"full_col_cell_{i}_{j}")
-    model.addConstr(gp.quicksum(y_col[j] for j in range(L)) >= 1, name="at_least_one_col")
-
-
-def _optimize_and_extract(
-    name: str,
-    model: gp.Model,
-    a: gp.tupledict,
-    z: gp.tupledict,
-    y_row: gp.tupledict | None = None,
-    y_col: gp.tupledict | None = None,
-) -> CertificateResult:
-    """Optimize a MILP and convert Gurobi status/solution attributes to ``CertificateResult``."""
-    # attacked_cells is diagnostic. z is not part of the primary objective, so a
-    # feasible optimum may include extra attackable cells beyond those required
-    # by the row/column objective. B* remains the certified primary quantity.
-    # If Gurobi stops at TIME_LIMIT or SUBOPTIMAL with a feasible solution, B*
-    # is the best feasible upper bound, not a certified optimum.
-    model.optimize()
-    status_name = _status_name(model.status)
-    if model.status not in {GRB.OPTIMAL, GRB.SUBOPTIMAL, GRB.TIME_LIMIT} or model.SolCount == 0:
-        return CertificateResult(
-            name=name,
-            B_star=None,
-            selected_poisoned_shards=[],
-            attacked_cells=[],
-            status=model.status,
-            status_name=status_name,
-            objective=None,
-            is_optimal=False,
-            mip_gap=_safe_model_attr(model, "MIPGap"),
-            lower_bound=_safe_model_attr(model, "ObjBound"),
-            upper_bound=None,
-        )
-
-    selected = [k for k in a.keys() if a[k].X > 0.5]
-    attacked = [(i, j) for i, j in z.keys() if z[i, j].X > 0.5]
-    y_row_values = None if y_row is None else [i for i in y_row.keys() if y_row[i].X > 0.5]
-    y_col_values = None if y_col is None else [j for j in y_col.keys() if y_col[j].X > 0.5]
-    objective = float(sum(a[k].X for k in a.keys()))
-    upper_bound = _safe_model_attr(model, "ObjVal")
-
-    return CertificateResult(
-        name=name,
-        B_star=int(round(objective)),
-        selected_poisoned_shards=selected,
-        attacked_cells=attacked,
-        status=model.status,
-        status_name=status_name,
-        objective=objective,
-        y_row=y_row_values,
-        y_col=y_col_values,
-        is_optimal=model.status == GRB.OPTIMAL,
-        mip_gap=_safe_model_attr(model, "MIPGap"),
-        lower_bound=_safe_model_attr(model, "ObjBound"),
-        upper_bound=upper_bound,
-    )
-
-
-def _optimize_damage_and_extract(
-    name: str,
-    model: gp.Model,
-    a: gp.tupledict,
-    z: gp.tupledict,
-    budget: int,
-    y_row: gp.tupledict | None = None,
-) -> DamageResult:
-    model.optimize()
-    status_name = _status_name(model.status)
-    runtime_sec = _safe_model_attr(model, "Runtime")
-    if model.status not in {GRB.OPTIMAL, GRB.SUBOPTIMAL, GRB.TIME_LIMIT} or model.SolCount == 0:
-        return DamageResult(
-            name=name,
-            budget=budget,
-            selected_poisoned_shards=[],
-            attacked_cells=[],
-            attacked_rows=None,
-            status=model.status,
-            status_name=status_name,
-            objective_value=None,
-            is_optimal=False,
-            mip_gap=_safe_model_attr(model, "MIPGap"),
-            lower_bound=None,
-            upper_bound=_safe_model_attr(model, "ObjBound"),
-            runtime_sec=runtime_sec,
-        )
-
-    selected = [k for k in a.keys() if a[k].X > 0.5]
-    attacked = [(i, j) for i, j in z.keys() if z[i, j].X > 0.5]
-    attacked_rows = None if y_row is None else [i for i in y_row.keys() if y_row[i].X > 0.5]
-    objective = _safe_model_attr(model, "ObjVal")
-    return DamageResult(
-        name=name,
-        budget=budget,
-        selected_poisoned_shards=selected,
-        attacked_cells=attacked,
-        attacked_rows=attacked_rows,
-        status=model.status,
-        status_name=status_name,
-        objective_value=objective,
-        is_optimal=model.status == GRB.OPTIMAL,
-        mip_gap=_safe_model_attr(model, "MIPGap"),
-        lower_bound=objective,
-        upper_bound=_safe_model_attr(model, "ObjBound"),
-        runtime_sec=runtime_sec,
-    )
-
-
-def _safe_model_attr(model: gp.Model, attr_name: str) -> float | None:
-    try:
-        value = getattr(model, attr_name)
-    except (gp.GurobiError, AttributeError):
-        return None
-    try:
-        numeric = float(value)
-    except (TypeError, ValueError):
-        return None
-    if not np.isfinite(numeric):
-        return None
-    return numeric
-
-
-def _status_name(status: int) -> str:
-    status_map = {
-        GRB.LOADED: "LOADED",
-        GRB.OPTIMAL: "OPTIMAL",
-        GRB.INFEASIBLE: "INFEASIBLE",
-        GRB.INF_OR_UNBD: "INF_OR_UNBD",
-        GRB.UNBOUNDED: "UNBOUNDED",
-        GRB.CUTOFF: "CUTOFF",
-        GRB.ITERATION_LIMIT: "ITERATION_LIMIT",
-        GRB.NODE_LIMIT: "NODE_LIMIT",
-        GRB.TIME_LIMIT: "TIME_LIMIT",
-        GRB.SOLUTION_LIMIT: "SOLUTION_LIMIT",
-        GRB.INTERRUPTED: "INTERRUPTED",
-        GRB.NUMERIC: "NUMERIC",
-        GRB.SUBOPTIMAL: "SUBOPTIMAL",
-    }
-    return status_map.get(status, f"STATUS_{status}")

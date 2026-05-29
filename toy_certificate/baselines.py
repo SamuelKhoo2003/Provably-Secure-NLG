@@ -15,6 +15,7 @@ def compute_reference_baselines(data: ToyData) -> dict[str, int | float]:
     phrase_row_budgets = atomic_phrase_validity_row_budgets(data)
     row_stability_radii = stability_cell_budgets.min(axis=1)
     row_validity_weak_radii = validity_cell_budgets.min(axis=1)
+    row_validity_strong_radii = validity_cell_budgets.max(axis=1)
     targeted_sequence_baselines = aggregate_tpa_sequence_baselines(targeted_validity_cell_budgets)
     independent_stability_row_costs = stability_cell_budgets.sum(axis=1)
     independent_validity_row_costs = validity_cell_budgets.sum(axis=1)
@@ -26,6 +27,8 @@ def compute_reference_baselines(data: ToyData) -> dict[str, int | float]:
         "dpa_val_cell_min": int(np.min(validity_cell_budgets)),
         "dpa_val_row_weak_q1": int(np.min(row_validity_weak_radii)),
         "dpa_val_row_weak_qN": int(np.max(row_validity_weak_radii)),
+        "dpa_val_row_strong_q1": int(np.min(row_validity_strong_radii)),
+        "dpa_val_row_strong_qN": int(np.max(row_validity_strong_radii)),
         "raw_dpa_val_min_cell": int(np.min(validity_cell_budgets)),
         "tpa_val_cell_min": int(np.min(targeted_validity_cell_budgets)),
         **targeted_sequence_baselines,

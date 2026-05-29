@@ -11,28 +11,15 @@ For stability, this is the percentage of evaluated stability regions where the c
 For validity, this is the percentage of evaluated validity regions where the harmful target output is guaranteed not to be forceable under budget B.
 
 Plots generated:
-- main_stability_budget_curve.svg
+- stability_one_token_per_row_budget_curve.svg
+- stability_one_prompt_budget_curve.svg
 - main_validity_budget_curve.svg
 - stability_certificate_vs_K.svg
 - validity_certificate_vs_K.svg
 
 Plot series:
-- main_stability_budget_curve.svg: Shared MILP one prompt, full sequence, DPA weakest token
-- main_validity_budget_curve.svg: Shared MILP full sequence, TPA max-token sequence, DPA weakest harmful token
+- stability_one_token_per_row_budget_curve.svg: Shared MILP all prompts, one token each, DPA weakest token
+- stability_one_prompt_budget_curve.svg: Shared MILP one prompt, full sequence, DPA weakest token
+- main_validity_budget_curve.svg: Shared MILP full sequence, TPA max-token sequence, DPA weakest harmful token, DPA most difficult harmful token
 - stability_certificate_vs_K.svg: Shared MILP full matrix, DPA weakest token
-- validity_certificate_vs_K.svg: Shared MILP all harmful sequences, DPA weakest harmful token, TPA max-token sequence
-
-Plots intentionally disabled in the default workflow:
-- ablation_stability_row_column_joint
-- ablation_validity_row_column_joint
-- stability_diagnostic_references
-- validity_diagnostic_references
-- stability_full_matrix_main_comparison
-- stability_one_sequence_main_comparison
-- validity_all_prompts_main_comparison
-- validity_one_sequence_main_comparison
-- validity_sensitivity_target_bias
-
-Removed paths:
-- Removed old ablation, diagnostic-reference, and main-comparison plot generator paths that were no longer used by plot.sh.
-- Kept shared SVG/line/heatmap helpers used by smoke visualization and validity_demo plotting.
+- validity_certificate_vs_K.svg: Shared MILP all harmful sequences, DPA weakest harmful token, DPA most difficult harmful token, TPA max-token sequence

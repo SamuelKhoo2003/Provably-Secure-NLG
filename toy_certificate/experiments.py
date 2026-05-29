@@ -30,7 +30,6 @@ from .baselines import (
     targeted_validity_token_budgets as _targeted_validity_token_budgets,
 )
 from .csv_io import (
-    copy_legacy_csv_columns as _copy_legacy_csv_columns,
     looks_numeric as _looks_numeric,
     read_optional_csv as _read_optional_csv,
     read_rows_csv as _read_rows_csv,
@@ -39,12 +38,7 @@ from .csv_io import (
 from .data import ToyData, generate_toy_votes, generate_validity_demo_votes, stability_margins
 from .milp import (
     CertificateResult,
-    solve_col_stability,
-    solve_col_validity,
-    solve_row_col_stability,
     solve_row_col_validity,
-    solve_row_stability,
-    solve_row_validity,
     solve_structured_stability,
 )
 
@@ -96,72 +90,23 @@ def run_sanity(
 
 def solve_default_certificates(data: ToyData, T: int, stability_competitor_mode: str = "all") -> list[CertificateResult]:
     """Solve the small default certificate set used by the sanity command."""
-    q_all_rows = data.stab_votes.shape[1]
+    N, L = data.stab_votes.shape[1], data.stab_votes.shape[2]
     return [
-        solve_row_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, competitor_mode=stability_competitor_mode),
-        solve_col_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, competitor_mode=stability_competitor_mode),
-        solve_row_col_stability(
-            data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, definition="any_cell", competitor_mode=stability_competitor_mode
+        solve_structured_stability(
+            data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=1, competitor_mode=stability_competitor_mode
         ),
-        solve_row_col_stability(
-            data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, definition="full_row", competitor_mode=stability_competitor_mode
+        solve_structured_stability(
+            data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=L, competitor_mode=stability_competitor_mode
         ),
-        solve_row_validity(data.val_votes, data.val_counts, data.target, T, data.influence),
-        solve_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, definition="full_column"),
+        solve_structured_stability(
+            data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=N, r_cols=1, competitor_mode=stability_competitor_mode
+        ),
+        solve_structured_stability(
+            data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=N, r_cols=L, competitor_mode=stability_competitor_mode
+        ),
         solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1),
-        solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=q_all_rows),
+        solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=N),
     ]
-
-
-def sweep_delta(K: int, N: int, L: int, T: int, deltas: Iterable[float], seed: int, stability_competitor_mode: str = "all") -> None:
-    """Print a small delta sweep table for quick interactive debugging."""
-    rows = []
-    for delta in deltas:
-        data = generate_toy_votes(K=K, N=N, L=L, T=T, delta_stab=delta, delta_val=delta, seed=seed)
-        rows.append(
-            [
-                delta,
-                solve_row_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, competitor_mode=stability_competitor_mode).B_star,
-                solve_row_validity(data.val_votes, data.val_counts, data.target, T, data.influence).B_star,
-                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1).B_star,
-                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=N).B_star,
-            ]
-        )
-    _print_sweep_table(["delta", "row_stab", "row_val", "row_col_val_q1", "row_col_val_qN"], rows)
-
-
-def sweep_length(K: int, N: int, lengths: Iterable[int], T: int, delta: float, seed: int, stability_competitor_mode: str = "all") -> None:
-    """Print a small sequence-length sweep table."""
-    rows = []
-    for L in lengths:
-        data = generate_toy_votes(K=K, N=N, L=L, T=T, delta_stab=delta, delta_val=delta, seed=seed)
-        rows.append(
-            [
-                L,
-                solve_row_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, competitor_mode=stability_competitor_mode).B_star,
-                solve_row_validity(data.val_votes, data.val_counts, data.target, T, data.influence).B_star,
-                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1).B_star,
-                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=N).B_star,
-            ]
-        )
-    _print_sweep_table(["L", "row_stab", "row_val", "row_col_val_q1", "row_col_val_qN"], rows)
-
-
-def sweep_prompts(K: int, prompts: Iterable[int], L: int, T: int, delta: float, seed: int, stability_competitor_mode: str = "all") -> None:
-    """Print a small prompt-count sweep table."""
-    rows = []
-    for N in prompts:
-        data = generate_toy_votes(K=K, N=N, L=L, T=T, delta_stab=delta, delta_val=delta, seed=seed)
-        rows.append(
-            [
-                N,
-                solve_row_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, competitor_mode=stability_competitor_mode).B_star,
-                solve_row_validity(data.val_votes, data.val_counts, data.target, T, data.influence).B_star,
-                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1).B_star,
-                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=N).B_star,
-            ]
-        )
-    _print_sweep_table(["N", "row_stab", "row_val", "row_col_val_q1", "row_col_val_qN"], rows)
 
 
 def visualize_instance(
@@ -451,24 +396,12 @@ def plot_benchmark_csv(csv_path: str, save_dir: str | None = None) -> list[dict[
 
 
 DEFAULT_REPORT_PLOT_FILENAMES = (
-    "main_stability_budget_curve.svg",
+    "stability_one_token_per_row_budget_curve.svg",
+    "stability_one_prompt_budget_curve.svg",
     "main_validity_budget_curve.svg",
     "stability_certificate_vs_K.svg",
     "validity_certificate_vs_K.svg",
 )
-
-DISABLED_DEFAULT_PLOTS = (
-    "ablation_stability_row_column_joint",
-    "ablation_validity_row_column_joint",
-    "stability_diagnostic_references",
-    "validity_diagnostic_references",
-    "stability_full_matrix_main_comparison",
-    "stability_one_sequence_main_comparison",
-    "validity_all_prompts_main_comparison",
-    "validity_one_sequence_main_comparison",
-    "validity_sensitivity_target_bias",
-)
-
 
 def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, csv_path: Path) -> None:
     """Write only the simplified default report plot set."""
@@ -476,32 +409,71 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
     budget_rows = _read_optional_csv(csv_path.parent / "benchmark_budget_curves.csv")
     audit: list[dict[str, object]] = []
 
-    budget_specs = [
-        (
-            "main_stability_budget_curve.svg",
-            "Main stability budget curve",
-            [
-                ("Shared MILP one prompt, full sequence", "Shared MILP", "stability_full_sequence_per_prompt", "radius_derived"),
-                ("DPA weakest token", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
-            ],
-        ),
-        (
-            "main_validity_budget_curve.svg",
-            "Main validity budget curve",
-            [
-                ("Shared MILP full sequence", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-                ("TPA max-token sequence", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-                ("DPA weakest harmful token", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
-            ],
-        ),
-    ]
-    for filename, title, selections in budget_specs:
-        series, skipped = _budget_curve_series(budget_rows, selections)
-        if series:
-            _save_line_plot(output_dir / filename, title, "Poisoned shard budget B", "Certified fraction (%)", series)
-        else:
-            print(f"Warning: skipped {filename}; no requested budget-curve series were available.")
-        audit.append({"plot": filename, "series": list(series), "skipped": skipped})
+    stability_all_prompts_series, stability_all_prompts_skipped = _certificate_budget_curve_series(
+        rows,
+        [
+            ("Shared MILP all prompts, one token each", "row_col_stab_qN_r1"),
+            ("DPA weakest token", "dpa_stab_row_radius_qN"),
+        ],
+        budget_rows=budget_rows,
+    )
+    if stability_all_prompts_series:
+        _save_line_plot(
+            output_dir / "stability_one_token_per_row_budget_curve.svg",
+            "Stability one token per row budget curve",
+            "Poisoned shard budget B",
+            "Certified fraction (%)",
+            stability_all_prompts_series,
+        )
+    else:
+        print("Warning: skipped stability_one_token_per_row_budget_curve.svg; no requested benchmark-result series were available.")
+    audit.append(
+        {
+            "plot": "stability_one_token_per_row_budget_curve.svg",
+            "series": list(stability_all_prompts_series),
+            "skipped": stability_all_prompts_skipped,
+        }
+    )
+
+    stability_one_prompt_series, stability_one_prompt_skipped = _budget_curve_series(
+        budget_rows,
+        [
+            ("Shared MILP one prompt, full sequence", "Shared MILP", "stability_full_sequence_per_prompt", "radius_derived"),
+            ("DPA weakest token", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
+        ],
+    )
+    if stability_one_prompt_series:
+        _save_line_plot(
+            output_dir / "stability_one_prompt_budget_curve.svg",
+            "Stability one prompt budget curve",
+            "Poisoned shard budget B",
+            "Certified fraction (%)",
+            stability_one_prompt_series,
+        )
+    else:
+        print("Warning: skipped stability_one_prompt_budget_curve.svg; no requested budget-curve series were available.")
+    audit.append(
+        {
+            "plot": "stability_one_prompt_budget_curve.svg",
+            "series": list(stability_one_prompt_series),
+            "skipped": stability_one_prompt_skipped,
+        }
+    )
+
+    validity_series, validity_skipped = _budget_curve_series(
+        budget_rows,
+        [
+            ("Shared MILP full sequence", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("TPA max-token sequence", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("DPA weakest harmful token", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
+            ("DPA most difficult harmful token", "DPA most difficult harmful token", "most_difficult_harmful_token_not_full_sequence_validity", "radius_derived"),
+        ],
+    )
+    if validity_series:
+        _save_line_plot(output_dir / "main_validity_budget_curve.svg", "Main validity budget curve", "Poisoned shard budget B", "Certified fraction (%)", validity_series)
+    else:
+        print("Warning: skipped main_validity_budget_curve.svg; no requested budget-curve series were available.")
+    audit.append({"plot": "main_validity_budget_curve.svg", "series": list(validity_series), "skipped": validity_skipped})
 
     metric_specs = [
         (
@@ -556,6 +528,39 @@ def _budget_curve_series(
     return series, skipped
 
 
+def _certificate_budget_curve_series(
+    rows: list[dict[str, object]],
+    selections: list[tuple[str, str]],
+    budget_rows: list[dict[str, object]],
+) -> tuple[dict[str, tuple[list[float], list[float]]], list[str]]:
+    series: dict[str, tuple[list[float], list[float]]] = {}
+    skipped: list[str] = []
+    budgets = sorted({budget for row in budget_rows if (budget := _numeric_value(row.get("budget"))) is not None})
+    if not budgets:
+        max_certificate = max(
+            (
+                value
+                for _, metric in selections
+                for row in rows
+                if (value := _numeric_value(row.get(metric))) is not None
+            ),
+            default=None,
+        )
+        if max_certificate is not None:
+            budgets = [float(budget) for budget in range(0, int(np.ceil(max_certificate)) + 1)]
+    if not budgets:
+        return series, ["no budget values available"]
+    for label, metric in selections:
+        certificates = [_numeric_value(row.get(metric)) for row in rows]
+        certificates = [value for value in certificates if value is not None]
+        if not certificates:
+            skipped.append(f"{label}: missing or empty column {metric}")
+            continue
+        ys = [100.0 * float(np.mean([budget < certificate for certificate in certificates])) for budget in budgets]
+        series[label] = (budgets, ys)
+    return series, skipped
+
+
 def _metric_series(
     rows: list[dict[str, object]],
     axis_name: str,
@@ -597,17 +602,6 @@ def _write_default_plot_audit(path: Path, csv_path: Path, audit: list[dict[str, 
         skipped = item["skipped"]
         if skipped:
             lines.append(f"  skipped: {'; '.join(skipped)}")
-    lines.extend(
-        [
-            "",
-            "Plots intentionally disabled in the default workflow:",
-            *[f"- {name}" for name in DISABLED_DEFAULT_PLOTS],
-            "",
-            "Removed paths:",
-            "- Removed old ablation, diagnostic-reference, and main-comparison plot generator paths that were no longer used by plot.sh.",
-            "- Kept shared SVG/line/heatmap helpers used by smoke visualization and validity_demo plotting.",
-        ]
-    )
     path.write_text("\n".join(lines))
 
 
@@ -615,6 +609,7 @@ AUDIT_CURVE_SELECTIONS: list[tuple[str, str, str, str]] = [
     ("DPA weakest token, radius-derived", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
     ("TPA max-token sequence, radius-derived", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
     ("Shared full sequence, radius-derived", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+    ("DPA most difficult harmful token, radius-derived", "DPA most difficult harmful token", "most_difficult_harmful_token_not_full_sequence_validity", "radius_derived"),
 ]
 
 
@@ -665,112 +660,6 @@ def audit_curve_csvs(csv_dir: str) -> list[dict[str, object]]:
     if not diagnostics:
         print("No diagnostics produced.")
     return diagnostics
-
-
-def compare_stability_modes(
-    Ks: Iterable[int],
-    Ns: Iterable[int],
-    Ls: Iterable[int],
-    Ts: Iterable[int],
-    deltas: Iterable[float],
-    target_bias: float,
-    influence_mode: str,
-    seed: int,
-    save_dir: str,
-) -> list[dict[str, object]]:
-    """Compare exact all-competitor and runner-up stability modes.
-
-    The diagnostic writes one row per structured stability objective and records
-    ``B_star`` values, optimality flags, statuses, and runtimes. Negative optimal
-    differences indicate a violation of the expected ``runner_up >= all``
-    relationship and are printed as warnings.
-    """
-    output_dir = Path(save_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    rows: list[dict[str, object]] = []
-
-    for K in Ks:
-        for N in Ns:
-            for L in Ls:
-                for T in Ts:
-                    for delta in deltas:
-                        data = generate_toy_votes(
-                            K=K,
-                            N=N,
-                            L=L,
-                            T=T,
-                            delta_stab=delta,
-                            delta_val=delta,
-                            target_bias=target_bias,
-                            seed=seed,
-                            influence_mode=influence_mode,
-                        )
-                        objectives = [
-                            ("one prompt, one token", 1, 1),
-                            ("one prompt, full sequence", 1, L),
-                            ("all prompts, one token each", N, 1),
-                            ("all prompts, full matrix", N, L),
-                        ]
-                        for objective, q_rows, r_cols in objectives:
-                            start = perf_counter()
-                            all_result = solve_structured_stability(
-                                data.stab_votes,
-                                data.stab_counts,
-                                data.clean_pred,
-                                data.runner_up,
-                                data.influence,
-                                q_rows=q_rows,
-                                r_cols=r_cols,
-                                competitor_mode="all",
-                            )
-                            all_runtime = perf_counter() - start
-                            start = perf_counter()
-                            runner_result = solve_structured_stability(
-                                data.stab_votes,
-                                data.stab_counts,
-                                data.clean_pred,
-                                data.runner_up,
-                                data.influence,
-                                q_rows=q_rows,
-                                r_cols=r_cols,
-                                competitor_mode="runner_up",
-                            )
-                            runner_runtime = perf_counter() - start
-                            diff = None
-                            if all_result.B_star is not None and runner_result.B_star is not None:
-                                diff = runner_result.B_star - all_result.B_star
-                                if all_result.is_optimal and runner_result.is_optimal and diff < 0:
-                                    print(f"Warning: runner_up < all for K={K} N={N} L={L} T={T} delta={delta} objective={objective}")
-                            rows.append(
-                                {
-                                    "seed": seed,
-                                    "K": K,
-                                    "N": N,
-                                    "L": L,
-                                    "T": T,
-                                    "delta_stab": delta,
-                                    "delta_val": delta,
-                                    "target_bias": target_bias,
-                                    "influence_mode": influence_mode,
-                                    "objective": objective,
-                                    "B_star_all": all_result.B_star,
-                                    "B_star_runner_up": runner_result.B_star,
-                                    "diff": "" if diff is None else diff,
-                                    "all_is_optimal": all_result.is_optimal,
-                                    "runner_up_is_optimal": runner_result.is_optimal,
-                                    "all_status_name": all_result.status_name,
-                                    "runner_up_status_name": runner_result.status_name,
-                                    "all_runtime_sec": f"{all_runtime:.6f}",
-                                    "runner_up_runtime_sec": f"{runner_runtime:.6f}",
-                                }
-                            )
-
-    csv_path = output_dir / "stability_mode_comparison.csv"
-    _write_rows_csv(csv_path, rows)
-    _save_stability_mode_comparison_plots(rows, output_dir)
-    _print_stability_mode_comparison_summary(rows)
-    print(f"Wrote stability mode comparison CSV: {csv_path}")
-    return rows
 
 
 def _safe_difference(left: float | None, right: float | None) -> float | str:
@@ -899,6 +788,7 @@ CANONICAL_COLORS = {
     "Shared MILP all harmful sequences": "#08519c",
     "DPA weakest token": "#d62728",
     "DPA weakest harmful token": "#8c564b",
+    "DPA most difficult harmful token": "#e377c2",
     "TPA max-token sequence": "#2ca02c",
 }
 
@@ -910,6 +800,7 @@ MAIN_STABILITY_METRICS = {
 MAIN_VALIDITY_METRICS = {
     "Shared MILP all harmful sequences": "row_col_val_qN",
     "DPA weakest harmful token": "dpa_val_row_weak_qN",
+    "DPA most difficult harmful token": "dpa_val_row_strong_qN",
     "TPA max-token sequence": "tpa_val_sequence_qN",
 }
 
@@ -969,6 +860,7 @@ def save_validity_demo_budget_curve_plots(output_dir: Path, source_dir: Path | N
             ("Shared MILP full sequence", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
             ("TPA max-token sequence", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
             ("DPA weakest harmful token", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
+            ("DPA most difficult harmful token", "DPA most difficult harmful token", "most_difficult_harmful_token_not_full_sequence_validity", "radius_derived"),
         ],
     )
     result_rows = _read_optional_csv(csv_dir / "benchmark_results.csv")
@@ -980,6 +872,7 @@ def save_validity_demo_budget_curve_plots(output_dir: Path, source_dir: Path | N
         y_label="Mean certified budget B*",
         metrics={
             "DPA weakest harmful token": "dpa_val_row_weak_q1",
+            "DPA most difficult harmful token": "dpa_val_row_strong_q1",
             "TPA max-token sequence": "tpa_val_sequence_q1",
             "Shared MILP full sequence": "row_col_val_q1",
         },
@@ -1104,15 +997,6 @@ def _print_instance_summary(
     print(margins)
 
 
-def _print_sweep_table(headers: list[str], rows: list[list[object]]) -> None:
-    widths = [max(len(str(header)), *(len(str(row[idx])) for row in rows)) for idx, header in enumerate(headers)]
-    header_line = " | ".join(str(header).ljust(widths[idx]) for idx, header in enumerate(headers))
-    print(header_line)
-    print("-+-".join("-" * width for width in widths))
-    for row in rows:
-        print(" | ".join(str(value).ljust(widths[idx]) for idx, value in enumerate(row)))
-
-
 def _resolve_objective_flags(
     *,
     objective_family: str,
@@ -1158,12 +1042,15 @@ def _compute_benchmark_baselines(data: ToyData, make_stability_objectives: bool,
         targeted_validity_cell_budgets = _targeted_validity_token_budgets(data)
         phrase_row_budgets = _atomic_phrase_validity_row_budgets(data)
         row_validity_weak_radii = validity_cell_budgets.min(axis=1)
+        row_validity_strong_radii = validity_cell_budgets.max(axis=1)
         independent_validity_row_costs = validity_cell_budgets.sum(axis=1)
         rows.update(
             {
                 "dpa_val_cell_min": int(np.min(validity_cell_budgets)),
                 "dpa_val_row_weak_q1": int(np.min(row_validity_weak_radii)),
                 "dpa_val_row_weak_qN": int(np.max(row_validity_weak_radii)),
+                "dpa_val_row_strong_q1": int(np.min(row_validity_strong_radii)),
+                "dpa_val_row_strong_qN": int(np.max(row_validity_strong_radii)),
                 "raw_dpa_val_min_cell": int(np.min(validity_cell_budgets)),
                 "tpa_val_cell_min": int(np.min(targeted_validity_cell_budgets)),
                 **aggregate_tpa_sequence_baselines(targeted_validity_cell_budgets),
@@ -1318,6 +1205,11 @@ def compute_radius_derived_budget_curve_rows(
                     validity_cell_budgets.min(axis=1),
                 ),
                 (
+                    "DPA most difficult harmful token",
+                    "most_difficult_harmful_token_not_full_sequence_validity",
+                    validity_cell_budgets.max(axis=1),
+                ),
+                (
                     "TPA max-token sequence",
                     "validity_full_harmful_sequence_per_prompt",
                     targeted_validity_cell_budgets.max(axis=1),
@@ -1465,40 +1357,6 @@ def _save_focused_plot(rows: list[dict[str, object]], path: Path, title: str, ax
     _save_line_plot(path, title, _axis_label(axis_name), y_label, series)
 
 
-def _save_stability_mode_comparison_plots(rows: list[dict[str, object]], output_dir: Path) -> None:
-    """Save exact-vs-runner-up stability difference and runtime plots."""
-    diff_series = _mean_series_by_axis(rows, "L", "diff")
-    if diff_series is not None:
-        _save_line_plot_svg(
-            output_dir / "stability_mode_diff_by_L.svg",
-            "Stability competitor mode difference",
-            _axis_label("L"),
-            "Mean runner-up minus all-competitor B*",
-            {"runner-up minus all-competitor": diff_series},
-        )
-
-    grouped: dict[float, list[float]] = {}
-    for row in rows:
-        x_value = _numeric_value(row.get("L"))
-        all_runtime = _numeric_value(row.get("all_runtime_sec"))
-        runner_runtime = _numeric_value(row.get("runner_up_runtime_sec"))
-        if x_value is None or all_runtime is None or runner_runtime is None or runner_runtime == 0:
-            continue
-        grouped.setdefault(x_value, []).append(all_runtime / runner_runtime)
-    if grouped:
-        xs, ys = [], []
-        for x in sorted(grouped):
-            xs.append(x)
-            ys.append(float(np.mean(grouped[x])))
-        _save_line_plot_svg(
-            output_dir / "stability_mode_runtime_by_L.svg",
-            "Stability competitor mode runtime ratio",
-            _axis_label("L"),
-            "Mean all-competitor / runner-up runtime",
-            {"runtime ratio": (xs, ys)},
-        )
-
-
 def _save_certified_fraction_budget_plot(
     rows: list[dict[str, object]],
     path: Path,
@@ -1529,34 +1387,6 @@ def _save_certified_fraction_budget_plot(
 
 def _select_curve_rows(rows: list[dict[str, object]], method: str, objective: str, curve_type: str) -> list[dict[str, object]]:
     return [row for row in rows if row.get("method") == method and row.get("objective") == objective and row.get("curve_type") == curve_type]
-
-
-def _print_stability_mode_comparison_summary(rows: list[dict[str, object]]) -> None:
-    comparable = [row for row in rows if _numeric_value(row.get("diff")) is not None]
-    optimal = [row for row in comparable if row.get("all_is_optimal") is True and row.get("runner_up_is_optimal") is True]
-    diffs = [_numeric_value(row.get("diff")) for row in optimal]
-    diffs = [diff for diff in diffs if diff is not None]
-    violations = [diff for diff in diffs if diff < 0]
-    all_runtimes = [_numeric_value(row.get("all_runtime_sec")) for row in comparable]
-    runner_runtimes = [_numeric_value(row.get("runner_up_runtime_sec")) for row in comparable]
-    all_runtimes = [value for value in all_runtimes if value is not None]
-    runner_runtimes = [value for value in runner_runtimes if value is not None]
-
-    print()
-    print("Stability competitor mode comparison summary")
-    print(f"Compared rows: {len(comparable)}")
-    print(f"Optimal pairs: {len(optimal)}")
-    if diffs:
-        print(f"Fraction diff == 0: {sum(diff == 0 for diff in diffs) / len(diffs):.3f}")
-        print(f"Mean diff: {float(np.mean(diffs)):.3f}")
-        print(f"Max diff: {float(np.max(diffs)):.3f}")
-    else:
-        print("Fraction diff == 0: NA")
-        print("Mean diff: NA")
-        print("Max diff: NA")
-    print(f"Violations runner_up < all: {len(violations)}")
-    print(f"Mean all-competitor runtime: {float(np.mean(all_runtimes)):.6f}s" if all_runtimes else "Mean all-competitor runtime: NA")
-    print(f"Mean runner-up runtime: {float(np.mean(runner_runtimes)):.6f}s" if runner_runtimes else "Mean runner-up runtime: NA")
 
 
 def _mean_series_by_axis(rows: list[dict[str, object]], axis_name: str, metric: str) -> tuple[list[float], list[float]] | None:
@@ -1693,7 +1523,7 @@ def _save_line_plot(path: Path, title: str, x_label: str, y_label: str, series: 
     fig, ax = plt.subplots(figsize=(8.0, 5.2), dpi=220)
     for label, (xs, ys) in series.items():
         color = CANONICAL_COLORS.get(label)
-        linestyle = "--" if "baseline" in label else "-"
+        linestyle = _line_style_for_label(label)
         marker = "s" if "PHD" in label else "o"
         ax.plot(xs, ys, label=label, color=color, linestyle=linestyle, marker=marker, linewidth=2.2, markersize=4.8)
     ax.set_title(title, fontsize=12, pad=10)
@@ -1765,16 +1595,33 @@ def _save_line_plot_svg(path: Path, title: str, x_label: str, y_label: str, seri
         svg.append(f'<text x="{x:.1f}" y="{top + plot_h + 18}" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">{x_value:.2g}</text>')
 
     for idx, (name, (xs, ys)) in enumerate(series.items()):
-        color = colors[idx % len(colors)]
+        color = CANONICAL_COLORS.get(name, colors[idx % len(colors)])
+        dash_attr = _svg_dash_attr_for_label(name)
         points = " ".join(f"{sx(x):.1f},{sy(y):.1f}" for x, y in zip(xs, ys))
-        svg.append(f'<polyline points="{points}" fill="none" stroke="{color}" stroke-width="2.5"/>')
+        svg.append(f'<polyline points="{points}" fill="none" stroke="{color}" stroke-width="2.5"{dash_attr}/>')
         for x, y in zip(xs, ys):
             svg.append(f'<circle cx="{sx(x):.1f}" cy="{sy(y):.1f}" r="4" fill="{color}"/>')
         legend_y = top + 18 + idx * 20
-        svg.append(f'<rect x="{left + plot_w + 24}" y="{legend_y - 10}" width="12" height="12" fill="{color}"/>')
+        svg.append(f'<line x1="{left + plot_w + 24}" y1="{legend_y - 4}" x2="{left + plot_w + 38}" y2="{legend_y - 4}" stroke="{color}" stroke-width="2.5"{dash_attr}/>')
         svg.append(f'<text x="{left + plot_w + 42}" y="{legend_y}" font-family="Arial, sans-serif" font-size="12" fill="#111827">{_xml_escape(name)}</text>')
     svg.append("</svg>")
     path.write_text("\n".join(svg))
+
+
+def _line_style_for_label(label: str) -> str:
+    if label == "DPA most difficult harmful token":
+        return ":"
+    if "baseline" in label:
+        return "--"
+    return "-"
+
+
+def _svg_dash_attr_for_label(label: str) -> str:
+    if label == "DPA most difficult harmful token":
+        return ' stroke-dasharray="2 7" stroke-linecap="round"'
+    if "baseline" in label:
+        return ' stroke-dasharray="7 5"'
+    return ""
 
 
 def _wrap_svg_text(text: str, max_chars: int) -> list[str]:
@@ -1819,18 +1666,6 @@ def _heat_color(value: float, vmin: float, vmax: float) -> str:
 
 def _xml_escape(value: str) -> str:
     return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-
-
-def _parse_float_list(value: str) -> list[float]:
-    if isinstance(value, list):
-        return value
-    return [float(part.strip()) for part in value.split(",") if part.strip()]
-
-
-def _parse_int_list(value: str) -> list[int]:
-    if isinstance(value, list):
-        return value
-    return [int(part.strip()) for part in value.split(",") if part.strip()]
 
 
 def _parse_scalar_config_value(value: str) -> object:
@@ -2036,53 +1871,6 @@ def _print_benchmark_dry_run(
     print(f"  estimated validity solves: {total_validity}")
 
 
-BENCHMARK_PRESETS: dict[str, dict[str, list[float] | list[int]]] = {
-    "smoke": {
-        "Ks": [8],
-        "Ns": [2],
-        "lengths": [6],
-        "Ts": [4],
-        "delta_stabs": [0.2],
-        "delta_vals": [0.2],
-        "target_biases": [0.3],
-    },
-    "small": {
-        "Ks": [4, 6, 8],
-        "Ns": [2, 3],
-        "lengths": [2, 3, 4],
-        "Ts": [4, 6],
-        "delta_stabs": [0.2],
-        "delta_vals": [0.2],
-        "target_biases": [0.3],
-    },
-    "medium": {
-        "Ks": [4, 6, 8, 10],
-        "Ns": [2, 3, 4],
-        "lengths": [2, 3, 4, 5],
-        "Ts": [4, 6, 8],
-        "delta_stabs": [0.0, 0.2],
-        "delta_vals": [0.0, 0.2],
-        "target_biases": [0.1, 0.3],
-    },
-    "large": {
-        "Ks": [5, 10, 15, 20, 25],
-        "Ns": [3, 5, 7, 9, 11],
-        "lengths": [3, 6, 9, 12],
-        "Ts": [3, 6, 9, 12],
-        "delta_stabs": [0.0, 0.25, 0.5],
-        "delta_vals": [0.0, 0.25, 0.5],
-        "target_biases": [0.2],
-    },
-}
-
-
-def _benchmark_preset(name: str) -> dict[str, list[float] | list[int]]:
-    try:
-        return BENCHMARK_PRESETS[name]
-    except KeyError as exc:  # pragma: no cover - argparse guards this in normal use.
-        raise ValueError(f"Unknown benchmark preset: {name}") from exc
-
-
 def build_parser() -> argparse.ArgumentParser:
     """Build the command-line parser for toy experiment workflows."""
     parser = argparse.ArgumentParser(description="Toy row/column certificate experiments.")
@@ -2095,10 +1883,6 @@ def build_parser() -> argparse.ArgumentParser:
             "plot-csv",
             "plot-validity-demo",
             "audit-curves",
-            "sweep-delta",
-            "sweep-length",
-            "sweep-prompts",
-            "compare-stability-modes",
         ],
     )
     parser.add_argument("--K", type=int, default=7)
@@ -2108,57 +1892,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--delta", type=float, default=0.2)
     parser.add_argument("--delta-stab", type=float, default=None)
     parser.add_argument("--delta-val", type=float, default=None)
-    parser.add_argument("--delta-stabs", type=_parse_float_list, default=None)
-    parser.add_argument("--delta-vals", type=_parse_float_list, default=None)
     parser.add_argument("--target-bias", type=float, default=None)
-    parser.add_argument("--target-biases", type=_parse_float_list, default=None)
-    parser.add_argument("--generator", choices=["toy", "validity_demo"], default="toy")
-    parser.add_argument("--group-size", type=int, default=3)
-    parser.add_argument("--target-gap", type=int, default=1)
-    parser.add_argument("--overlap", type=int, default=0)
     parser.add_argument("--influence-mode", choices=["dense", "row-local", "column-local", "validity_demo"], default="dense")
     parser.add_argument("--stability-competitor-mode", choices=["all", "runner_up"], default="all")
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--preset", choices=sorted(BENCHMARK_PRESETS), default=None, help="Benchmark preset used when explicit grid ranges are omitted.")
-    parser.add_argument("--deltas", type=_parse_float_list, default=None)
-    parser.add_argument("--Ks", type=_parse_int_list, default=None)
-    parser.add_argument("--Ns", type=_parse_int_list, default=None)
-    parser.add_argument("--lengths", type=_parse_int_list, default=None)
-    parser.add_argument("--prompts", type=_parse_int_list, default=None)
-    parser.add_argument("--Ts", type=_parse_int_list, default=None)
     parser.add_argument("--save-dir", default=None)
     parser.add_argument("--csv", default="outputs/results/benchmark_results.csv")
     parser.add_argument("--csv-dir", default="outputs/results")
     parser.add_argument("--show-grid", action="store_true")
     parser.add_argument("--make-plots", action="store_true", help="Also render benchmark plots after running Gurobi.")
-    parser.add_argument("--budget-max", type=int, default=15, help="Maximum poisoned-shard budget for fixed-budget curve CSVs.")
-    parser.add_argument("--make-budget-curves", action=argparse.BooleanOptionalAction, default=True)
-    parser.add_argument("--objective-family", choices=["full", "validity_only"], default="full")
-    parser.add_argument("--make-stability-objectives", action=argparse.BooleanOptionalAction, default=None)
-    parser.add_argument("--make-validity-objectives", action=argparse.BooleanOptionalAction, default=None)
-    parser.add_argument("--make-stability-budget-curves", action=argparse.BooleanOptionalAction, default=None)
-    parser.add_argument("--make-validity-budget-curves", action=argparse.BooleanOptionalAction, default=None)
-    parser.add_argument("--config", default=None, help="YAML benchmark config. Preferred for benchmark runs.")
+    parser.add_argument("--config", default=None, help="YAML benchmark config. Required for benchmark runs.")
     parser.add_argument("--dry-run", action="store_true", help="Validate config and print solve estimates without running Gurobi.")
     parser.add_argument("--verbose", action="store_true", help="Print resolved dry-run grid values.")
     return parser
-
-
-def _resolve_benchmark_grid(args: argparse.Namespace) -> dict[str, list[float] | list[int]]:
-    preset_name = args.preset or "medium"
-    preset = _benchmark_preset(preset_name)
-    target_bias_values = args.target_biases if args.target_biases is not None else preset["target_biases"]
-    if args.target_bias is not None:
-        target_bias_values = [args.target_bias]
-    return {
-        "Ks": args.Ks if args.Ks is not None else preset["Ks"],
-        "Ns": args.Ns if args.Ns is not None else preset["Ns"],
-        "lengths": args.lengths if args.lengths is not None else preset["lengths"],
-        "Ts": args.Ts if args.Ts is not None else preset["Ts"],
-        "delta_stabs": args.delta_stabs if args.delta_stabs is not None else args.deltas if args.deltas is not None else preset["delta_stabs"],
-        "delta_vals": args.delta_vals if args.delta_vals is not None else args.deltas if args.deltas is not None else preset["delta_vals"],
-        "target_biases": target_bias_values,
-    }
 
 
 def main() -> None:
@@ -2197,67 +1943,38 @@ def main() -> None:
             stability_competitor_mode=args.stability_competitor_mode,
         )
     elif args.command == "benchmark":
-        if args.config is not None:
-            try:
-                config = load_experiment_config(args.config)
-            except ConfigError as exc:
-                raise SystemExit(f"ConfigError: {exc}") from exc
-            benchmark_scale(
-                Ks=config["Ks"],
-                Ns=config["Ns"],
-                Ls=config["lengths"],
-                Ts=config["Ts"],
-                delta_stabs=config["delta_stabs"],
-                delta_vals=config["delta_vals"],
-                target_biases=config["target_biases"],
-                influence_mode=config["influence_mode"],
-                stability_competitor_mode=config["stability_competitor_mode"],
-                seed=config["seed"],
-                save_dir=config["save_dir"],
-                make_plots=args.make_plots,
-                budget_max=config["budget_max"],
-                make_budget_curves=config["make_budget_curves"],
-                objective_family=config["objective_family"],
-                make_stability_objectives=config.get("make_stability_objectives"),
-                make_validity_objectives=config.get("make_validity_objectives"),
-                make_stability_budget_curves=config.get("make_stability_budget_curves"),
-                make_validity_budget_curves=config.get("make_validity_budget_curves"),
-                dry_run=args.dry_run,
-                verbose=args.verbose,
-                generator=config["generator"],
-                group_size=config.get("group_size", args.group_size),
-                target_gap=config.get("target_gap", args.target_gap),
-                overlap=config.get("overlap", args.overlap),
-            )
-            return
-        print("WARNING: direct CLI benchmark parameters are deprecated; use --config path/to/config.yaml instead.")
-        grid = _resolve_benchmark_grid(args)
+        if args.config is None:
+            raise SystemExit("ConfigError: benchmark requires --config path/to/config.yaml")
+        try:
+            config = load_experiment_config(args.config)
+        except ConfigError as exc:
+            raise SystemExit(f"ConfigError: {exc}") from exc
         benchmark_scale(
-            Ks=grid["Ks"],
-            Ns=grid["Ns"],
-            Ls=grid["lengths"],
-            Ts=grid["Ts"],
-            delta_stabs=grid["delta_stabs"],
-            delta_vals=grid["delta_vals"],
-            target_biases=grid["target_biases"],
-            influence_mode=args.influence_mode,
-            stability_competitor_mode=args.stability_competitor_mode,
-            seed=args.seed,
-            save_dir=args.save_dir or "outputs/results",
+            Ks=config["Ks"],
+            Ns=config["Ns"],
+            Ls=config["lengths"],
+            Ts=config["Ts"],
+            delta_stabs=config["delta_stabs"],
+            delta_vals=config["delta_vals"],
+            target_biases=config["target_biases"],
+            influence_mode=config["influence_mode"],
+            stability_competitor_mode=config["stability_competitor_mode"],
+            seed=config["seed"],
+            save_dir=config["save_dir"],
             make_plots=args.make_plots,
-            budget_max=args.budget_max,
-            make_budget_curves=args.make_budget_curves,
-            objective_family=args.objective_family,
-            make_stability_objectives=args.make_stability_objectives,
-            make_validity_objectives=args.make_validity_objectives,
-            make_stability_budget_curves=args.make_stability_budget_curves,
-            make_validity_budget_curves=args.make_validity_budget_curves,
+            budget_max=config["budget_max"],
+            make_budget_curves=config["make_budget_curves"],
+            objective_family=config["objective_family"],
+            make_stability_objectives=config.get("make_stability_objectives"),
+            make_validity_objectives=config.get("make_validity_objectives"),
+            make_stability_budget_curves=config.get("make_stability_budget_curves"),
+            make_validity_budget_curves=config.get("make_validity_budget_curves"),
             dry_run=args.dry_run,
             verbose=args.verbose,
-            generator=args.generator,
-            group_size=args.group_size,
-            target_gap=args.target_gap,
-            overlap=args.overlap,
+            generator=config["generator"],
+            group_size=config.get("group_size", 3),
+            target_gap=config.get("target_gap", 1),
+            overlap=config.get("overlap", 0),
         )
     elif args.command == "plot-csv":
         plot_benchmark_csv(args.csv, save_dir=args.save_dir)
@@ -2265,48 +1982,6 @@ def main() -> None:
         plot_validity_demo_csv(args.csv, save_dir=args.save_dir)
     elif args.command == "audit-curves":
         audit_curve_csvs(args.csv_dir)
-    elif args.command == "sweep-delta":
-        sweep_delta(
-            K=args.K,
-            N=args.N,
-            L=args.L,
-            T=args.T,
-            deltas=args.deltas if args.deltas is not None else [0.0, 0.2, 0.4],
-            seed=args.seed,
-            stability_competitor_mode=args.stability_competitor_mode,
-        )
-    elif args.command == "sweep-length":
-        sweep_length(
-            K=args.K,
-            N=args.N,
-            lengths=args.lengths if args.lengths is not None else [2, 4],
-            T=args.T,
-            delta=args.delta,
-            seed=args.seed,
-            stability_competitor_mode=args.stability_competitor_mode,
-        )
-    elif args.command == "sweep-prompts":
-        sweep_prompts(
-            K=args.K,
-            prompts=args.prompts if args.prompts is not None else [1, 2, 4, 8],
-            L=args.L,
-            T=args.T,
-            delta=args.delta,
-            seed=args.seed,
-            stability_competitor_mode=args.stability_competitor_mode,
-        )
-    elif args.command == "compare-stability-modes":
-        compare_stability_modes(
-            Ks=args.Ks if args.Ks is not None else _benchmark_preset("small")["Ks"],
-            Ns=args.Ns if args.Ns is not None else _benchmark_preset("small")["Ns"],
-            Ls=args.lengths if args.lengths is not None else _benchmark_preset("small")["lengths"],
-            Ts=args.Ts if args.Ts is not None else _benchmark_preset("small")["Ts"],
-            deltas=args.deltas if args.deltas is not None else [0.0, 0.2, 0.4],
-            target_bias=args.target_bias if args.target_bias is not None else 0.2,
-            influence_mode=args.influence_mode,
-            seed=args.seed,
-            save_dir=args.save_dir or "outputs/results/stability_mode_comparison",
-        )
     else:
         raise ValueError(f"Unknown command: {args.command}")
 

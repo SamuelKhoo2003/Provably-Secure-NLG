@@ -11,7 +11,7 @@ delta_val_values: [0.25]
 target_bias_values: [0.3]
 
 seed: 0
-budget_max: 50
+budget_max: 40
 
 influence_mode: dense
 stability_competitor_mode: all

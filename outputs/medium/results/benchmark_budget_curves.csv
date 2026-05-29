@@ -43,6 +43,17 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,10,2,3,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,0.5,0.5,0.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,2,3,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,0.5,0.5,0.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,2,3,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,0.5,0.5,0.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.0,2.0,2.0,2.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,2.0,2.0,2.0,2.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,3,6,0.2,0.2,0.3,dense,all,2,0.0,1.0,2.0,2.0,2.0,2.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,3,6,0.2,0.2,0.3,dense,all,3,0.0,1.0,2.0,2.0,2.0,2.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,3,6,0.2,0.2,0.3,dense,all,4,0.0,1.0,2.0,2.0,2.0,2.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,3,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,2.0,2.0,2.0,2.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,3,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,2.0,2.0,2.0,2.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,3,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,2.0,2.0,2.0,2.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,3,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,2.0,2.0,2.0,2.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,3,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,2.0,2.0,2.0,2.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,3,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,2.0,2.0,2.0,2.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,10,2,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.0,2.0,2.0,2.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,2,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,2.0,2.0,2.0,2.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,2,3,6,0.2,0.2,0.3,dense,all,2,0.0,1.0,2.0,2.0,2.0,2.0,0,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -131,6 +142,17 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,10,2,5,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,0.5,0.5,0.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,2,5,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,0.5,0.5,0.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,2,5,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,0.5,0.5,0.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.0,4.0,4.0,4.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.0,4.0,4.0,4.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,5,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.0,4.0,4.0,4.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,5,6,0.2,0.2,0.3,dense,all,3,1.0,0.0,4.0,4.0,4.0,4.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,5,6,0.2,0.2,0.3,dense,all,4,0.0,1.0,4.0,4.0,4.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,5,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,4.0,4.0,4.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,5,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,4.0,4.0,4.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,5,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,4.0,4.0,4.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,5,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,4.0,4.0,4.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,5,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,4.0,4.0,4.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,5,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,4.0,4.0,4.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,10,2,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.0,4.0,4.0,4.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,2,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.0,4.0,4.0,4.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,2,5,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.0,4.0,4.0,4.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -219,6 +241,17 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,10,2,7,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,0.5,0.5,0.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,2,7,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,0.5,0.5,0.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,2,7,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,0.5,0.5,0.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.0,4.0,4.0,4.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.0,4.0,4.0,4.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,7,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.0,4.0,4.0,4.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,7,6,0.2,0.2,0.3,dense,all,3,1.0,0.0,4.0,4.0,4.0,4.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,7,6,0.2,0.2,0.3,dense,all,4,0.0,1.0,4.0,4.0,4.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,7,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,4.0,4.0,4.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,7,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,4.0,4.0,4.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,7,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,4.0,4.0,4.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,7,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,4.0,4.0,4.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,7,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,4.0,4.0,4.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,2,7,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,4.0,4.0,4.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,10,2,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.0,4.0,4.0,4.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,2,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.0,4.0,4.0,4.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,2,7,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.0,4.0,4.0,4.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -307,6 +340,17 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,10,3,3,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,1.3333333333333333,1.0,0.0,3.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,3,3,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,1.3333333333333333,1.0,0.0,3.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,3,3,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,1.3333333333333333,1.0,0.0,3.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.6666666666666665,3.0,1.0,4.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,3,6,0.2,0.2,0.3,dense,all,1,0.6666666666666666,0.33333333333333337,2.6666666666666665,3.0,1.0,4.0,2,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,3,6,0.2,0.2,0.3,dense,all,2,0.6666666666666666,0.33333333333333337,2.6666666666666665,3.0,1.0,4.0,2,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,3,6,0.2,0.2,0.3,dense,all,3,0.3333333333333333,0.6666666666666667,2.6666666666666665,3.0,1.0,4.0,1,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,3,6,0.2,0.2,0.3,dense,all,4,0.0,1.0,2.6666666666666665,3.0,1.0,4.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,3,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,2.6666666666666665,3.0,1.0,4.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,3,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,2.6666666666666665,3.0,1.0,4.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,3,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,2.6666666666666665,3.0,1.0,4.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,3,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,2.6666666666666665,3.0,1.0,4.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,3,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,2.6666666666666665,3.0,1.0,4.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,3,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,2.6666666666666665,3.0,1.0,4.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,10,3,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.6666666666666665,3.0,1.0,4.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,3,3,6,0.2,0.2,0.3,dense,all,1,0.6666666666666666,0.33333333333333337,2.6666666666666665,3.0,1.0,4.0,2,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,3,3,6,0.2,0.2,0.3,dense,all,2,0.6666666666666666,0.33333333333333337,2.6666666666666665,3.0,1.0,4.0,2,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -395,6 +439,17 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,10,3,5,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,0.3333333333333333,0.0,0.0,1.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,3,5,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,0.3333333333333333,0.0,0.0,1.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,3,5,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,0.3333333333333333,0.0,0.0,1.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.6666666666666665,3.0,2.0,3.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,2.6666666666666665,3.0,2.0,3.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,5,6,0.2,0.2,0.3,dense,all,2,0.6666666666666666,0.33333333333333337,2.6666666666666665,3.0,2.0,3.0,2,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,5,6,0.2,0.2,0.3,dense,all,3,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,5,6,0.2,0.2,0.3,dense,all,4,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,5,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,5,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,5,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,5,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,5,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,5,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,10,3,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.6666666666666665,3.0,2.0,3.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,3,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,2.6666666666666665,3.0,2.0,3.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,3,5,6,0.2,0.2,0.3,dense,all,2,0.6666666666666666,0.33333333333333337,2.6666666666666665,3.0,2.0,3.0,2,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -483,6 +538,17 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,10,3,7,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,0.3333333333333333,0.0,0.0,1.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,3,7,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,0.3333333333333333,0.0,0.0,1.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,3,7,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,0.3333333333333333,0.0,0.0,1.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.6666666666666665,3.0,2.0,3.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,2.6666666666666665,3.0,2.0,3.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,7,6,0.2,0.2,0.3,dense,all,2,0.6666666666666666,0.33333333333333337,2.6666666666666665,3.0,2.0,3.0,2,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,7,6,0.2,0.2,0.3,dense,all,3,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,7,6,0.2,0.2,0.3,dense,all,4,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,7,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,7,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,7,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,7,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,7,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,3,7,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,2.6666666666666665,3.0,2.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,10,3,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.6666666666666665,3.0,2.0,3.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,3,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,2.6666666666666665,3.0,2.0,3.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,3,7,6,0.2,0.2,0.3,dense,all,2,0.6666666666666666,0.33333333333333337,2.6666666666666665,3.0,2.0,3.0,2,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -571,6 +637,17 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,10,4,3,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,0.5,0.5,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,4,3,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,0.5,0.5,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,4,3,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,0.5,0.5,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.5,4.0,2.0,4.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.5,4.0,2.0,4.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,3,6,0.2,0.2,0.3,dense,all,2,0.75,0.25,3.5,4.0,2.0,4.0,3,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,3,6,0.2,0.2,0.3,dense,all,3,0.75,0.25,3.5,4.0,2.0,4.0,3,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,3,6,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.5,4.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,3,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.5,4.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,3,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.5,4.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,3,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.5,4.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,3,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.5,4.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,3,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.5,4.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,3,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.5,4.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,10,4,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.5,4.0,2.0,4.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,4,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.5,4.0,2.0,4.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,4,3,6,0.2,0.2,0.3,dense,all,2,0.75,0.25,3.5,4.0,2.0,4.0,3,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -659,6 +736,17 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,10,4,5,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,0.0,0.0,0.0,0.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,4,5,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,0.0,0.0,0.0,0.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,4,5,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,0.0,0.0,0.0,0.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,2.0,4.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,2.0,4.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,5,6,0.2,0.2,0.3,dense,all,2,0.75,0.25,3.0,3.0,2.0,4.0,3,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,5,6,0.2,0.2,0.3,dense,all,3,0.25,0.75,3.0,3.0,2.0,4.0,1,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,5,6,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.0,3.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,5,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.0,3.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,5,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.0,3.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,5,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.0,3.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,5,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.0,3.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,5,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.0,3.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,5,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.0,3.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,10,4,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,2.0,4.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,4,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,2.0,4.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,4,5,6,0.2,0.2,0.3,dense,all,2,0.75,0.25,3.0,3.0,2.0,4.0,3,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -747,6 +835,17 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,10,4,7,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,0.25,0.0,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,4,7,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,0.25,0.0,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,10,4,7,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,0.25,0.0,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,2.0,4.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,2.0,4.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,7,6,0.2,0.2,0.3,dense,all,2,0.75,0.25,3.0,3.0,2.0,4.0,3,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,7,6,0.2,0.2,0.3,dense,all,3,0.25,0.75,3.0,3.0,2.0,4.0,1,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,7,6,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.0,3.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,7,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.0,3.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,7,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.0,3.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,7,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.0,3.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,7,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.0,3.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,7,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.0,3.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,10,4,7,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.0,3.0,2.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,10,4,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,2.0,4.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,4,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,2.0,4.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,10,4,7,6,0.2,0.2,0.3,dense,all,2,0.75,0.25,3.0,3.0,2.0,4.0,3,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -855,6 +954,22 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,15,2,3,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,1.5,1.5,0.0,3.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,2,3,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,1.5,1.5,0.0,3.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,2,3,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,1.5,1.5,0.0,3.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.5,4.5,4.0,5.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.5,4.5,4.0,5.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.5,4.5,4.0,5.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,3,1.0,0.0,4.5,4.5,4.0,5.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,4,0.5,0.5,4.5,4.5,4.0,5.0,1,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,4.5,4.5,4.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,4.5,4.5,4.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,4.5,4.5,4.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,4.5,4.5,4.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,4.5,4.5,4.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,4.5,4.5,4.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,4.5,4.5,4.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,4.5,4.5,4.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,4.5,4.5,4.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,4.5,4.5,4.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,3,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,4.5,4.5,4.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,15,2,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.5,4.5,4.0,5.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,2,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.5,4.5,4.0,5.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,2,3,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.5,4.5,4.0,5.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -983,6 +1098,22 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,15,2,5,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,0.5,0.5,0.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,2,5,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,0.5,0.5,0.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,2,5,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,0.5,0.5,0.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.5,3.5,3.0,4.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.5,3.5,3.0,4.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,3.5,3.5,3.0,4.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,3,0.5,0.5,3.5,3.5,3.0,4.0,1,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.5,3.5,3.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.5,3.5,3.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.5,3.5,3.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.5,3.5,3.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.5,3.5,3.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.5,3.5,3.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.5,3.5,3.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,3.5,3.5,3.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,3.5,3.5,3.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,3.5,3.5,3.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,3.5,3.5,3.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,5,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,3.5,3.5,3.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,15,2,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.5,3.5,3.0,4.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,2,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.5,3.5,3.0,4.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,2,5,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,3.5,3.5,3.0,4.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -1111,6 +1242,22 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,15,2,7,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,0.0,0.0,0.0,0.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,2,7,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,0.0,0.0,0.0,0.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,2,7,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,0.0,0.0,0.0,0.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.5,3.5,2.0,5.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.5,3.5,2.0,5.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,2,0.5,0.5,3.5,3.5,2.0,5.0,1,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,3,0.5,0.5,3.5,3.5,2.0,5.0,1,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,4,0.5,0.5,3.5,3.5,2.0,5.0,1,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.5,3.5,2.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.5,3.5,2.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.5,3.5,2.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.5,3.5,2.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.5,3.5,2.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.5,3.5,2.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,3.5,3.5,2.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,3.5,3.5,2.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,3.5,3.5,2.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,3.5,3.5,2.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,2,7,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,3.5,3.5,2.0,5.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,15,2,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.5,3.5,2.0,5.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,2,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.5,3.5,2.0,5.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,2,7,6,0.2,0.2,0.3,dense,all,2,0.5,0.5,3.5,3.5,2.0,5.0,1,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -1239,6 +1386,22 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,15,3,3,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,1.6666666666666667,2.0,0.0,3.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,3,3,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,1.6666666666666667,2.0,0.0,3.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,3,3,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,1.6666666666666667,2.0,0.0,3.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,5.0,5.0,4.0,6.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,5.0,5.0,4.0,6.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,5.0,5.0,4.0,6.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,3,1.0,0.0,5.0,5.0,4.0,6.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,4,0.6666666666666666,0.33333333333333337,5.0,5.0,4.0,6.0,2,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,5,0.3333333333333333,0.6666666666666667,5.0,5.0,4.0,6.0,1,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,5.0,5.0,4.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,5.0,5.0,4.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,5.0,5.0,4.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,5.0,5.0,4.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,5.0,5.0,4.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,5.0,5.0,4.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,5.0,5.0,4.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,5.0,5.0,4.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,5.0,5.0,4.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,3,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,5.0,5.0,4.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,15,3,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,5.0,5.0,4.0,6.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,3,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,5.0,5.0,4.0,6.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,3,3,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,5.0,5.0,4.0,6.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -1367,6 +1530,22 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,15,3,5,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,1.0,1.0,0.0,2.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,3,5,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,1.0,1.0,0.0,2.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,3,5,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,1.0,1.0,0.0,2.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,3.0,3.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,3.0,3.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,3.0,3.0,3.0,3.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,3,0.0,1.0,3.0,3.0,3.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.0,3.0,3.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.0,3.0,3.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.0,3.0,3.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.0,3.0,3.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.0,3.0,3.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.0,3.0,3.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.0,3.0,3.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,3.0,3.0,3.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,3.0,3.0,3.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,3.0,3.0,3.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,3.0,3.0,3.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,5,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,3.0,3.0,3.0,3.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,15,3,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,3.0,3.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,3,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,3.0,3.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,3,5,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,3.0,3.0,3.0,3.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -1495,6 +1674,22 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,15,3,7,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,0.0,0.0,0.0,0.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,3,7,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,0.0,0.0,0.0,0.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,3,7,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,0.0,0.0,0.0,0.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,5.333333333333333,5.0,5.0,6.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,5.333333333333333,5.0,5.0,6.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,5.333333333333333,5.0,5.0,6.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,3,1.0,0.0,5.333333333333333,5.0,5.0,6.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,4,1.0,0.0,5.333333333333333,5.0,5.0,6.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,5,0.3333333333333333,0.6666666666666667,5.333333333333333,5.0,5.0,6.0,1,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,5.333333333333333,5.0,5.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,5.333333333333333,5.0,5.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,5.333333333333333,5.0,5.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,5.333333333333333,5.0,5.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,5.333333333333333,5.0,5.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,5.333333333333333,5.0,5.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,5.333333333333333,5.0,5.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,5.333333333333333,5.0,5.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,5.333333333333333,5.0,5.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,3,7,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,5.333333333333333,5.0,5.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,15,3,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,5.333333333333333,5.0,5.0,6.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,3,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,5.333333333333333,5.0,5.0,6.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,3,7,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,5.333333333333333,5.0,5.0,6.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -1623,6 +1818,22 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,15,4,3,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,0.25,0.0,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,4,3,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,0.25,0.0,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,4,3,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,0.25,0.0,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.25,4.5,2.0,6.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.25,4.5,2.0,6.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,2,0.75,0.25,4.25,4.5,2.0,6.0,3,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,3,0.75,0.25,4.25,4.5,2.0,6.0,3,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,4,0.5,0.5,4.25,4.5,2.0,6.0,2,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,5,0.25,0.75,4.25,4.5,2.0,6.0,1,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,4.25,4.5,2.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,4.25,4.5,2.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,4.25,4.5,2.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,4.25,4.5,2.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,4.25,4.5,2.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,4.25,4.5,2.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,4.25,4.5,2.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,4.25,4.5,2.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,4.25,4.5,2.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,3,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,4.25,4.5,2.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,15,4,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.25,4.5,2.0,6.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,4,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.25,4.5,2.0,6.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,4,3,6,0.2,0.2,0.3,dense,all,2,0.75,0.25,4.25,4.5,2.0,6.0,3,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -1751,6 +1962,22 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,15,4,5,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,0.25,0.0,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,4,5,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,0.25,0.0,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,4,5,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,0.25,0.0,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,3,0.5,0.5,4.0,4.0,3.0,5.0,2,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,4,0.5,0.5,4.0,4.0,3.0,5.0,2,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,5,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,15,4,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,4,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,4,5,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -1879,6 +2106,22 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,15,4,7,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,4,7,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,15,4,7,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.0,4.0,4.0,4.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.0,4.0,4.0,4.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.0,4.0,4.0,4.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,3,1.0,0.0,4.0,4.0,4.0,4.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,4,0.0,1.0,4.0,4.0,4.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,4.0,4.0,4.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,4.0,4.0,4.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,4.0,4.0,4.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,4.0,4.0,4.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,4.0,4.0,4.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,4.0,4.0,4.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,4.0,4.0,4.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,4.0,4.0,4.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,4.0,4.0,4.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,4.0,4.0,4.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,15,4,7,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,4.0,4.0,4.0,4.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,15,4,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.0,4.0,4.0,4.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,4,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.0,4.0,4.0,4.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,15,4,7,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.0,4.0,4.0,4.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -2027,6 +2270,27 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,20,2,3,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,2.0,2.0,1.0,3.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,2,3,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,2.0,2.0,1.0,3.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,2,3,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,2.0,2.0,1.0,3.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,6.0,6.0,5.0,7.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,6.0,6.0,5.0,7.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,6.0,6.0,5.0,7.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,3,1.0,0.0,6.0,6.0,5.0,7.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,4,1.0,0.0,6.0,6.0,5.0,7.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,5,0.5,0.5,6.0,6.0,5.0,7.0,1,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,6,0.5,0.5,6.0,6.0,5.0,7.0,1,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,6.0,6.0,5.0,7.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,6.0,6.0,5.0,7.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,6.0,6.0,5.0,7.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,6.0,6.0,5.0,7.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,6.0,6.0,5.0,7.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,6.0,6.0,5.0,7.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,6.0,6.0,5.0,7.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,6.0,6.0,5.0,7.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,6.0,6.0,5.0,7.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,16,0.0,1.0,6.0,6.0,5.0,7.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,17,0.0,1.0,6.0,6.0,5.0,7.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,6.0,6.0,5.0,7.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,6.0,6.0,5.0,7.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,3,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,6.0,6.0,5.0,7.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,20,2,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,6.0,6.0,5.0,7.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,2,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,6.0,6.0,5.0,7.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,2,3,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,6.0,6.0,5.0,7.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -2195,6 +2459,27 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,20,2,5,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,1.0,1.0,1.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,2,5,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,1.0,1.0,1.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,2,5,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,1.0,1.0,1.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,2.0,4.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,2.0,4.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,2,0.5,0.5,3.0,3.0,2.0,4.0,1,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,3,0.5,0.5,3.0,3.0,2.0,4.0,1,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,16,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,17,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,5,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,3.0,3.0,2.0,4.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,20,2,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,2.0,4.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,2,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,2.0,4.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,2,5,6,0.2,0.2,0.3,dense,all,2,0.5,0.5,3.0,3.0,2.0,4.0,1,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -2363,6 +2648,27 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,20,2,7,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,0.5,0.5,0.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,2,7,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,0.5,0.5,0.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,2,7,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,0.5,0.5,0.0,1.0,0,2,0,2,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.5,4.5,3.0,6.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.5,4.5,3.0,6.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.5,4.5,3.0,6.0,2,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,3,0.5,0.5,4.5,4.5,3.0,6.0,1,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,4,0.5,0.5,4.5,4.5,3.0,6.0,1,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,5,0.5,0.5,4.5,4.5,3.0,6.0,1,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,4.5,4.5,3.0,6.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,4.5,4.5,3.0,6.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,4.5,4.5,3.0,6.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,4.5,4.5,3.0,6.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,4.5,4.5,3.0,6.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,4.5,4.5,3.0,6.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,4.5,4.5,3.0,6.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,4.5,4.5,3.0,6.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,4.5,4.5,3.0,6.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,4.5,4.5,3.0,6.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,16,0.0,1.0,4.5,4.5,3.0,6.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,17,0.0,1.0,4.5,4.5,3.0,6.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,4.5,4.5,3.0,6.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,4.5,4.5,3.0,6.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,2,7,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,4.5,4.5,3.0,6.0,0,2,0,2,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,20,2,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.5,4.5,3.0,6.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,2,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.5,4.5,3.0,6.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,2,7,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.5,4.5,3.0,6.0,2,2,0,2,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -2531,6 +2837,27 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,20,3,3,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,1.0,0.0,0.0,3.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,3,3,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,1.0,0.0,0.0,3.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,3,3,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,1.0,0.0,0.0,3.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.333333333333333,4.0,3.0,6.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.333333333333333,4.0,3.0,6.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.333333333333333,4.0,3.0,6.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,3,0.6666666666666666,0.33333333333333337,4.333333333333333,4.0,3.0,6.0,2,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,4,0.3333333333333333,0.6666666666666667,4.333333333333333,4.0,3.0,6.0,1,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,5,0.3333333333333333,0.6666666666666667,4.333333333333333,4.0,3.0,6.0,1,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,4.333333333333333,4.0,3.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,4.333333333333333,4.0,3.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,4.333333333333333,4.0,3.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,4.333333333333333,4.0,3.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,4.333333333333333,4.0,3.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,4.333333333333333,4.0,3.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,4.333333333333333,4.0,3.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,4.333333333333333,4.0,3.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,4.333333333333333,4.0,3.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,4.333333333333333,4.0,3.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,16,0.0,1.0,4.333333333333333,4.0,3.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,17,0.0,1.0,4.333333333333333,4.0,3.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,4.333333333333333,4.0,3.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,4.333333333333333,4.0,3.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,3,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,4.333333333333333,4.0,3.0,6.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,20,3,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.333333333333333,4.0,3.0,6.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,3,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.333333333333333,4.0,3.0,6.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,3,3,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.333333333333333,4.0,3.0,6.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -2699,6 +3026,27 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,20,3,5,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,1.0,1.0,1.0,1.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,3,5,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,1.0,1.0,1.0,1.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,3,5,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,1.0,1.0,1.0,1.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.333333333333333,5.0,3.0,5.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.333333333333333,5.0,3.0,5.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.333333333333333,5.0,3.0,5.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,3,0.6666666666666666,0.33333333333333337,4.333333333333333,5.0,3.0,5.0,2,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,4,0.6666666666666666,0.33333333333333337,4.333333333333333,5.0,3.0,5.0,2,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,16,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,17,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,5,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,4.333333333333333,5.0,3.0,5.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,20,3,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.333333333333333,5.0,3.0,5.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,3,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.333333333333333,5.0,3.0,5.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,3,5,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.333333333333333,5.0,3.0,5.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -2867,6 +3215,27 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,20,3,7,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,0.3333333333333333,0.0,0.0,1.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,3,7,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,0.3333333333333333,0.0,0.0,1.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,3,7,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,0.3333333333333333,0.0,0.0,1.0,0,3,0,3,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,6.0,6.0,5.0,7.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,6.0,6.0,5.0,7.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,6.0,6.0,5.0,7.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,3,1.0,0.0,6.0,6.0,5.0,7.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,4,1.0,0.0,6.0,6.0,5.0,7.0,3,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,5,0.6666666666666666,0.33333333333333337,6.0,6.0,5.0,7.0,2,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,6,0.3333333333333333,0.6666666666666667,6.0,6.0,5.0,7.0,1,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,6.0,6.0,5.0,7.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,6.0,6.0,5.0,7.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,6.0,6.0,5.0,7.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,6.0,6.0,5.0,7.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,6.0,6.0,5.0,7.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,6.0,6.0,5.0,7.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,6.0,6.0,5.0,7.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,6.0,6.0,5.0,7.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,6.0,6.0,5.0,7.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,16,0.0,1.0,6.0,6.0,5.0,7.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,17,0.0,1.0,6.0,6.0,5.0,7.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,6.0,6.0,5.0,7.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,6.0,6.0,5.0,7.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,3,7,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,6.0,6.0,5.0,7.0,0,3,0,3,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,20,3,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,6.0,6.0,5.0,7.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,3,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,6.0,6.0,5.0,7.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,3,7,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,6.0,6.0,5.0,7.0,3,3,0,3,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -3035,6 +3404,27 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,20,4,3,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,1.5,1.0,0.0,4.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,4,3,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,1.5,1.0,0.0,4.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,4,3,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,1.5,1.0,0.0,4.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.75,5.0,3.0,6.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.75,5.0,3.0,6.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.75,5.0,3.0,6.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,3,0.75,0.25,4.75,5.0,3.0,6.0,3,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,4,0.5,0.5,4.75,5.0,3.0,6.0,2,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,5,0.5,0.5,4.75,5.0,3.0,6.0,2,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,4.75,5.0,3.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,4.75,5.0,3.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,4.75,5.0,3.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,4.75,5.0,3.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,4.75,5.0,3.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,4.75,5.0,3.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,4.75,5.0,3.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,4.75,5.0,3.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,4.75,5.0,3.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,4.75,5.0,3.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,16,0.0,1.0,4.75,5.0,3.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,17,0.0,1.0,4.75,5.0,3.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,4.75,5.0,3.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,4.75,5.0,3.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,3,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,4.75,5.0,3.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,20,4,3,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.75,5.0,3.0,6.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,4,3,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.75,5.0,3.0,6.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,4,3,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.75,5.0,3.0,6.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -3203,6 +3593,27 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,20,4,5,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,0.5,0.5,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,4,5,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,0.5,0.5,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,4,5,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,0.5,0.5,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.5,4.5,4.0,5.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.5,4.5,4.0,5.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.5,4.5,4.0,5.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,3,1.0,0.0,4.5,4.5,4.0,5.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,4,0.5,0.5,4.5,4.5,4.0,5.0,2,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,5,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,16,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,17,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,5,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,4.5,4.5,4.0,5.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,20,4,5,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.5,4.5,4.0,5.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,4,5,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.5,4.5,4.0,5.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,4,5,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.5,4.5,4.0,5.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
@@ -3371,6 +3782,27 @@ seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competito
 0,20,4,7,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,0.75,1.0,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,4,7,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,0.75,1.0,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
 0,20,4,7,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,0.75,1.0,0.0,1.0,0,4,0,4,DPA weakest harmful token,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,5.25,5.0,5.0,6.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,5.25,5.0,5.0,6.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,5.25,5.0,5.0,6.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,3,1.0,0.0,5.25,5.0,5.0,6.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,4,1.0,0.0,5.25,5.0,5.0,6.0,4,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,5,0.25,0.75,5.25,5.0,5.0,6.0,1,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,6,0.0,1.0,5.25,5.0,5.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,7,0.0,1.0,5.25,5.0,5.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,8,0.0,1.0,5.25,5.0,5.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,9,0.0,1.0,5.25,5.0,5.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,10,0.0,1.0,5.25,5.0,5.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,11,0.0,1.0,5.25,5.0,5.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,12,0.0,1.0,5.25,5.0,5.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,13,0.0,1.0,5.25,5.0,5.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,14,0.0,1.0,5.25,5.0,5.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,15,0.0,1.0,5.25,5.0,5.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,16,0.0,1.0,5.25,5.0,5.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,17,0.0,1.0,5.25,5.0,5.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,18,0.0,1.0,5.25,5.0,5.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,19,0.0,1.0,5.25,5.0,5.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,7,6,0.2,0.2,0.3,dense,all,20,0.0,1.0,5.25,5.0,5.0,6.0,0,4,0,4,DPA most difficult harmful token,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
 0,20,4,7,6,0.2,0.2,0.3,dense,all,0,1.0,0.0,5.25,5.0,5.0,6.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,4,7,6,0.2,0.2,0.3,dense,all,1,1.0,0.0,5.25,5.0,5.0,6.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived
 0,20,4,7,6,0.2,0.2,0.3,dense,all,2,1.0,0.0,5.25,5.0,5.0,6.0,4,4,0,4,TPA max-token sequence,validity_full_harmful_sequence_per_prompt,radius_derived

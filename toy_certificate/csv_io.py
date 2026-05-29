@@ -25,7 +25,7 @@ def write_rows_csv(path: Path, rows: list[dict[str, object]]) -> None:
 
 
 def read_rows_csv(path: Path) -> list[dict[str, object]]:
-    """Read benchmark rows and normalize legacy column aliases."""
+    """Read benchmark rows."""
     with path.open(newline="") as f:
         reader = csv.DictReader(f)
         rows = []
@@ -33,7 +33,6 @@ def read_rows_csv(path: Path) -> list[dict[str, object]]:
             parsed = {}
             for key, value in row.items():
                 parsed[key] = parse_csv_value(key, value)
-            copy_legacy_csv_columns(parsed)
             rows.append(parsed)
     return rows
 
@@ -71,32 +70,6 @@ def parse_csv_value(key: str, value: str | None) -> object:
         numeric = float(value)
         return int(numeric) if numeric.is_integer() else numeric
     return value
-
-
-def copy_legacy_csv_columns(row: dict[str, object]) -> None:
-    legacy_map = {
-        "row_col_stability_any_cell": "row_col_stab_q1_r1",
-        "row_col_stability_full_row": "row_col_stab_q1_rL",
-        "row_col_validity_q1": "row_col_val_q1",
-        "row_col_validity_qN": "row_col_val_qN",
-        "naive_dpa_stability_full_row": "independent_stab_full_row_q1",
-        "naive_dpa_validity_q1": "independent_val_q1",
-        "naive_dpa_validity_qN": "independent_val_qN",
-        "phd_ref_stability_any_cell": "raw_dpa_stab_min_cell",
-        "phd_ref_validity_any_cell": "raw_dpa_val_min_cell",
-        "independent_stab_qN_rL": "independent_stab_full_row_qN",
-        "independent_val_q1": "independent_val_sequence_q1",
-        "independent_val_qN": "independent_val_sequence_qN",
-    }
-    for old_key, new_key in legacy_map.items():
-        if old_key in row and new_key not in row:
-            row[new_key] = row[old_key]
-    if "raw_dpa_stab_min_cell" in row:
-        row.setdefault("dpa_stab_cell_min", row["raw_dpa_stab_min_cell"])
-        row.setdefault("dpa_stab_row_radius_q1", row["raw_dpa_stab_min_cell"])
-    if "raw_dpa_val_min_cell" in row:
-        row.setdefault("dpa_val_cell_min", row["raw_dpa_val_min_cell"])
-        row.setdefault("dpa_val_row_weak_q1", row["raw_dpa_val_min_cell"])
 
 
 def looks_numeric(value: object) -> bool:
