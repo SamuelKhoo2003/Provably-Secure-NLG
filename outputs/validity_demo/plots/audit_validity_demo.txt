@@ -54,3 +54,9 @@ validity_demo is artificial and controlled. It is not intended to model a natura
 TPA is count-based and sees each harmful target token as individually cheap from aggregate counts.
 The joint row-column shared MILP is shard-aware and must use one shared poisoned-shard allocation across target positions.
 The demo assigns cheap target-token attacks to different shard groups, so the full harmful sequence requires more shared poisoned shards than TPA's count-only sequence baseline suggests.
+
+
+CHEN paper
+
+certified accuracy, certified proportion
+talk about percentage of remaining points i can now certify relative to other baselines
