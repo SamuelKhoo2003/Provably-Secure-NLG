@@ -5,77 +5,28 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 . "${ROOT_DIR}/scripts/_python.sh"
-. "${ROOT_DIR}/scripts/_config.sh"
 PYTHON_BIN="$(resolve_python_bin)"
-CONFIG="${CONFIG:-configs/medium.yaml}"
-PRESET="${PRESET:-$(config_value preset medium)}"
-OUT_DIR="${OUT_DIR:-$(config_value output_dir outputs/$PRESET/results)}"
-CSV_PATH="${CSV_PATH:-$OUT_DIR/benchmark_results.csv}"
-STABILITY_COMPETITOR_MODE="${STABILITY_COMPETITOR_MODE:-$(config_value stability_competitor_mode all)}"
-BUDGET_MAX="${BUDGET_MAX:-$(config_value budget_max 15)}"
-MAKE_BUDGET_CURVES="${MAKE_BUDGET_CURVES:-$(config_value make_budget_curves 1)}"
-MAKE_DAMAGE_CURVES="${MAKE_DAMAGE_CURVES:-$(config_value make_damage_curves 1)}"
-MAKE_HORIZON_CURVES="${MAKE_HORIZON_CURVES:-$(config_value make_horizon_curves 1)}"
-GENERATOR="${GENERATOR:-$(config_value generator toy)}"
-GROUP_SIZE="${GROUP_SIZE:-$(config_value group_size 3)}"
-TARGET_GAP="${TARGET_GAP:-$(config_value target_gap 1)}"
-OVERLAP="${OVERLAP:-$(config_value overlap 0)}"
 
-echo "Writing benchmark data to: $OUT_DIR"
+if [[ -z "${CONFIG:-}" ]]; then
+  echo "ERROR: CONFIG is required." >&2
+  echo "Example: CONFIG=configs/medium.yaml ./scripts/data.sh" >&2
+  exit 1
+fi
+
+if [[ ! -f "$CONFIG" ]]; then
+  echo "ERROR: config file not found: $CONFIG" >&2
+  exit 1
+fi
+
+args=(benchmark --config "$CONFIG")
+
+if [[ "${DRY_RUN:-0}" == "1" ]]; then
+  args+=(--dry-run)
+fi
+
+if [[ "${VERBOSE:-0}" == "1" ]]; then
+  args+=(--verbose)
+fi
+
 echo "Config: $CONFIG"
-echo "Generator: $GENERATOR"
-echo "Stability competitor mode: $STABILITY_COMPETITOR_MODE"
-mkdir -p "$OUT_DIR"
-
-args=(--preset "$PRESET" --generator "$GENERATOR" --group-size "$GROUP_SIZE" --target-gap "$TARGET_GAP" --overlap "$OVERLAP" --influence-mode "${INFLUENCE_MODE:-$(config_value influence_mode dense)}" --stability-competitor-mode "$STABILITY_COMPETITOR_MODE" --seed "${SEED:-$(config_value seed 0)}" --save-dir "$OUT_DIR" --budget-max "$BUDGET_MAX")
-
-KS="${KS:-$(config_value K_values "")}"
-NS="${NS:-$(config_value N_values "")}"
-LENGTHS="${LENGTHS:-$(config_value L_values "")}"
-TS="${TS:-$(config_value T_values "")}"
-DELTA_STABS="${DELTA_STABS:-${DELTAS:-$(config_value delta_stab_values "")}}"
-DELTA_VALS="${DELTA_VALS:-${DELTAS:-$(config_value delta_val_values "")}}"
-TARGET_BIASES="${TARGET_BIASES:-${TARGET_BIAS:-$(config_value target_bias_values "")}}"
-
-if [[ -n "$KS" ]]; then
-  args+=(--Ks "$KS")
-fi
-if [[ -n "$NS" ]]; then
-  args+=(--Ns "$NS")
-fi
-if [[ -n "$LENGTHS" ]]; then
-  args+=(--lengths "$LENGTHS")
-fi
-if [[ -n "$TS" ]]; then
-  args+=(--Ts "$TS")
-fi
-if [[ -n "$DELTA_STABS" ]]; then
-  args+=(--delta-stabs "$DELTA_STABS")
-fi
-if [[ -n "$DELTA_VALS" ]]; then
-  args+=(--delta-vals "$DELTA_VALS")
-fi
-if [[ -n "$TARGET_BIASES" ]]; then
-  args+=(--target-biases "$TARGET_BIASES")
-fi
-if [[ "$MAKE_BUDGET_CURVES" == "0" ]]; then
-  args+=(--no-make-budget-curves)
-fi
-if [[ "$MAKE_DAMAGE_CURVES" == "0" ]]; then
-  args+=(--no-make-damage-curves)
-fi
-if [[ "$MAKE_HORIZON_CURVES" == "0" ]]; then
-  args+=(--no-make-horizon-curves)
-fi
-
-"$PYTHON_BIN" -m toy_certificate.experiments benchmark "${args[@]}"
-
-generated_csv="$OUT_DIR/benchmark_results.csv"
-if [[ "$CSV_PATH" != "$generated_csv" ]]; then
-  mkdir -p "$(dirname "$CSV_PATH")"
-  cp "$generated_csv" "$CSV_PATH"
-fi
-
-echo
-echo "CSV: $CSV_PATH"
-echo "Generate plots with: ./scripts/plot.sh"
+"$PYTHON_BIN" -m toy_certificate.experiments "${args[@]}"

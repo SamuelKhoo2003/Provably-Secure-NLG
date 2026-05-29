@@ -1,4 +1,4 @@
-preset: smoke
+name: validity_demo
 generator: validity_demo
 K_values: [20,40,60]
 N_values: [4,8,16]
@@ -9,10 +9,19 @@ target_gap: 1
 overlap: 0
 seed: 0
 budget_max: 60
-make_damage_curves: 0
 delta_stab_values: [0.2]
 delta_val_values: [0.0]
 target_bias_values: [0.25]
 influence_mode: validity_demo
 stability_competitor_mode: all
+objective_family: validity_only
+make_budget_curves: true
+make_damage_curves: false
+make_horizon_curves: true
+make_stability_objectives: false
+make_validity_objectives: true
+make_stability_budget_curves: false
+make_validity_budget_curves: true
+make_stability_horizon_curves: false
+make_validity_horizon_curves: true
 output_dir: outputs/validity_demo/results

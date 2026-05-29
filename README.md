@@ -2,12 +2,31 @@
 
 EIE Final Year Project 2026.
 
+## Experiment Configs
+
+Benchmark/data runs are configured through YAML files. `scripts/data.sh`
+requires `CONFIG` and passes that config to the Python benchmark runner:
+
+```bash
+CONFIG=configs/validity_demo.yaml ./scripts/data.sh
+CONFIG=configs/validity_demo.yaml DRY_RUN=1 VERBOSE=1 ./scripts/data.sh
+```
+
+Config files are strict: required fields such as `generator`, `K_values`,
+`N_values`, `L_values`, `T_values`, `seed`, `budget_max`, `output_dir`,
+`influence_mode`, `stability_competitor_mode`, `objective_family`, and curve
+flags must be present with the right type. Direct shell overrides for grid
+values are not supported by `scripts/data.sh`. The Python `--preset
+smoke|small|medium|large` path remains a legacy convenience for manual use; repo
+experiment runs should use `--config`.
+
 ## Horizon Plots
 
-`./scripts/data.sh` writes `benchmark_horizons.csv` alongside the benchmark
-results. Horizon curves answer a prefix question at fixed poisoning budget `B`:
-how many initial token positions remain certified? This differs from certified
-fraction plots, which count how many rows or regions are fully certified.
+`CONFIG=<path> ./scripts/data.sh` writes `benchmark_horizons.csv` alongside the
+benchmark results when horizon curves are enabled in YAML. Horizon curves answer
+a prefix question at fixed poisoning budget `B`: how many initial token
+positions remain certified? This differs from certified fraction plots, which
+count how many rows or regions are fully certified.
 
 Stability horizons use token-level DPA stability radii for the clean prefix.
 Validity horizons use TPA-style targeted token radii for harmful target prefixes,
@@ -53,7 +72,14 @@ Run the data and plots with:
 
 ```bash
 ./scripts/validity_demo.sh
+DRY_RUN=1 VERBOSE=1 ./scripts/validity_demo.sh
 ```
+
+`scripts/validity_demo.sh` defaults to `configs/validity_demo.yaml`; that YAML
+controls the validity-demo size and objective selection. The config sets
+`objective_family: validity_only` and disables stability objectives, stability
+budget curves, stability horizon curves, and damage curves so the demo does not
+accidentally run expensive stability MILPs.
 
 The main SVG outputs are `validity_demo_baseline_vs_milp.svg`,
 `validity_demo_budget_curve.svg`, and `validity_demo_certificate_vs_K.svg`. TPA

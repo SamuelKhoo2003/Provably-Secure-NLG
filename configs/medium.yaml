@@ -1,4 +1,5 @@
-preset: medium
+name: medium
+generator: toy
 
 K_values: [10, 15, 20]
 N_values: [2, 3, 4]
@@ -14,5 +15,9 @@ budget_max: 25
 
 influence_mode: dense
 stability_competitor_mode: all
+objective_family: full
+make_budget_curves: true
+make_damage_curves: true
+make_horizon_curves: true
 
 output_dir: outputs/medium/results

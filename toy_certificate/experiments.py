@@ -52,6 +52,10 @@ from .milp import (
 )
 
 
+class ConfigError(ValueError):
+    """Raised when a benchmark YAML config is missing or malformed."""
+
+
 def run_sanity(
     K: int = 7,
     N: int = 3,
@@ -215,6 +219,15 @@ def benchmark_scale(
     make_budget_curves: bool = True,
     make_damage_curves: bool = True,
     make_horizon_curves: bool = True,
+    objective_family: str = "full",
+    make_stability_objectives: bool | None = None,
+    make_validity_objectives: bool | None = None,
+    make_stability_budget_curves: bool | None = None,
+    make_validity_budget_curves: bool | None = None,
+    make_stability_horizon_curves: bool | None = None,
+    make_validity_horizon_curves: bool | None = None,
+    dry_run: bool = False,
+    verbose: bool = False,
     generator: str = "toy",
     group_size: int = 3,
     target_gap: int = 1,
@@ -226,6 +239,35 @@ def benchmark_scale(
     rows record ``stability_competitor_mode`` so exact all-competitor runs can be
     distinguished from runner-up approximation runs.
     """
+    objective_flags = _resolve_objective_flags(
+        objective_family=objective_family,
+        make_budget_curves=make_budget_curves,
+        make_horizon_curves=make_horizon_curves,
+        make_stability_objectives=make_stability_objectives,
+        make_validity_objectives=make_validity_objectives,
+        make_stability_budget_curves=make_stability_budget_curves,
+        make_validity_budget_curves=make_validity_budget_curves,
+        make_stability_horizon_curves=make_stability_horizon_curves,
+        make_validity_horizon_curves=make_validity_horizon_curves,
+    )
+    objective_flags["make_damage_curves"] = make_damage_curves
+    if dry_run:
+        _print_benchmark_dry_run(
+            Ks=Ks,
+            Ns=Ns,
+            Ls=Ls,
+            Ts=Ts,
+            delta_stabs=delta_stabs,
+            delta_vals=delta_vals,
+            target_biases=target_biases,
+            generator=generator,
+            objective_family=objective_family,
+            objective_flags=objective_flags,
+            budget_max=budget_max,
+            save_dir=save_dir,
+            verbose=verbose,
+        )
+        return []
     output_dir = Path(save_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     rows: list[dict[str, object]] = []
@@ -268,7 +310,13 @@ def benchmark_scale(
                                 else:
                                     raise ValueError(f"Unknown generator: {generator}")
                                 start = perf_counter()
-                                results = _solve_benchmark_certificates(data, T, stability_competitor_mode=stability_competitor_mode)
+                                results = _solve_benchmark_certificates(
+                                    data,
+                                    T,
+                                    stability_competitor_mode=stability_competitor_mode,
+                                    make_stability_objectives=objective_flags["make_stability_objectives"],
+                                    make_validity_objectives=objective_flags["make_validity_objectives"],
+                                )
                                 runtime_total = perf_counter() - start
                                 row = {
                                     "K": K_actual,
@@ -290,7 +338,13 @@ def benchmark_scale(
                                     metric_name = _csv_metric_name(result.name, N, L)
                                     _add_certificate_columns(row, metric_name, result)
                                 _fill_degenerate_corner_columns(row)
-                                row.update(compute_reference_baselines(data))
+                                row.update(
+                                    _compute_benchmark_baselines(
+                                        data,
+                                        make_stability_objectives=objective_flags["make_stability_objectives"],
+                                        make_validity_objectives=objective_flags["make_validity_objectives"],
+                                    )
+                                )
                                 _add_validity_demo_gap_columns(row)
                                 rows.append(row)
                                 budgets = list(range(0, min(K_actual, budget_max) + 1))
@@ -306,7 +360,7 @@ def benchmark_scale(
                                     influence_mode=influence_mode,
                                     stability_competitor_mode=stability_competitor_mode,
                                 )
-                                if make_budget_curves:
+                                if objective_flags["make_stability_budget_curves"] or objective_flags["make_validity_budget_curves"]:
                                     budget_curve_rows.extend(
                                         compute_radius_derived_budget_curve_rows(
                                             data,
@@ -314,6 +368,8 @@ def benchmark_scale(
                                             budgets=budgets,
                                             metadata=metadata,
                                             stability_competitor_mode=stability_competitor_mode,
+                                            make_stability_curves=objective_flags["make_stability_budget_curves"],
+                                            make_validity_curves=objective_flags["make_validity_budget_curves"],
                                         )
                                     )
                                 if make_damage_curves:
@@ -324,10 +380,20 @@ def benchmark_scale(
                                             budgets=budgets,
                                             metadata=metadata,
                                             stability_competitor_mode=stability_competitor_mode,
+                                            make_stability_curves=objective_flags["make_stability_objectives"],
+                                            make_validity_curves=objective_flags["make_validity_objectives"],
                                         )
                                     )
-                                if make_horizon_curves:
-                                    horizon_rows.extend(compute_horizon_curve_rows(data, budgets=budgets, metadata=metadata))
+                                if objective_flags["make_stability_horizon_curves"] or objective_flags["make_validity_horizon_curves"]:
+                                    horizon_rows.extend(
+                                        compute_horizon_curve_rows(
+                                            data,
+                                            budgets=budgets,
+                                            metadata=metadata,
+                                            make_stability_curves=objective_flags["make_stability_horizon_curves"],
+                                            make_validity_curves=objective_flags["make_validity_horizon_curves"],
+                                        )
+                                    )
                                 print(
                                     "bench "
                                     f"K={K_actual} N={N} L={L} T={T} delta_stab={delta_stab} delta_val={delta_val} target_bias={target_bias}: "
@@ -338,7 +404,7 @@ def benchmark_scale(
     _write_rows_csv(csv_path, rows)
     print()
     print(f"Wrote benchmark CSV: {csv_path}")
-    if make_budget_curves:
+    if objective_flags["make_stability_budget_curves"] or objective_flags["make_validity_budget_curves"]:
         budget_csv_path = output_dir / "benchmark_budget_curves.csv"
         _write_rows_csv(budget_csv_path, budget_curve_rows)
         print(f"Wrote budget-curve CSV: {budget_csv_path}")
@@ -346,7 +412,7 @@ def benchmark_scale(
         damage_csv_path = output_dir / "benchmark_damage_curves.csv"
         _write_rows_csv(damage_csv_path, damage_curve_rows)
         print(f"Wrote direct-damage CSV: {damage_csv_path}")
-    if make_horizon_curves:
+    if objective_flags["make_stability_horizon_curves"] or objective_flags["make_validity_horizon_curves"]:
         horizon_csv_path = output_dir / "benchmark_horizons.csv"
         _write_rows_csv(horizon_csv_path, horizon_rows)
         print(f"Wrote horizon CSV: {horizon_csv_path}")
@@ -1113,30 +1179,137 @@ def _print_sweep_table(headers: list[str], rows: list[list[object]]) -> None:
         print(" | ".join(str(value).ljust(widths[idx]) for idx, value in enumerate(row)))
 
 
-def _solve_benchmark_certificates(data: ToyData, T: int, stability_competitor_mode: str = "all") -> list[CertificateResult]:
+def _resolve_objective_flags(
+    *,
+    objective_family: str,
+    make_budget_curves: bool,
+    make_horizon_curves: bool,
+    make_stability_objectives: bool | None,
+    make_validity_objectives: bool | None,
+    make_stability_budget_curves: bool | None,
+    make_validity_budget_curves: bool | None,
+    make_stability_horizon_curves: bool | None,
+    make_validity_horizon_curves: bool | None,
+) -> dict[str, bool]:
+    if objective_family == "full":
+        flags = {
+            "make_stability_objectives": True,
+            "make_validity_objectives": True,
+            "make_stability_budget_curves": make_budget_curves,
+            "make_validity_budget_curves": make_budget_curves,
+            "make_stability_horizon_curves": make_horizon_curves,
+            "make_validity_horizon_curves": make_horizon_curves,
+        }
+    elif objective_family == "validity_only":
+        flags = {
+            "make_stability_objectives": False,
+            "make_validity_objectives": True,
+            "make_stability_budget_curves": False,
+            "make_validity_budget_curves": make_budget_curves,
+            "make_stability_horizon_curves": False,
+            "make_validity_horizon_curves": make_horizon_curves,
+        }
+    else:
+        raise ValueError(f"Unknown objective_family: {objective_family}")
+    for key, value in {
+        "make_stability_objectives": make_stability_objectives,
+        "make_validity_objectives": make_validity_objectives,
+        "make_stability_budget_curves": make_stability_budget_curves,
+        "make_validity_budget_curves": make_validity_budget_curves,
+        "make_stability_horizon_curves": make_stability_horizon_curves,
+        "make_validity_horizon_curves": make_validity_horizon_curves,
+    }.items():
+        if value is not None:
+            flags[key] = value
+    return flags
+
+
+def _compute_benchmark_baselines(data: ToyData, make_stability_objectives: bool, make_validity_objectives: bool) -> dict[str, int | float]:
+    if make_stability_objectives and make_validity_objectives:
+        return compute_reference_baselines(data)
+    rows: dict[str, int | float] = {}
+    if make_validity_objectives:
+        validity_cell_budgets = _cell_validity_budgets(data)
+        targeted_validity_cell_budgets = _targeted_validity_token_budgets(data)
+        phrase_row_budgets = _atomic_phrase_validity_row_budgets(data)
+        row_validity_weak_radii = validity_cell_budgets.min(axis=1)
+        independent_validity_row_costs = validity_cell_budgets.sum(axis=1)
+        rows.update(
+            {
+                "dpa_val_cell_min": int(np.min(validity_cell_budgets)),
+                "dpa_val_row_weak_q1": int(np.min(row_validity_weak_radii)),
+                "dpa_val_row_weak_qN": int(np.max(row_validity_weak_radii)),
+                "raw_dpa_val_min_cell": int(np.min(validity_cell_budgets)),
+                "tpa_val_cell_min": int(np.min(targeted_validity_cell_budgets)),
+                **aggregate_tpa_sequence_baselines(targeted_validity_cell_budgets),
+                "independent_val_sequence_q1": int(np.min(independent_validity_row_costs)),
+                "independent_val_sequence_qN": int(independent_validity_row_costs.sum()),
+                "independent_val_q1": int(np.min(independent_validity_row_costs)),
+                "independent_val_qN": int(independent_validity_row_costs.sum()),
+                "phrase_dpa_val_q1": int(np.min(phrase_row_budgets)),
+                "phrase_dpa_val_qN": int(np.max(phrase_row_budgets)),
+                "phrase_independent_val_q1": int(np.min(phrase_row_budgets)),
+                "phrase_independent_val_qN": int(phrase_row_budgets.sum()),
+            }
+        )
+    if make_stability_objectives:
+        stability_cell_budgets = _cell_stability_budgets(data)
+        row_stability_radii = stability_cell_budgets.min(axis=1)
+        independent_stability_row_costs = stability_cell_budgets.sum(axis=1)
+        rows.update(
+            {
+                "raw_dpa_stab_min_cell": int(np.min(_phd_margin_stability_budgets(data))),
+                "dpa_stab_cell_min": int(np.min(stability_cell_budgets)),
+                "dpa_stab_row_radius_q1": int(np.min(row_stability_radii)),
+                "dpa_stab_row_radius_qN": int(np.max(row_stability_radii)),
+                "independent_stab_full_row_q1": int(np.min(independent_stability_row_costs)),
+                "independent_stab_full_row_qN": int(independent_stability_row_costs.sum()),
+                "independent_stab_qN_rL": int(independent_stability_row_costs.sum()),
+            }
+        )
+    return rows
+
+
+def _solve_benchmark_certificates(
+    data: ToyData,
+    T: int,
+    stability_competitor_mode: str = "all",
+    make_stability_objectives: bool = True,
+    make_validity_objectives: bool = True,
+) -> list[CertificateResult]:
     """Solve the certificate set stored in benchmark CSV rows."""
     N = data.stab_votes.shape[1]
     L = data.stab_votes.shape[2]
-    return [
-        solve_row_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, competitor_mode=stability_competitor_mode),
-        solve_col_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, competitor_mode=stability_competitor_mode),
-        solve_structured_stability(
-            data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=1, competitor_mode=stability_competitor_mode
-        ),
-        solve_structured_stability(
-            data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=L, competitor_mode=stability_competitor_mode
-        ),
-        solve_structured_stability(
-            data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=N, r_cols=1, competitor_mode=stability_competitor_mode
-        ),
-        solve_structured_stability(
-            data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=N, r_cols=L, competitor_mode=stability_competitor_mode
-        ),
-        solve_row_validity(data.val_votes, data.val_counts, data.target, T, data.influence),
-        solve_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, definition="full_column"),
-        solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1),
-        solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=N),
-    ]
+    results: list[CertificateResult] = []
+    if make_stability_objectives:
+        results.extend(
+            [
+                solve_row_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, competitor_mode=stability_competitor_mode),
+                solve_col_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, competitor_mode=stability_competitor_mode),
+                solve_structured_stability(
+                    data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=1, competitor_mode=stability_competitor_mode
+                ),
+                solve_structured_stability(
+                    data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=L, competitor_mode=stability_competitor_mode
+                ),
+                solve_structured_stability(
+                    data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=N, r_cols=1, competitor_mode=stability_competitor_mode
+                ),
+                solve_structured_stability(
+                    data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=N, r_cols=L, competitor_mode=stability_competitor_mode
+                ),
+            ]
+        )
+    if make_validity_objectives:
+        results.extend(
+            [
+                solve_row_validity(data.val_votes, data.val_counts, data.target, T, data.influence),
+                solve_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, definition="full_column"),
+                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1),
+                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=N),
+            ]
+        )
+    return results
 
 
 def certified_fraction_from_radii(radii: np.ndarray, budgets: Iterable[int]) -> list[dict[str, int | float]]:
@@ -1221,55 +1394,66 @@ def compute_radius_derived_budget_curve_rows(
     budgets: Iterable[int],
     metadata: dict[str, object],
     stability_competitor_mode: str = "all",
+    make_stability_curves: bool = True,
+    make_validity_curves: bool = True,
 ) -> list[dict[str, object]]:
     """Build long-format radius-derived certified-fraction curve rows."""
     del T
-    stability_cell_budgets = _cell_stability_budgets(data)
-    validity_cell_budgets = _cell_validity_budgets(data)
-    targeted_validity_cell_budgets = _targeted_validity_token_budgets(data)
-    phrase_row_budgets = _atomic_phrase_validity_row_budgets(data)
-    curves = [
-        (
-            "DPA token margin",
-            "full_response_stable_against_any_token_change",
-            stability_cell_budgets.min(axis=1),
-        ),
-        (
-            "Shared MILP",
-            "stability_one_token_per_prompt",
-            _shared_stability_row_radii(data, r_cols=1, competitor_mode=stability_competitor_mode),
-        ),
-        (
-            "Shared MILP",
-            "stability_full_sequence_per_prompt",
-            _shared_stability_row_radii(data, r_cols=data.stab_votes.shape[2], competitor_mode=stability_competitor_mode),
-        ),
-        (
-            "DPA weakest harmful token",
-            "weakest_harmful_token_not_full_sequence_validity",
-            validity_cell_budgets.min(axis=1),
-        ),
-        (
-            "TPA max-token sequence",
-            "validity_full_harmful_sequence_per_prompt",
-            targeted_validity_cell_budgets.max(axis=1),
-        ),
-        (
-            "Shared MILP",
-            "validity_full_harmful_sequence_per_prompt",
-            _shared_validity_row_radii(data),
-        ),
-        (
-            "Atomic phrase aggregation",
-            "validity_full_harmful_sequence_per_prompt",
-            phrase_row_budgets,
-        ),
-        (
-            "Independent composition",
-            "validity_full_harmful_sequence_per_prompt",
-            validity_cell_budgets.sum(axis=1),
-        ),
-    ]
+    curves = []
+    if make_stability_curves:
+        stability_cell_budgets = _cell_stability_budgets(data)
+        curves.extend(
+            [
+                (
+                    "DPA token margin",
+                    "full_response_stable_against_any_token_change",
+                    stability_cell_budgets.min(axis=1),
+                ),
+                (
+                    "Shared MILP",
+                    "stability_one_token_per_prompt",
+                    _shared_stability_row_radii(data, r_cols=1, competitor_mode=stability_competitor_mode),
+                ),
+                (
+                    "Shared MILP",
+                    "stability_full_sequence_per_prompt",
+                    _shared_stability_row_radii(data, r_cols=data.stab_votes.shape[2], competitor_mode=stability_competitor_mode),
+                ),
+            ]
+        )
+    if make_validity_curves:
+        validity_cell_budgets = _cell_validity_budgets(data)
+        targeted_validity_cell_budgets = _targeted_validity_token_budgets(data)
+        phrase_row_budgets = _atomic_phrase_validity_row_budgets(data)
+        curves.extend(
+            [
+                (
+                    "DPA weakest harmful token",
+                    "weakest_harmful_token_not_full_sequence_validity",
+                    validity_cell_budgets.min(axis=1),
+                ),
+                (
+                    "TPA max-token sequence",
+                    "validity_full_harmful_sequence_per_prompt",
+                    targeted_validity_cell_budgets.max(axis=1),
+                ),
+                (
+                    "Shared MILP",
+                    "validity_full_harmful_sequence_per_prompt",
+                    _shared_validity_row_radii(data),
+                ),
+                (
+                    "Atomic phrase aggregation",
+                    "validity_full_harmful_sequence_per_prompt",
+                    phrase_row_budgets,
+                ),
+                (
+                    "Independent composition",
+                    "validity_full_harmful_sequence_per_prompt",
+                    validity_cell_budgets.sum(axis=1),
+                ),
+            ]
+        )
     rows: list[dict[str, object]] = []
     for method, objective, radii in curves:
         for summary in certified_fraction_from_radii(radii, budgets):
@@ -1291,48 +1475,57 @@ def compute_direct_damage_curve_rows(
     budgets: Iterable[int],
     metadata: dict[str, object],
     stability_competitor_mode: str = "all",
+    make_stability_curves: bool = True,
+    make_validity_curves: bool = True,
 ) -> list[dict[str, object]]:
     """Build long-format fixed-budget shared-MILP damage curve rows."""
-    objectives = [
-        (
-            "stability_one_token_per_prompt",
-            lambda budget: maximize_attacked_rows_stability(
-                data.stab_votes,
-                data.stab_counts,
-                data.clean_pred,
-                data.runner_up,
-                data.influence,
-                budget=budget,
-                row_requirement="any_token",
-                competitor_mode=stability_competitor_mode,
-            ),
-        ),
-        (
-            "stability_full_sequence_per_prompt",
-            lambda budget: maximize_attacked_rows_stability(
-                data.stab_votes,
-                data.stab_counts,
-                data.clean_pred,
-                data.runner_up,
-                data.influence,
-                budget=budget,
-                row_requirement="full_sequence",
-                competitor_mode=stability_competitor_mode,
-            ),
-        ),
-        (
-            "validity_full_harmful_sequence_per_prompt",
-            lambda budget: maximize_attacked_rows_validity(
-                data.val_votes,
-                data.val_counts,
-                data.target,
-                T,
-                data.influence,
-                budget=budget,
-                row_requirement="full_sequence",
-            ),
-        ),
-    ]
+    objectives = []
+    if make_stability_curves:
+        objectives.extend(
+            [
+                (
+                    "stability_one_token_per_prompt",
+                    lambda budget: maximize_attacked_rows_stability(
+                        data.stab_votes,
+                        data.stab_counts,
+                        data.clean_pred,
+                        data.runner_up,
+                        data.influence,
+                        budget=budget,
+                        row_requirement="any_token",
+                        competitor_mode=stability_competitor_mode,
+                    ),
+                ),
+                (
+                    "stability_full_sequence_per_prompt",
+                    lambda budget: maximize_attacked_rows_stability(
+                        data.stab_votes,
+                        data.stab_counts,
+                        data.clean_pred,
+                        data.runner_up,
+                        data.influence,
+                        budget=budget,
+                        row_requirement="full_sequence",
+                        competitor_mode=stability_competitor_mode,
+                    ),
+                ),
+            ]
+        )
+    if make_validity_curves:
+        objectives.append(
+            (
+                "validity_full_harmful_sequence_per_prompt",
+                lambda budget: maximize_attacked_rows_validity(
+                    data.val_votes,
+                    data.val_counts,
+                    data.target,
+                    T,
+                    data.influence,
+                    budget=budget,
+                    row_requirement="full_sequence",
+                ),
+            )
+        )
     rows: list[dict[str, object]] = []
     N = data.stab_votes.shape[1]
     for budget in budgets:
@@ -1342,22 +1535,33 @@ def compute_direct_damage_curve_rows(
     return rows
 
 
-def compute_horizon_curve_rows(data: ToyData, budgets: Iterable[int], metadata: dict[str, object]) -> list[dict[str, object]]:
+def compute_horizon_curve_rows(
+    data: ToyData,
+    budgets: Iterable[int],
+    metadata: dict[str, object],
+    make_stability_curves: bool = True,
+    make_validity_curves: bool = True,
+) -> list[dict[str, object]]:
     """Build long-format prefix horizon summaries for fixed budgets."""
-    curves = [
-        (
-            "DPA stability horizon",
-            "stability_clean_prefix",
-            _cell_stability_budgets(data),
-            prefix_horizons_from_token_radii,
-        ),
-        (
-            "TPA validity horizon",
-            "validity_harmful_target_prefix",
-            _targeted_validity_token_budgets(data),
-            targeted_validity_prefix_horizons_from_token_radii,
-        ),
-    ]
+    curves = []
+    if make_stability_curves:
+        curves.append(
+            (
+                "DPA stability horizon",
+                "stability_clean_prefix",
+                _cell_stability_budgets(data),
+                prefix_horizons_from_token_radii,
+            )
+        )
+    if make_validity_curves:
+        curves.append(
+            (
+                "TPA validity horizon",
+                "validity_harmful_target_prefix",
+                _targeted_validity_token_budgets(data),
+                targeted_validity_prefix_horizons_from_token_radii,
+            )
+        )
     rows: list[dict[str, object]] = []
     for method, objective, token_radii, horizon_fn in curves:
         for budget in budgets:
@@ -1965,6 +2169,226 @@ def _parse_int_list(value: str) -> list[int]:
     return [int(part.strip()) for part in value.split(",") if part.strip()]
 
 
+def _parse_scalar_config_value(value: str) -> object:
+    value = value.strip()
+    if value.startswith("[") and value.endswith("]"):
+        return [_parse_scalar_config_value(part) for part in value[1:-1].split(",") if part.strip()]
+    unquoted = value.strip("'\"")
+    lower = unquoted.lower()
+    if lower in {"true", "false"}:
+        return lower == "true"
+    try:
+        return int(unquoted)
+    except ValueError:
+        try:
+            return float(unquoted)
+        except ValueError:
+            return unquoted
+
+
+def _read_flat_yaml_config(path: str | Path) -> dict[str, object]:
+    config_path = Path(path)
+    if not config_path.exists():
+        raise ConfigError(f"config file not found: {config_path}")
+    config: dict[str, object] = {}
+    for line_number, raw_line in enumerate(config_path.read_text().splitlines(), start=1):
+        line = raw_line.split("#", maxsplit=1)[0].strip()
+        if not line:
+            continue
+        if ":" not in line:
+            raise ConfigError(f"invalid config line {line_number} in {config_path}: expected `key: value`")
+        key, value = line.split(":", maxsplit=1)
+        key = key.strip()
+        if not key:
+            raise ConfigError(f"invalid config line {line_number} in {config_path}: empty key")
+        if key == "preset":
+            raise ConfigError(f"field `preset` in {config_path} is not supported in YAML configs; use `name` for metadata")
+        config[key] = _parse_scalar_config_value(value)
+    return config
+
+
+def _require_field(config: dict[str, object], path: Path, key: str) -> object:
+    if key not in config:
+        raise ConfigError(f"missing required field `{key}` in {path}")
+    return config[key]
+
+
+def _require_str(config: dict[str, object], path: Path, key: str, allowed: set[str] | None = None) -> str:
+    value = _require_field(config, path, key)
+    if not isinstance(value, str):
+        raise ConfigError(f"field `{key}` in {path} must be a string")
+    if allowed is not None and value not in allowed:
+        raise ConfigError(f"field `{key}` in {path} must be one of {sorted(allowed)}")
+    return value
+
+
+def _require_int(config: dict[str, object], path: Path, key: str) -> int:
+    value = _require_field(config, path, key)
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ConfigError(f"field `{key}` in {path} must be an integer")
+    return value
+
+
+def _require_bool(config: dict[str, object], path: Path, key: str) -> bool:
+    value = _require_field(config, path, key)
+    if not isinstance(value, bool):
+        raise ConfigError(f"field `{key}` in {path} must be a boolean")
+    return value
+
+
+def _require_number_list(config: dict[str, object], path: Path, key: str, item_type: type) -> list[int] | list[float]:
+    value = _require_field(config, path, key)
+    if not isinstance(value, list) or not value:
+        raise ConfigError(f"field `{key}` in {path} must be a non-empty list")
+    if item_type is int:
+        if not all(isinstance(item, int) and not isinstance(item, bool) for item in value):
+            raise ConfigError(f"field `{key}` in {path} must be a list of integers")
+        return [int(item) for item in value]
+    if not all(isinstance(item, (int, float)) and not isinstance(item, bool) for item in value):
+        raise ConfigError(f"field `{key}` in {path} must be a list of numbers")
+    return [float(item) for item in value]
+
+
+def load_experiment_config(path: str | Path) -> dict[str, object]:
+    config_path = Path(path)
+    config = _read_flat_yaml_config(config_path)
+    generator = _require_str(config, config_path, "generator", {"toy", "validity_demo"})
+    benchmark_config: dict[str, object] = {
+        "Ks": _require_number_list(config, config_path, "K_values", int),
+        "Ns": _require_number_list(config, config_path, "N_values", int),
+        "lengths": _require_number_list(config, config_path, "L_values", int),
+        "Ts": _require_number_list(config, config_path, "T_values", int),
+        "delta_stabs": _require_number_list(config, config_path, "delta_stab_values", float),
+        "delta_vals": _require_number_list(config, config_path, "delta_val_values", float),
+        "target_biases": _require_number_list(config, config_path, "target_bias_values", float),
+        "generator": generator,
+        "seed": _require_int(config, config_path, "seed"),
+        "budget_max": _require_int(config, config_path, "budget_max"),
+        "save_dir": _require_str(config, config_path, "output_dir"),
+        "influence_mode": _require_str(config, config_path, "influence_mode", {"dense", "row-local", "column-local", "validity_demo"}),
+        "stability_competitor_mode": _require_str(config, config_path, "stability_competitor_mode", {"all", "runner_up"}),
+        "objective_family": _require_str(config, config_path, "objective_family", {"full", "validity_only"}),
+        "make_budget_curves": _require_bool(config, config_path, "make_budget_curves"),
+        "make_damage_curves": _require_bool(config, config_path, "make_damage_curves"),
+        "make_horizon_curves": _require_bool(config, config_path, "make_horizon_curves"),
+    }
+    for key in [
+        "make_stability_objectives",
+        "make_validity_objectives",
+        "make_stability_budget_curves",
+        "make_validity_budget_curves",
+        "make_stability_horizon_curves",
+        "make_validity_horizon_curves",
+    ]:
+        if key in config:
+            value = config[key]
+            if not isinstance(value, bool):
+                raise ConfigError(f"field `{key}` in {config_path} must be a boolean")
+            benchmark_config[key] = value
+    if generator == "validity_demo":
+        benchmark_config.update(
+            {
+                "group_size": _require_int(config, config_path, "group_size"),
+                "target_gap": _require_int(config, config_path, "target_gap"),
+                "overlap": _require_int(config, config_path, "overlap"),
+            }
+        )
+    return benchmark_config
+
+
+def _estimate_solve_counts(
+    Ks: Iterable[int],
+    Ns: Iterable[int],
+    Ls: Iterable[int],
+    Ts: Iterable[int],
+    delta_stabs: Iterable[float],
+    delta_vals: Iterable[float],
+    target_biases: Iterable[float],
+    budget_max: int,
+    objective_flags: dict[str, bool],
+) -> dict[str, int]:
+    counts = {
+        "instances": 0,
+        "stability_objective_solves": 0,
+        "validity_objective_solves": 0,
+        "per_row_stability_solves": 0,
+        "per_row_validity_solves": 0,
+        "direct_damage_stability_solves": 0,
+        "direct_damage_validity_solves": 0,
+    }
+    for K in Ks:
+        for N in Ns:
+            for _L in Ls:
+                for _T in Ts:
+                    for _delta_stab in delta_stabs:
+                        for _delta_val in delta_vals:
+                            for _target_bias in target_biases:
+                                counts["instances"] += 1
+                                budget_count = min(int(K), int(budget_max)) + 1
+                                if objective_flags["make_stability_objectives"]:
+                                    counts["stability_objective_solves"] += 6
+                                if objective_flags["make_validity_objectives"]:
+                                    counts["validity_objective_solves"] += 4
+                                if objective_flags["make_stability_budget_curves"]:
+                                    counts["per_row_stability_solves"] += 2 * int(N)
+                                if objective_flags["make_validity_budget_curves"]:
+                                    counts["per_row_validity_solves"] += int(N)
+                                if objective_flags["make_stability_objectives"]:
+                                    counts["direct_damage_stability_solves"] += 2 * budget_count
+                                if objective_flags["make_validity_objectives"]:
+                                    counts["direct_damage_validity_solves"] += budget_count
+    if not objective_flags.get("make_damage_curves", False):
+        counts["direct_damage_stability_solves"] = 0
+        counts["direct_damage_validity_solves"] = 0
+    return counts
+
+
+def _print_benchmark_dry_run(
+    *,
+    Ks: Iterable[int],
+    Ns: Iterable[int],
+    Ls: Iterable[int],
+    Ts: Iterable[int],
+    delta_stabs: Iterable[float],
+    delta_vals: Iterable[float],
+    target_biases: Iterable[float],
+    generator: str,
+    objective_family: str,
+    objective_flags: dict[str, bool],
+    budget_max: int,
+    save_dir: str,
+    verbose: bool,
+) -> None:
+    Ks, Ns, Ls, Ts = list(Ks), list(Ns), list(Ls), list(Ts)
+    delta_stabs, delta_vals, target_biases = list(delta_stabs), list(delta_vals), list(target_biases)
+    counts = _estimate_solve_counts(Ks, Ns, Ls, Ts, delta_stabs, delta_vals, target_biases, budget_max, objective_flags)
+    total_stability = counts["stability_objective_solves"] + counts["per_row_stability_solves"] + counts["direct_damage_stability_solves"]
+    total_validity = counts["validity_objective_solves"] + counts["per_row_validity_solves"] + counts["direct_damage_validity_solves"]
+    print("Benchmark dry run")
+    print(f"generator: {generator}")
+    print(f"output_dir: {save_dir}")
+    print(f"objective_family: {objective_family}")
+    print(f"stability objectives: {'enabled' if objective_flags['make_stability_objectives'] else 'disabled'}")
+    print(f"validity objectives: {'enabled' if objective_flags['make_validity_objectives'] else 'disabled'}")
+    print(f"stability budget curves: {'enabled' if objective_flags['make_stability_budget_curves'] else 'disabled'}")
+    print(f"validity budget curves: {'enabled' if objective_flags['make_validity_budget_curves'] else 'disabled'}")
+    print(f"stability horizon curves: {'enabled' if objective_flags['make_stability_horizon_curves'] else 'disabled'}")
+    print(f"validity horizon curves: {'enabled' if objective_flags['make_validity_horizon_curves'] else 'disabled'}")
+    print(f"damage curves: {'enabled' if objective_flags['make_damage_curves'] else 'disabled'}")
+    print(f"expanded benchmark instances: {counts['instances']}")
+    if verbose:
+        print(f"K values: {Ks}")
+        print(f"N values: {Ns}")
+        print(f"L values: {Ls}")
+        print(f"T values: {Ts}")
+        print(f"delta_stab values: {delta_stabs}")
+        print(f"delta_val values: {delta_vals}")
+        print(f"target_bias values: {target_biases}")
+    print("estimated Gurobi solves:")
+    print(f"  estimated stability solves: {total_stability}")
+    print(f"  estimated validity solves: {total_validity}")
+
+
 BENCHMARK_PRESETS: dict[str, dict[str, list[float] | list[int]]] = {
     "smoke": {
         "Ks": [8],
@@ -2064,6 +2488,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--make-budget-curves", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--make-damage-curves", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--make-horizon-curves", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--objective-family", choices=["full", "validity_only"], default="full")
+    parser.add_argument("--make-stability-objectives", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--make-validity-objectives", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--make-stability-budget-curves", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--make-validity-budget-curves", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--make-stability-horizon-curves", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--make-validity-horizon-curves", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--config", default=None, help="YAML benchmark config. Preferred for benchmark runs.")
+    parser.add_argument("--dry-run", action="store_true", help="Validate config and print solve estimates without running Gurobi.")
+    parser.add_argument("--verbose", action="store_true", help="Print resolved dry-run grid values.")
     return parser
 
 
@@ -2120,6 +2554,44 @@ def main() -> None:
             stability_competitor_mode=args.stability_competitor_mode,
         )
     elif args.command == "benchmark":
+        if args.config is not None:
+            try:
+                config = load_experiment_config(args.config)
+            except ConfigError as exc:
+                raise SystemExit(f"ConfigError: {exc}") from exc
+            benchmark_scale(
+                Ks=config["Ks"],
+                Ns=config["Ns"],
+                Ls=config["lengths"],
+                Ts=config["Ts"],
+                delta_stabs=config["delta_stabs"],
+                delta_vals=config["delta_vals"],
+                target_biases=config["target_biases"],
+                influence_mode=config["influence_mode"],
+                stability_competitor_mode=config["stability_competitor_mode"],
+                seed=config["seed"],
+                save_dir=config["save_dir"],
+                make_plots=args.make_plots,
+                budget_max=config["budget_max"],
+                make_budget_curves=config["make_budget_curves"],
+                make_damage_curves=config["make_damage_curves"],
+                make_horizon_curves=config["make_horizon_curves"],
+                objective_family=config["objective_family"],
+                make_stability_objectives=config.get("make_stability_objectives"),
+                make_validity_objectives=config.get("make_validity_objectives"),
+                make_stability_budget_curves=config.get("make_stability_budget_curves"),
+                make_validity_budget_curves=config.get("make_validity_budget_curves"),
+                make_stability_horizon_curves=config.get("make_stability_horizon_curves"),
+                make_validity_horizon_curves=config.get("make_validity_horizon_curves"),
+                dry_run=args.dry_run,
+                verbose=args.verbose,
+                generator=config["generator"],
+                group_size=config.get("group_size", args.group_size),
+                target_gap=config.get("target_gap", args.target_gap),
+                overlap=config.get("overlap", args.overlap),
+            )
+            return
+        print("WARNING: direct CLI benchmark parameters are deprecated; use --config path/to/config.yaml instead.")
         grid = _resolve_benchmark_grid(args)
         benchmark_scale(
             Ks=grid["Ks"],
@@ -2138,6 +2610,15 @@ def main() -> None:
             make_budget_curves=args.make_budget_curves,
             make_damage_curves=args.make_damage_curves,
             make_horizon_curves=args.make_horizon_curves,
+            objective_family=args.objective_family,
+            make_stability_objectives=args.make_stability_objectives,
+            make_validity_objectives=args.make_validity_objectives,
+            make_stability_budget_curves=args.make_stability_budget_curves,
+            make_validity_budget_curves=args.make_validity_budget_curves,
+            make_stability_horizon_curves=args.make_stability_horizon_curves,
+            make_validity_horizon_curves=args.make_validity_horizon_curves,
+            dry_run=args.dry_run,
+            verbose=args.verbose,
             generator=args.generator,
             group_size=args.group_size,
             target_gap=args.target_gap,

@@ -14,7 +14,7 @@ if [[ ! -f "$CONFIG" ]]; then
   exit 1
 fi
 
-RESULTS_DIR="${RESULTS_DIR:-$(config_value output_dir outputs/validity_demo/results)}"
+RESULTS_DIR="$(config_value output_dir outputs/validity_demo/results)"
 PLOTS_DIR="${PLOTS_DIR:-outputs/validity_demo/plots}"
 
 echo "== validity_demo =="
@@ -24,7 +24,13 @@ echo "Results dir: $RESULTS_DIR"
 echo "Plots dir:   $PLOTS_DIR"
 echo
 
-CONFIG="$CONFIG" OUT_DIR="$RESULTS_DIR" ./scripts/data.sh
+CONFIG="$CONFIG" ./scripts/data.sh
+
+if [[ "${DRY_RUN:-0}" == "1" ]]; then
+  echo
+  echo "Dry run only; skipped validity_demo plotting."
+  exit 0
+fi
 
 "$PYTHON_BIN" -m toy_certificate.experiments plot-validity-demo \
   --csv "$RESULTS_DIR/benchmark_results.csv" \
