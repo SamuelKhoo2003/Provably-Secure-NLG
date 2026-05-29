@@ -97,10 +97,6 @@ def copy_legacy_csv_columns(row: dict[str, object]) -> None:
     if "raw_dpa_val_min_cell" in row:
         row.setdefault("dpa_val_cell_min", row["raw_dpa_val_min_cell"])
         row.setdefault("dpa_val_row_weak_q1", row["raw_dpa_val_min_cell"])
-    if "certified_fraction_full_horizon" in row:
-        row.setdefault("full_horizon_certified_fraction", row["certified_fraction_full_horizon"])
-    if "full_horizon_certified_fraction" in row:
-        row.setdefault("certified_fraction_full_horizon", row["full_horizon_certified_fraction"])
 
 
 def looks_numeric(value: object) -> bool:

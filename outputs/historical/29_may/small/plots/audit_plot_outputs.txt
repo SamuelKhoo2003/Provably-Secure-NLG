@@ -17,22 +17,27 @@ Plots generated:
 - validity_certificate_vs_K.svg
 
 Plot series:
-- main_stability_budget_curve.svg: Shared MILP one prompt, full sequence, DPA weakest token
-- main_validity_budget_curve.svg: Shared MILP full sequence, TPA max-token sequence, DPA weakest harmful token
-- stability_certificate_vs_K.svg: Shared MILP full matrix, DPA weakest token
-- validity_certificate_vs_K.svg: Shared MILP all harmful sequences, DPA weakest harmful token, TPA max-token sequence
+- main_stability_budget_curve.svg: Joint row-column MILP, DPA weakest-token stability baseline
+- main_validity_budget_curve.svg: Joint row-column MILP, TPA sequence baseline, DPA weakest harmful-token diagnostic
+- stability_certificate_vs_K.svg: Joint row-column MILP, DPA weakest-token stability baseline
+- validity_certificate_vs_K.svg: Joint row-column MILP, DPA weakest harmful-token diagnostic, TPA sequence baseline
 
 Plots intentionally disabled in the default workflow:
 - ablation_stability_row_column_joint
 - ablation_validity_row_column_joint
+- direct_damage_curve_joint_milp
 - stability_diagnostic_references
 - validity_diagnostic_references
 - stability_full_matrix_main_comparison
 - stability_one_sequence_main_comparison
 - validity_all_prompts_main_comparison
 - validity_one_sequence_main_comparison
+- stability_horizon_by_budget
+- stability_horizon_fraction_by_budget
+- validity_horizon_by_budget
+- validity_horizon_fraction_by_budget
 - validity_sensitivity_target_bias
 
 Removed paths:
-- Removed old ablation, diagnostic-reference, and main-comparison plot generator paths that were no longer used by plot.sh.
+- Removed old ablation, diagnostic-reference, main-comparison, direct-damage plot, and horizon plot generator paths that were no longer used by plot.sh.
 - Kept shared SVG/line/heatmap helpers used by smoke visualization and validity_demo plotting.

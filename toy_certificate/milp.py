@@ -9,7 +9,7 @@ Stability objectives change outputs away from the clean winner. Validity
 objectives force harmful target tokens or full harmful target sequences. Report
 figures should prefer :func:`solve_structured_stability` and
 :func:`solve_row_col_validity`; older row/column functions remain as
-compatibility wrappers and baseline-oriented objectives.
+legacy debugging helpers and are not part of the report-facing comparisons.
 """
 
 from __future__ import annotations

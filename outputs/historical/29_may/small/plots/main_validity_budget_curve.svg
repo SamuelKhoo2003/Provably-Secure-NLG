@@ -33,7 +33,7 @@
 <circle cx="727.2" cy="470.0" r="4" fill="#2563eb"/>
 <circle cx="800.0" cy="470.0" r="4" fill="#2563eb"/>
 <rect x="824" y="78" width="12" height="12" fill="#2563eb"/>
-<text x="842" y="88" font-family="Arial, sans-serif" font-size="12" fill="#111827">Shared MILP full sequence</text>
+<text x="842" y="88" font-family="Arial, sans-serif" font-size="12" fill="#111827">Joint row-column MILP</text>
 <polyline points="72.0,70.0 144.8,85.7 217.6,297.5 290.4,404.6 363.2,462.2 436.0,470.0 508.8,470.0 581.6,470.0 654.4,470.0 727.2,470.0 800.0,470.0" fill="none" stroke="#dc2626" stroke-width="2.5"/>
 <circle cx="72.0" cy="70.0" r="4" fill="#dc2626"/>
 <circle cx="144.8" cy="85.7" r="4" fill="#dc2626"/>
@@ -47,7 +47,7 @@
 <circle cx="727.2" cy="470.0" r="4" fill="#dc2626"/>
 <circle cx="800.0" cy="470.0" r="4" fill="#dc2626"/>
 <rect x="824" y="98" width="12" height="12" fill="#dc2626"/>
-<text x="842" y="108" font-family="Arial, sans-serif" font-size="12" fill="#111827">TPA max-token sequence</text>
+<text x="842" y="108" font-family="Arial, sans-serif" font-size="12" fill="#111827">TPA sequence baseline</text>
 <polyline points="72.0,334.1 144.8,441.2 217.6,470.0 290.4,470.0 363.2,470.0 436.0,470.0 508.8,470.0 581.6,470.0 654.4,470.0 727.2,470.0 800.0,470.0" fill="none" stroke="#059669" stroke-width="2.5"/>
 <circle cx="72.0" cy="334.1" r="4" fill="#059669"/>
 <circle cx="144.8" cy="441.2" r="4" fill="#059669"/>
@@ -61,5 +61,5 @@
 <circle cx="727.2" cy="470.0" r="4" fill="#059669"/>
 <circle cx="800.0" cy="470.0" r="4" fill="#059669"/>
 <rect x="824" y="118" width="12" height="12" fill="#059669"/>
-<text x="842" y="128" font-family="Arial, sans-serif" font-size="12" fill="#111827">DPA weakest harmful token</text>
+<text x="842" y="128" font-family="Arial, sans-serif" font-size="12" fill="#111827">DPA weakest harmful-token diagnostic</text>
 </svg>

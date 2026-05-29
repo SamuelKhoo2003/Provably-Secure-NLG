@@ -39,9 +39,6 @@ from .csv_io import (
 from .data import ToyData, generate_toy_votes, generate_validity_demo_votes, stability_margins
 from .milp import (
     CertificateResult,
-    DamageResult,
-    maximize_attacked_rows_stability,
-    maximize_attacked_rows_validity,
     solve_col_stability,
     solve_col_validity,
     solve_row_col_stability,
@@ -217,15 +214,11 @@ def benchmark_scale(
     make_plots: bool = False,
     budget_max: int = 15,
     make_budget_curves: bool = True,
-    make_damage_curves: bool = True,
-    make_horizon_curves: bool = True,
     objective_family: str = "full",
     make_stability_objectives: bool | None = None,
     make_validity_objectives: bool | None = None,
     make_stability_budget_curves: bool | None = None,
     make_validity_budget_curves: bool | None = None,
-    make_stability_horizon_curves: bool | None = None,
-    make_validity_horizon_curves: bool | None = None,
     dry_run: bool = False,
     verbose: bool = False,
     generator: str = "toy",
@@ -242,15 +235,11 @@ def benchmark_scale(
     objective_flags = _resolve_objective_flags(
         objective_family=objective_family,
         make_budget_curves=make_budget_curves,
-        make_horizon_curves=make_horizon_curves,
         make_stability_objectives=make_stability_objectives,
         make_validity_objectives=make_validity_objectives,
         make_stability_budget_curves=make_stability_budget_curves,
         make_validity_budget_curves=make_validity_budget_curves,
-        make_stability_horizon_curves=make_stability_horizon_curves,
-        make_validity_horizon_curves=make_validity_horizon_curves,
     )
-    objective_flags["make_damage_curves"] = make_damage_curves
     if dry_run:
         _print_benchmark_dry_run(
             Ks=Ks,
@@ -272,8 +261,6 @@ def benchmark_scale(
     output_dir.mkdir(parents=True, exist_ok=True)
     rows: list[dict[str, object]] = []
     budget_curve_rows: list[dict[str, object]] = []
-    damage_curve_rows: list[dict[str, object]] = []
-    horizon_rows: list[dict[str, object]] = []
 
     for K in Ks:
         for N in Ns:
@@ -372,28 +359,6 @@ def benchmark_scale(
                                             make_validity_curves=objective_flags["make_validity_budget_curves"],
                                         )
                                     )
-                                if make_damage_curves:
-                                    damage_curve_rows.extend(
-                                        compute_direct_damage_curve_rows(
-                                            data,
-                                            T=T,
-                                            budgets=budgets,
-                                            metadata=metadata,
-                                            stability_competitor_mode=stability_competitor_mode,
-                                            make_stability_curves=objective_flags["make_stability_objectives"],
-                                            make_validity_curves=objective_flags["make_validity_objectives"],
-                                        )
-                                    )
-                                if objective_flags["make_stability_horizon_curves"] or objective_flags["make_validity_horizon_curves"]:
-                                    horizon_rows.extend(
-                                        compute_horizon_curve_rows(
-                                            data,
-                                            budgets=budgets,
-                                            metadata=metadata,
-                                            make_stability_curves=objective_flags["make_stability_horizon_curves"],
-                                            make_validity_curves=objective_flags["make_validity_horizon_curves"],
-                                        )
-                                    )
                                 print(
                                     "bench "
                                     f"K={K_actual} N={N} L={L} T={T} delta_stab={delta_stab} delta_val={delta_val} target_bias={target_bias}: "
@@ -408,14 +373,6 @@ def benchmark_scale(
         budget_csv_path = output_dir / "benchmark_budget_curves.csv"
         _write_rows_csv(budget_csv_path, budget_curve_rows)
         print(f"Wrote budget-curve CSV: {budget_csv_path}")
-    if make_damage_curves:
-        damage_csv_path = output_dir / "benchmark_damage_curves.csv"
-        _write_rows_csv(damage_csv_path, damage_curve_rows)
-        print(f"Wrote direct-damage CSV: {damage_csv_path}")
-    if objective_flags["make_stability_horizon_curves"] or objective_flags["make_validity_horizon_curves"]:
-        horizon_csv_path = output_dir / "benchmark_horizons.csv"
-        _write_rows_csv(horizon_csv_path, horizon_rows)
-        print(f"Wrote horizon CSV: {horizon_csv_path}")
     if make_plots:
         save_default_report_plots(rows, output_dir, csv_path=csv_path)
         print(f"Wrote benchmark plots under: {output_dir}")
@@ -474,12 +431,9 @@ def _copy_metric_family(row: dict[str, object], source: str, target: str) -> Non
 def _add_validity_demo_gap_columns(row: dict[str, object]) -> None:
     """Add validity-demo comparison columns when the needed values are present."""
     joint = _numeric_value(row.get("row_col_val_q1"))
-    row_milp = _numeric_value(row.get("row_validity"))
     tpa = _numeric_value(row.get("tpa_val_sequence_q1"))
     row["validity_gap_joint_minus_tpa_q1"] = _safe_difference(joint, tpa)
     row["validity_ratio_joint_over_tpa_q1"] = _safe_ratio(joint, tpa)
-    row["validity_gap_row_minus_tpa_q1"] = _safe_difference(row_milp, tpa)
-    row["validity_ratio_row_over_tpa_q1"] = _safe_ratio(row_milp, tpa)
     dpa_weak = _numeric_value(row.get("dpa_val_row_weak_q1"))
     row["validity_gap_tpa_minus_dpa_weak_q1"] = _safe_difference(tpa, dpa_weak)
     row["validity_gap_joint_minus_dpa_weak_q1"] = _safe_difference(joint, dpa_weak)
@@ -506,17 +460,12 @@ DEFAULT_REPORT_PLOT_FILENAMES = (
 DISABLED_DEFAULT_PLOTS = (
     "ablation_stability_row_column_joint",
     "ablation_validity_row_column_joint",
-    "direct_damage_curve_joint_milp",
     "stability_diagnostic_references",
     "validity_diagnostic_references",
     "stability_full_matrix_main_comparison",
     "stability_one_sequence_main_comparison",
     "validity_all_prompts_main_comparison",
     "validity_one_sequence_main_comparison",
-    "stability_horizon_by_budget",
-    "stability_horizon_fraction_by_budget",
-    "validity_horizon_by_budget",
-    "validity_horizon_fraction_by_budget",
     "validity_sensitivity_target_bias",
 )
 
@@ -532,17 +481,17 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
             "main_stability_budget_curve.svg",
             "Main stability budget curve",
             [
-                ("Joint row-column MILP", "Shared MILP", "stability_full_sequence_per_prompt", "radius_derived"),
-                ("DPA weakest-token stability baseline", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
+                ("Shared MILP one prompt, full sequence", "Shared MILP", "stability_full_sequence_per_prompt", "radius_derived"),
+                ("DPA weakest token", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
             ],
         ),
         (
             "main_validity_budget_curve.svg",
             "Main validity budget curve",
             [
-                ("Joint row-column MILP", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-                ("TPA sequence baseline", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-                ("DPA weakest harmful-token diagnostic", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
+                ("Shared MILP full sequence", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+                ("TPA max-token sequence", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+                ("DPA weakest harmful token", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
             ],
         ),
     ]
@@ -655,7 +604,7 @@ def _write_default_plot_audit(path: Path, csv_path: Path, audit: list[dict[str, 
             *[f"- {name}" for name in DISABLED_DEFAULT_PLOTS],
             "",
             "Removed paths:",
-            "- Removed old ablation, diagnostic-reference, main-comparison, direct-damage plot, and horizon plot generator paths that were no longer used by plot.sh.",
+            "- Removed old ablation, diagnostic-reference, and main-comparison plot generator paths that were no longer used by plot.sh.",
             "- Kept shared SVG/line/heatmap helpers used by smoke visualization and validity_demo plotting.",
         ]
     )
@@ -664,38 +613,28 @@ def _write_default_plot_audit(path: Path, csv_path: Path, audit: list[dict[str, 
 
 AUDIT_CURVE_SELECTIONS: list[tuple[str, str, str, str]] = [
     ("DPA weakest token, radius-derived", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
-    ("Shared one-token-per-prompt, direct MILP", "Shared MILP", "stability_one_token_per_prompt", "direct_damage_milp"),
-    ("Shared full-sequence-per-prompt, direct MILP", "Shared MILP", "stability_full_sequence_per_prompt", "direct_damage_milp"),
     ("TPA max-token sequence, radius-derived", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
     ("Shared full sequence, radius-derived", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-    ("Shared full sequence, direct MILP", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "direct_damage_milp"),
 ]
 
 
 def audit_curve_csvs(csv_dir: str) -> list[dict[str, object]]:
-    """Print diagnostics for budget, damage, and horizon sidecar CSVs."""
+    """Print diagnostics for active budget-curve sidecar CSVs."""
     base = Path(csv_dir)
     budget_rows = _read_optional_csv(base / "benchmark_budget_curves.csv")
-    damage_rows = _read_optional_csv(base / "benchmark_damage_curves.csv")
-    horizon_rows = _read_optional_csv(base / "benchmark_horizons.csv")
-    combined = budget_rows + damage_rows
     diagnostics: list[dict[str, object]] = []
 
     print(f"Curve audit: {base}")
-    print(f"Rows: budget={len(budget_rows)} damage={len(damage_rows)} horizon={len(horizon_rows)}")
+    print(f"Rows: budget={len(budget_rows)}")
     print()
     print("Plotted certified-fraction series")
     series_by_label: dict[str, dict[float, float]] = {}
     for label, method, objective, curve_type in AUDIT_CURVE_SELECTIONS:
-        rows = _select_curve_rows(combined, method, objective, curve_type)
-        source = "benchmark_damage_curves.csv" if curve_type == "direct_damage_milp" else "benchmark_budget_curves.csv"
-        exact_rows = rows
-        if curve_type == "direct_damage_milp":
-            exact_rows = [row for row in rows if row.get("certified_fraction_is_exact") is True or row.get("is_optimal") is True]
-        metric_series = _mean_series_by_axis(exact_rows, "budget", "certified_fraction")
+        rows = _select_curve_rows(budget_rows, method, objective, curve_type)
+        source = "benchmark_budget_curves.csv"
+        metric_series = _mean_series_by_axis(rows, "budget", "certified_fraction")
         point_count = 0 if metric_series is None else len(metric_series[0])
-        skipped = len(rows) - len(exact_rows)
-        print(f"- {label}: source={source}, rows={len(rows)}, plotted_points={point_count}, skipped_nonoptimal={skipped}")
+        print(f"- {label}: source={source}, rows={len(rows)}, plotted_points={point_count}")
         if metric_series is not None:
             xs, ys = metric_series
             series_by_label[label] = {x: y for x, y in zip(xs, ys)}
@@ -706,7 +645,6 @@ def audit_curve_csvs(csv_dir: str) -> list[dict[str, object]]:
                 "source": source,
                 "rows": len(rows),
                 "plotted_points": point_count,
-                "skipped_nonoptimal": skipped,
             }
         )
 
@@ -724,8 +662,6 @@ def audit_curve_csvs(csv_dir: str) -> list[dict[str, object]]:
                 print(f"- identical: {left_label} == {right_label} over {len(shared_budgets)} budget point(s)")
                 diagnostics.append({"check": "identical_series", "left_label": left_label, "right_label": right_label, "points": len(shared_budgets)})
 
-    diagnostics.extend(_audit_direct_damage_rows(damage_rows))
-    diagnostics.extend(_audit_horizon_rows(horizon_rows))
     if not diagnostics:
         print("No diagnostics produced.")
     return diagnostics
@@ -949,29 +885,32 @@ def save_instance_plots(
 
 
 CANONICAL_METHODS = (
-    "Joint row-column MILP",
-    "DPA weakest-token stability baseline",
-    "TPA sequence baseline",
+    "Shared MILP full matrix",
+    "DPA weakest token",
+    "TPA max-token sequence",
 )
 
 CANONICAL_COLORS = {
-    "Joint row-column MILP": "#1f77b4",
-    "DPA weakest-token stability baseline": "#d62728",
-    "DPA weakest harmful-token diagnostic": "#8c564b",
-    "TPA sequence baseline": "#2ca02c",
-    "Row-only MILP ablation": "#9467bd",
-    "Column-only MILP ablation": "#ff7f0e",
+    "Shared MILP one prompt, one token": "#1f77b4",
+    "Shared MILP one prompt, full sequence": "#17becf",
+    "Shared MILP all prompts, one token each": "#9467bd",
+    "Shared MILP full matrix": "#08519c",
+    "Shared MILP full sequence": "#1f77b4",
+    "Shared MILP all harmful sequences": "#08519c",
+    "DPA weakest token": "#d62728",
+    "DPA weakest harmful token": "#8c564b",
+    "TPA max-token sequence": "#2ca02c",
 }
 
 MAIN_STABILITY_METRICS = {
-    "Joint row-column MILP": "row_col_stab_qN_rL",
-    "DPA weakest-token stability baseline": "dpa_stab_row_radius_qN",
+    "Shared MILP full matrix": "row_col_stab_qN_rL",
+    "DPA weakest token": "dpa_stab_row_radius_qN",
 }
 
 MAIN_VALIDITY_METRICS = {
-    "Joint row-column MILP": "row_col_val_qN",
-    "DPA weakest harmful-token diagnostic": "dpa_val_row_weak_qN",
-    "TPA sequence baseline": "tpa_val_sequence_qN",
+    "Shared MILP all harmful sequences": "row_col_val_qN",
+    "DPA weakest harmful token": "dpa_val_row_weak_qN",
+    "TPA max-token sequence": "tpa_val_sequence_qN",
 }
 
 def save_validity_demo_plot(rows: list[dict[str, object]], output_dir: Path, csv_path: Path, generator: str) -> None:
@@ -980,10 +919,9 @@ def save_validity_demo_plot(rows: list[dict[str, object]], output_dir: Path, csv
     if not demo_rows:
         return
     series_specs = [
-        ("TPA sequence baseline", "tpa_val_sequence_q1"),
-        ("Row-only shared MILP", "row_validity"),
-        ("Joint row-column shared MILP", "row_col_val_q1"),
-        ("DPA weakest harmful-token diagnostic", "dpa_val_row_weak_q1"),
+        ("TPA max-token sequence", "tpa_val_sequence_q1"),
+        ("Shared MILP full sequence", "row_col_val_q1"),
+        ("DPA weakest harmful token", "dpa_val_row_weak_q1"),
     ]
     series: dict[str, tuple[list[float], list[float]]] = {}
     skipped: list[str] = []
@@ -1028,9 +966,9 @@ def save_validity_demo_budget_curve_plots(output_dir: Path, source_dir: Path | N
         output_dir / "validity_demo_budget_curve.svg",
         "validity_demo certified fraction by budget",
         [
-            ("Joint row-column shared MILP", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-            ("TPA sequence baseline", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-            ("DPA weakest harmful-token diagnostic", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
+            ("Shared MILP full sequence", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("TPA max-token sequence", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("DPA weakest harmful token", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
         ],
     )
     result_rows = _read_optional_csv(csv_dir / "benchmark_results.csv")
@@ -1041,10 +979,9 @@ def save_validity_demo_budget_curve_plots(output_dir: Path, source_dir: Path | N
         axis_name="K",
         y_label="Mean certified budget B*",
         metrics={
-            "DPA weakest harmful-token diagnostic": "dpa_val_row_weak_q1",
-            "TPA sequence baseline": "tpa_val_sequence_q1",
-            "Row-only shared MILP": "row_validity",
-            "Joint row-column shared MILP": "row_col_val_q1",
+            "DPA weakest harmful token": "dpa_val_row_weak_q1",
+            "TPA max-token sequence": "tpa_val_sequence_q1",
+            "Shared MILP full sequence": "row_col_val_q1",
         },
     )
 
@@ -1080,16 +1017,13 @@ def write_validity_demo_audit(path: Path, rows: list[dict[str, object]], csv_pat
         f"Series plotted: {plotted}",
         f"Series skipped: {skipped or ['none']}",
         "",
-        "TPA sequence values by L:",
+        "TPA max-token sequence values by L:",
         *_format_mean_series(rows, "tpa_val_sequence_q1"),
         "",
-        "DPA weakest harmful-token diagnostic values by L:",
+        "DPA weakest harmful-token values by L:",
         *_format_mean_series(rows, "dpa_val_row_weak_q1"),
         "",
-        "Row-only shared MILP values by L:",
-        *_format_mean_series(rows, "row_validity"),
-        "",
-        "Joint row-column shared MILP values by L:",
+        "Shared MILP full sequence values by L:",
         *_format_mean_series(rows, "row_col_val_q1"),
         "",
         "Joint minus TPA gap by L:",
@@ -1105,7 +1039,7 @@ def write_validity_demo_audit(path: Path, rows: list[dict[str, object]], csv_pat
         "Explanation:",
         f"{generator} is artificial and controlled. It is not intended to model a natural language distribution.",
         "TPA is count-based and sees each harmful target token as individually cheap from aggregate counts.",
-        "The joint row-column shared MILP is shard-aware and must use one shared poisoned-shard allocation across target positions.",
+        "The full shared MILP is shard-aware and must use one shared poisoned-shard allocation across target positions.",
         "The demo assigns cheap target-token attacks to different shard groups, so the full harmful sequence requires more shared poisoned shards than TPA's count-only sequence baseline suggests.",
     ]
     path.write_text("\n".join(lines))
@@ -1183,13 +1117,10 @@ def _resolve_objective_flags(
     *,
     objective_family: str,
     make_budget_curves: bool,
-    make_horizon_curves: bool,
     make_stability_objectives: bool | None,
     make_validity_objectives: bool | None,
     make_stability_budget_curves: bool | None,
     make_validity_budget_curves: bool | None,
-    make_stability_horizon_curves: bool | None,
-    make_validity_horizon_curves: bool | None,
 ) -> dict[str, bool]:
     if objective_family == "full":
         flags = {
@@ -1197,8 +1128,6 @@ def _resolve_objective_flags(
             "make_validity_objectives": True,
             "make_stability_budget_curves": make_budget_curves,
             "make_validity_budget_curves": make_budget_curves,
-            "make_stability_horizon_curves": make_horizon_curves,
-            "make_validity_horizon_curves": make_horizon_curves,
         }
     elif objective_family == "validity_only":
         flags = {
@@ -1206,8 +1135,6 @@ def _resolve_objective_flags(
             "make_validity_objectives": True,
             "make_stability_budget_curves": False,
             "make_validity_budget_curves": make_budget_curves,
-            "make_stability_horizon_curves": False,
-            "make_validity_horizon_curves": make_horizon_curves,
         }
     else:
         raise ValueError(f"Unknown objective_family: {objective_family}")
@@ -1216,8 +1143,6 @@ def _resolve_objective_flags(
         "make_validity_objectives": make_validity_objectives,
         "make_stability_budget_curves": make_stability_budget_curves,
         "make_validity_budget_curves": make_validity_budget_curves,
-        "make_stability_horizon_curves": make_stability_horizon_curves,
-        "make_validity_horizon_curves": make_validity_horizon_curves,
     }.items():
         if value is not None:
             flags[key] = value
@@ -1284,8 +1209,6 @@ def _solve_benchmark_certificates(
     if make_stability_objectives:
         results.extend(
             [
-                solve_row_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, competitor_mode=stability_competitor_mode),
-                solve_col_stability(data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, competitor_mode=stability_competitor_mode),
                 solve_structured_stability(
                     data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=1, competitor_mode=stability_competitor_mode
                 ),
@@ -1303,8 +1226,6 @@ def _solve_benchmark_certificates(
     if make_validity_objectives:
         results.extend(
             [
-                solve_row_validity(data.val_votes, data.val_counts, data.target, T, data.influence),
-                solve_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, definition="full_column"),
                 solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1),
                 solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=N),
             ]
@@ -1350,42 +1271,6 @@ def certified_fraction_from_radii(radii: np.ndarray, budgets: Iterable[int]) -> 
             }
         )
     return rows
-
-
-def prefix_horizons_from_token_radii(token_radii: np.ndarray, budget: int) -> np.ndarray:
-    """Return longest certified prefix per row under the strict ``B < B*`` rule."""
-    token_radii = np.asarray(token_radii, dtype=float)
-    if token_radii.ndim != 2:
-        raise ValueError("token_radii must have shape (N, L)")
-    horizons = np.zeros(token_radii.shape[0], dtype=np.int64)
-    for i in range(token_radii.shape[0]):
-        horizon = 0
-        for radius in token_radii[i]:
-            if budget < radius:
-                horizon += 1
-            else:
-                break
-        horizons[i] = horizon
-    return horizons
-
-
-def targeted_validity_prefix_horizons_from_token_radii(token_radii: np.ndarray, budget: int) -> np.ndarray:
-    """Return TPA-style harmful-prefix validity horizons for each row.
-
-    For a harmful prefix to be forced, every target token in that prefix must be
-    forced. The prefix is therefore certified impossible whenever at least one
-    token in the prefix has radius greater than the attack budget.
-    """
-    token_radii = np.asarray(token_radii, dtype=float)
-    if token_radii.ndim != 2:
-        raise ValueError("token_radii must have shape (N, L)")
-    horizons = np.zeros(token_radii.shape[0], dtype=np.int64)
-    for i in range(token_radii.shape[0]):
-        prefix_radii = np.maximum.accumulate(token_radii[i])
-        certified_prefixes = np.flatnonzero(budget < prefix_radii)
-        if certified_prefixes.size:
-            horizons[i] = int(certified_prefixes[-1] + 1)
-    return horizons
 
 
 def compute_radius_derived_budget_curve_rows(
@@ -1464,127 +1349,6 @@ def compute_radius_derived_budget_curve_rows(
                     "method": method,
                     "objective": objective,
                     "curve_type": "radius_derived",
-                }
-            )
-    return rows
-
-
-def compute_direct_damage_curve_rows(
-    data: ToyData,
-    T: int,
-    budgets: Iterable[int],
-    metadata: dict[str, object],
-    stability_competitor_mode: str = "all",
-    make_stability_curves: bool = True,
-    make_validity_curves: bool = True,
-) -> list[dict[str, object]]:
-    """Build long-format fixed-budget shared-MILP damage curve rows."""
-    objectives = []
-    if make_stability_curves:
-        objectives.extend(
-            [
-                (
-                    "stability_one_token_per_prompt",
-                    lambda budget: maximize_attacked_rows_stability(
-                        data.stab_votes,
-                        data.stab_counts,
-                        data.clean_pred,
-                        data.runner_up,
-                        data.influence,
-                        budget=budget,
-                        row_requirement="any_token",
-                        competitor_mode=stability_competitor_mode,
-                    ),
-                ),
-                (
-                    "stability_full_sequence_per_prompt",
-                    lambda budget: maximize_attacked_rows_stability(
-                        data.stab_votes,
-                        data.stab_counts,
-                        data.clean_pred,
-                        data.runner_up,
-                        data.influence,
-                        budget=budget,
-                        row_requirement="full_sequence",
-                        competitor_mode=stability_competitor_mode,
-                    ),
-                ),
-            ]
-        )
-    if make_validity_curves:
-        objectives.append(
-            (
-                "validity_full_harmful_sequence_per_prompt",
-                lambda budget: maximize_attacked_rows_validity(
-                    data.val_votes,
-                    data.val_counts,
-                    data.target,
-                    T,
-                    data.influence,
-                    budget=budget,
-                    row_requirement="full_sequence",
-                ),
-            )
-        )
-    rows: list[dict[str, object]] = []
-    N = data.stab_votes.shape[1]
-    for budget in budgets:
-        for objective, solve in objectives:
-            result = solve(int(budget))
-            rows.append(_damage_curve_row(metadata, result, objective=objective, num_rows=N))
-    return rows
-
-
-def compute_horizon_curve_rows(
-    data: ToyData,
-    budgets: Iterable[int],
-    metadata: dict[str, object],
-    make_stability_curves: bool = True,
-    make_validity_curves: bool = True,
-) -> list[dict[str, object]]:
-    """Build long-format prefix horizon summaries for fixed budgets."""
-    curves = []
-    if make_stability_curves:
-        curves.append(
-            (
-                "DPA stability horizon",
-                "stability_clean_prefix",
-                _cell_stability_budgets(data),
-                prefix_horizons_from_token_radii,
-            )
-        )
-    if make_validity_curves:
-        curves.append(
-            (
-                "TPA validity horizon",
-                "validity_harmful_target_prefix",
-                _targeted_validity_token_budgets(data),
-                targeted_validity_prefix_horizons_from_token_radii,
-            )
-        )
-    rows: list[dict[str, object]] = []
-    for method, objective, token_radii, horizon_fn in curves:
-        for budget in budgets:
-            horizons = horizon_fn(token_radii, int(budget))
-            full_horizon = int(token_radii.shape[1])
-            full_horizon_fraction = float(np.mean(horizons == full_horizon))
-            rows.append(
-                {
-                    **metadata,
-                    "budget": int(budget),
-                    "method": method,
-                    "objective": objective,
-                    "mean_horizon": float(np.mean(horizons)),
-                    "median_horizon": float(np.median(horizons)),
-                    "min_horizon": int(np.min(horizons)),
-                    "max_horizon": int(np.max(horizons)),
-                    "mean_horizon_fraction": float(np.mean(horizons) / full_horizon),
-                    "median_horizon_fraction": float(np.median(horizons) / full_horizon),
-                    "min_horizon_fraction": float(np.min(horizons) / full_horizon),
-                    "max_horizon_fraction": float(np.max(horizons) / full_horizon),
-                    "max_possible_horizon": full_horizon,
-                    "full_horizon_certified_fraction": full_horizon_fraction,
-                    "certified_fraction_full_horizon": full_horizon_fraction,
                 }
             )
     return rows
@@ -1686,34 +1450,6 @@ def _benchmark_metadata(
     }
 
 
-def _damage_curve_row(metadata: dict[str, object], result: DamageResult, objective: str, num_rows: int) -> dict[str, object]:
-    max_attacked_rows = result.max_attacked_rows
-    if max_attacked_rows is None and result.objective_value is not None:
-        max_attacked_rows = int(round(result.objective_value))
-    attacked_fraction = None if max_attacked_rows is None else max_attacked_rows / num_rows
-    bound_type = "exact" if result.is_optimal else "feasible_attacked_lower_bound"
-    return {
-        **metadata,
-        "budget": result.budget,
-        "method": "Shared MILP",
-        "objective": objective,
-        "curve_type": "direct_damage_milp",
-        "max_attacked_rows": "" if max_attacked_rows is None else max_attacked_rows,
-        "max_attacked_cells": result.max_attacked_cells,
-        "attacked_fraction": "" if attacked_fraction is None else float(attacked_fraction),
-        "certified_fraction": "" if attacked_fraction is None else float(1.0 - attacked_fraction),
-        "status_name": result.status_name,
-        "is_optimal": result.is_optimal,
-        "certified_fraction_is_exact": result.is_optimal,
-        "bound_type": bound_type,
-        "objective_value": "" if result.objective_value is None else result.objective_value,
-        "lower_bound": "" if result.lower_bound is None else result.lower_bound,
-        "upper_bound": "" if result.upper_bound is None else result.upper_bound,
-        "mip_gap": "" if result.mip_gap is None else result.mip_gap,
-        "runtime_sec": "" if result.runtime_sec is None else result.runtime_sec,
-    }
-
-
 def _save_focused_plot(rows: list[dict[str, object]], path: Path, title: str, axis_name: str, y_label: str, metrics: dict[str, str]) -> None:
     """Save a mean-by-axis line plot for selected benchmark metric columns."""
     series = {}
@@ -1779,12 +1515,6 @@ def _save_certified_fraction_budget_plot(
             for row in rows
             if row.get("method") == method and row.get("objective") == objective and row.get("curve_type") == curve_type
         ]
-        if curve_type == "direct_damage_milp":
-            exact_rows = [row for row in selected if row.get("certified_fraction_is_exact") is True or row.get("is_optimal") is True]
-            skipped = len(selected) - len(exact_rows)
-            if skipped:
-                print(f"Warning: skipping {skipped} non-optimal direct-damage row(s) for {path.name} curve '{label}'.")
-            selected = exact_rows
         metric_series = _mean_series_by_axis(selected, "budget", "certified_fraction")
         if metric_series is None:
             print(f"Warning: skipping {path.name} curve '{label}' because matching rows are missing.")
@@ -1799,72 +1529,6 @@ def _save_certified_fraction_budget_plot(
 
 def _select_curve_rows(rows: list[dict[str, object]], method: str, objective: str, curve_type: str) -> list[dict[str, object]]:
     return [row for row in rows if row.get("method") == method and row.get("objective") == objective and row.get("curve_type") == curve_type]
-
-
-def _audit_direct_damage_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
-    diagnostics: list[dict[str, object]] = []
-    if not rows:
-        return diagnostics
-    print()
-    print("Direct damage checks")
-    grouped: dict[tuple[object, ...], list[dict[str, object]]] = {}
-    for row in rows:
-        key = tuple(row.get(name) for name in ["seed", "K", "N", "L", "T", "delta_stab", "delta_val", "target_bias", "influence_mode", "stability_competitor_mode", "objective"])
-        grouped.setdefault(key, []).append(row)
-        attacked = _numeric_value(row.get("max_attacked_rows"))
-        n_rows = _numeric_value(row.get("N"))
-        if attacked is not None and n_rows is not None and not 0 <= attacked <= n_rows:
-            diagnostic = {"check": "damage_bounds", "objective": row.get("objective"), "budget": row.get("budget"), "max_attacked_rows": attacked, "N": n_rows}
-            diagnostics.append(diagnostic)
-            print(f"- warning: max_attacked_rows outside [0,N]: {diagnostic}")
-    nonoptimal = [row for row in rows if not (row.get("is_optimal") is True or row.get("certified_fraction_is_exact") is True)]
-    if nonoptimal:
-        print(f"- non-optimal direct damage rows: {len(nonoptimal)}; certified_fraction is a bound, not an exact percentage.")
-        diagnostics.append({"check": "nonoptimal_direct_damage", "rows": len(nonoptimal)})
-
-    for key, group_rows in grouped.items():
-        sorted_rows = sorted(group_rows, key=lambda row: _numeric_value(row.get("budget")) or -1)
-        previous_attacked = None
-        previous_certified = None
-        for row in sorted_rows:
-            attacked = _numeric_value(row.get("attacked_fraction"))
-            certified = _numeric_value(row.get("certified_fraction"))
-            if attacked is not None and previous_attacked is not None and attacked + 1e-9 < previous_attacked:
-                diagnostics.append({"check": "attacked_fraction_monotonicity", "key": key, "budget": row.get("budget")})
-            if certified is not None and previous_certified is not None and certified > previous_certified + 1e-9:
-                diagnostics.append({"check": "certified_fraction_monotonicity", "key": key, "budget": row.get("budget")})
-            previous_attacked = attacked if attacked is not None else previous_attacked
-            previous_certified = certified if certified is not None else previous_certified
-    monotone_violations = [item for item in diagnostics if str(item.get("check", "")).endswith("monotonicity")]
-    print(f"- monotonicity violations: {len(monotone_violations)}")
-    return diagnostics
-
-
-def _audit_horizon_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
-    diagnostics: list[dict[str, object]] = []
-    if not rows:
-        return diagnostics
-    print()
-    print("Horizon checks")
-    for row in rows:
-        min_horizon = _numeric_value(row.get("min_horizon"))
-        max_horizon = _numeric_value(row.get("max_horizon"))
-        max_possible = _numeric_value(row.get("max_possible_horizon"))
-        full_fraction = _numeric_value(row.get("full_horizon_certified_fraction"))
-        if full_fraction is None:
-            full_fraction = _numeric_value(row.get("certified_fraction_full_horizon"))
-        if (
-            min_horizon is not None
-            and max_horizon is not None
-            and max_possible is not None
-            and not (0 <= min_horizon <= max_horizon <= max_possible)
-        ):
-            diagnostics.append({"check": "horizon_bounds", "method": row.get("method"), "budget": row.get("budget")})
-        if full_fraction is not None and not 0 <= full_fraction <= 1:
-            diagnostics.append({"check": "horizon_full_fraction_bounds", "method": row.get("method"), "budget": row.get("budget")})
-    violations = [item for item in diagnostics if str(item.get("check", "")).startswith("horizon")]
-    print(f"- horizon bound violations: {len(violations)}")
-    return diagnostics
 
 
 def _print_stability_mode_comparison_summary(rows: list[dict[str, object]]) -> None:
@@ -2269,16 +1933,12 @@ def load_experiment_config(path: str | Path) -> dict[str, object]:
         "stability_competitor_mode": _require_str(config, config_path, "stability_competitor_mode", {"all", "runner_up"}),
         "objective_family": _require_str(config, config_path, "objective_family", {"full", "validity_only"}),
         "make_budget_curves": _require_bool(config, config_path, "make_budget_curves"),
-        "make_damage_curves": _require_bool(config, config_path, "make_damage_curves"),
-        "make_horizon_curves": _require_bool(config, config_path, "make_horizon_curves"),
     }
     for key in [
         "make_stability_objectives",
         "make_validity_objectives",
         "make_stability_budget_curves",
         "make_validity_budget_curves",
-        "make_stability_horizon_curves",
-        "make_validity_horizon_curves",
     ]:
         if key in config:
             value = config[key]
@@ -2304,7 +1964,7 @@ def _estimate_solve_counts(
     delta_stabs: Iterable[float],
     delta_vals: Iterable[float],
     target_biases: Iterable[float],
-    budget_max: int,
+    _budget_max: int,
     objective_flags: dict[str, bool],
 ) -> dict[str, int]:
     counts = {
@@ -2313,10 +1973,8 @@ def _estimate_solve_counts(
         "validity_objective_solves": 0,
         "per_row_stability_solves": 0,
         "per_row_validity_solves": 0,
-        "direct_damage_stability_solves": 0,
-        "direct_damage_validity_solves": 0,
     }
-    for K in Ks:
+    for _K in Ks:
         for N in Ns:
             for _L in Ls:
                 for _T in Ts:
@@ -2324,22 +1982,14 @@ def _estimate_solve_counts(
                         for _delta_val in delta_vals:
                             for _target_bias in target_biases:
                                 counts["instances"] += 1
-                                budget_count = min(int(K), int(budget_max)) + 1
                                 if objective_flags["make_stability_objectives"]:
-                                    counts["stability_objective_solves"] += 6
+                                    counts["stability_objective_solves"] += 4
                                 if objective_flags["make_validity_objectives"]:
-                                    counts["validity_objective_solves"] += 4
+                                    counts["validity_objective_solves"] += 2
                                 if objective_flags["make_stability_budget_curves"]:
                                     counts["per_row_stability_solves"] += 2 * int(N)
                                 if objective_flags["make_validity_budget_curves"]:
                                     counts["per_row_validity_solves"] += int(N)
-                                if objective_flags["make_stability_objectives"]:
-                                    counts["direct_damage_stability_solves"] += 2 * budget_count
-                                if objective_flags["make_validity_objectives"]:
-                                    counts["direct_damage_validity_solves"] += budget_count
-    if not objective_flags.get("make_damage_curves", False):
-        counts["direct_damage_stability_solves"] = 0
-        counts["direct_damage_validity_solves"] = 0
     return counts
 
 
@@ -2362,8 +2012,8 @@ def _print_benchmark_dry_run(
     Ks, Ns, Ls, Ts = list(Ks), list(Ns), list(Ls), list(Ts)
     delta_stabs, delta_vals, target_biases = list(delta_stabs), list(delta_vals), list(target_biases)
     counts = _estimate_solve_counts(Ks, Ns, Ls, Ts, delta_stabs, delta_vals, target_biases, budget_max, objective_flags)
-    total_stability = counts["stability_objective_solves"] + counts["per_row_stability_solves"] + counts["direct_damage_stability_solves"]
-    total_validity = counts["validity_objective_solves"] + counts["per_row_validity_solves"] + counts["direct_damage_validity_solves"]
+    total_stability = counts["stability_objective_solves"] + counts["per_row_stability_solves"]
+    total_validity = counts["validity_objective_solves"] + counts["per_row_validity_solves"]
     print("Benchmark dry run")
     print(f"generator: {generator}")
     print(f"output_dir: {save_dir}")
@@ -2372,9 +2022,6 @@ def _print_benchmark_dry_run(
     print(f"validity objectives: {'enabled' if objective_flags['make_validity_objectives'] else 'disabled'}")
     print(f"stability budget curves: {'enabled' if objective_flags['make_stability_budget_curves'] else 'disabled'}")
     print(f"validity budget curves: {'enabled' if objective_flags['make_validity_budget_curves'] else 'disabled'}")
-    print(f"stability horizon curves: {'enabled' if objective_flags['make_stability_horizon_curves'] else 'disabled'}")
-    print(f"validity horizon curves: {'enabled' if objective_flags['make_validity_horizon_curves'] else 'disabled'}")
-    print(f"damage curves: {'enabled' if objective_flags['make_damage_curves'] else 'disabled'}")
     print(f"expanded benchmark instances: {counts['instances']}")
     if verbose:
         print(f"K values: {Ks}")
@@ -2486,15 +2133,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--make-plots", action="store_true", help="Also render benchmark plots after running Gurobi.")
     parser.add_argument("--budget-max", type=int, default=15, help="Maximum poisoned-shard budget for fixed-budget curve CSVs.")
     parser.add_argument("--make-budget-curves", action=argparse.BooleanOptionalAction, default=True)
-    parser.add_argument("--make-damage-curves", action=argparse.BooleanOptionalAction, default=True)
-    parser.add_argument("--make-horizon-curves", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--objective-family", choices=["full", "validity_only"], default="full")
     parser.add_argument("--make-stability-objectives", action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument("--make-validity-objectives", action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument("--make-stability-budget-curves", action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument("--make-validity-budget-curves", action=argparse.BooleanOptionalAction, default=None)
-    parser.add_argument("--make-stability-horizon-curves", action=argparse.BooleanOptionalAction, default=None)
-    parser.add_argument("--make-validity-horizon-curves", action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument("--config", default=None, help="YAML benchmark config. Preferred for benchmark runs.")
     parser.add_argument("--dry-run", action="store_true", help="Validate config and print solve estimates without running Gurobi.")
     parser.add_argument("--verbose", action="store_true", help="Print resolved dry-run grid values.")
@@ -2574,15 +2217,11 @@ def main() -> None:
                 make_plots=args.make_plots,
                 budget_max=config["budget_max"],
                 make_budget_curves=config["make_budget_curves"],
-                make_damage_curves=config["make_damage_curves"],
-                make_horizon_curves=config["make_horizon_curves"],
                 objective_family=config["objective_family"],
                 make_stability_objectives=config.get("make_stability_objectives"),
                 make_validity_objectives=config.get("make_validity_objectives"),
                 make_stability_budget_curves=config.get("make_stability_budget_curves"),
                 make_validity_budget_curves=config.get("make_validity_budget_curves"),
-                make_stability_horizon_curves=config.get("make_stability_horizon_curves"),
-                make_validity_horizon_curves=config.get("make_validity_horizon_curves"),
                 dry_run=args.dry_run,
                 verbose=args.verbose,
                 generator=config["generator"],
@@ -2608,15 +2247,11 @@ def main() -> None:
             make_plots=args.make_plots,
             budget_max=args.budget_max,
             make_budget_curves=args.make_budget_curves,
-            make_damage_curves=args.make_damage_curves,
-            make_horizon_curves=args.make_horizon_curves,
             objective_family=args.objective_family,
             make_stability_objectives=args.make_stability_objectives,
             make_validity_objectives=args.make_validity_objectives,
             make_stability_budget_curves=args.make_stability_budget_curves,
             make_validity_budget_curves=args.make_validity_budget_curves,
-            make_stability_horizon_curves=args.make_stability_horizon_curves,
-            make_validity_horizon_curves=args.make_validity_horizon_curves,
             dry_run=args.dry_run,
             verbose=args.verbose,
             generator=args.generator,

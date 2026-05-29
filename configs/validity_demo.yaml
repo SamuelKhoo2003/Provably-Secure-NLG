@@ -16,12 +16,8 @@ influence_mode: validity_demo
 stability_competitor_mode: all
 objective_family: validity_only
 make_budget_curves: true
-make_damage_curves: false
-make_horizon_curves: true
 make_stability_objectives: false
 make_validity_objectives: true
 make_stability_budget_curves: false
 make_validity_budget_curves: true
-make_stability_horizon_curves: false
-make_validity_horizon_curves: true
 output_dir: outputs/validity_demo/results

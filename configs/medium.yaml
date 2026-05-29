@@ -17,7 +17,5 @@ influence_mode: dense
 stability_competitor_mode: all
 objective_family: full
 make_budget_curves: true
-make_damage_curves: true
-make_horizon_curves: true
 
 output_dir: outputs/medium/results
