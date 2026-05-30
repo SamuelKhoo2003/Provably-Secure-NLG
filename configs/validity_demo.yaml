@@ -1,6 +1,6 @@
 name: validity_demo
 generator: validity_demo
-K_values: [20,40,60]
+K_values: [108]
 N_values: [4,8,16]
 L_values: [3,9,27]
 T_values: [5,10,15]

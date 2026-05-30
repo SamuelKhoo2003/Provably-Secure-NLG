@@ -132,7 +132,7 @@ def generate_validity_demo_votes(
     target look individually cheap, while a full harmful sequence requires a
     common poisoned-shard allocation spanning several mostly different groups.
     """
-    gap_pattern = [max(target_gap, 1 + 2 * ((j + 1) // 2)) for j in range(L)]
+    gap_pattern = [target_gap for _ in range(L)]
     return _generate_validity_demo_votes_from_gaps(
         L=L,
         group_size=group_size,
@@ -174,7 +174,13 @@ def _generate_validity_demo_votes_from_gaps(
 
     stride = group_size - overlap
     min_required_shards = group_size + (L - 1) * stride
-    K = max(min_required_shards, min_required_shards if K is None else K)
+    if K is None:
+        K = min_required_shards
+    elif K < min_required_shards:
+        raise ValueError(
+            f"{generator_name} requires K >= {min_required_shards} for L={L}, "
+            f"group_size={group_size}, overlap={overlap}; got K={K}"
+        )
     rng = np.random.default_rng(seed)
     groups = [np.arange(j * stride, j * stride + group_size, dtype=np.int64) for j in range(L)]
 

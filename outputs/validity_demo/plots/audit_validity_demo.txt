@@ -6,23 +6,20 @@ K values: [20, 36, 40, 60, 108]
 N values: [4, 8, 16]
 L values: [3, 9, 27]
 T values: [5, 10, 15]
-Series plotted: ['TPA sequence baseline', 'Row-only shared MILP', 'Joint row-column shared MILP', 'DPA weakest harmful-token diagnostic']
+Series plotted: ['TPA max-token sequence', 'Shared MILP full sequence', 'DPA weakest harmful token']
 Series skipped: ['none']
 
-TPA sequence values by L:
+TPA max-token sequence values by L:
 - L=3: 2
 - L=9: 5
 - L=27: 14
 
-DPA weakest harmful-token diagnostic values by L:
+DPA weakest harmful-token values by L:
 - L=3: 1
 - L=9: 1
 - L=27: 1
 
-Row-only shared MILP values by L:
-- L=3: 5
-
-Joint row-column shared MILP values by L:
+Shared MILP full sequence values by L:
 - L=3: 5
 
 Joint minus TPA gap by L:
@@ -40,5 +37,5 @@ Gap grows with L: False
 Explanation:
 validity_demo is artificial and controlled. It is not intended to model a natural language distribution.
 TPA is count-based and sees each harmful target token as individually cheap from aggregate counts.
-The joint row-column shared MILP is shard-aware and must use one shared poisoned-shard allocation across target positions.
+The full shared MILP is shard-aware and must use one shared poisoned-shard allocation across target positions.
 The demo assigns cheap target-token attacks to different shard groups, so the full harmful sequence requires more shared poisoned shards than TPA's count-only sequence baseline suggests.

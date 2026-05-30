@@ -466,7 +466,6 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
             ("Shared MILP full sequence", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
             ("TPA max-token sequence", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
             ("DPA weakest harmful token", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
-            ("DPA most difficult harmful token", "DPA most difficult harmful token", "most_difficult_harmful_token_not_full_sequence_validity", "radius_derived"),
         ],
     )
     if validity_series:
@@ -514,18 +513,70 @@ def _budget_curve_series(
     if not rows:
         return series, ["benchmark_budget_curves.csv missing or empty"]
     for label, method, objective, curve_type in selections:
-        selected = [
+        selected_rows = [
             row
             for row in rows
             if row.get("method") == method and row.get("objective") == objective and row.get("curve_type") == curve_type
         ]
-        metric_series = _mean_series_by_axis(selected, "budget", "certified_fraction")
+        metric_series, diagnostic = _fixed_denominator_budget_series(selected_rows)
         if metric_series is None:
-            skipped.append(f"{label}: missing method={method}, objective={objective}, curve_type={curve_type}")
+            skipped.append(f"{label}: {diagnostic or f'missing method={method}, objective={objective}, curve_type={curve_type}'}")
             continue
+        if not _is_nonincreasing(metric_series[1]):
+            skipped.append(f"{label}: warning non-monotonic certified fraction after fixed-denominator aggregation")
         xs, ys = metric_series
         series[label] = (xs, [100.0 * y for y in ys])
     return series, skipped
+
+
+def _fixed_denominator_budget_series(rows: list[dict[str, object]]) -> tuple[tuple[list[float], list[float]] | None, str | None]:
+    if not rows:
+        return None, "no matching budget rows"
+    grouped: dict[tuple[tuple[str, object], ...], dict[float, float]] = {}
+    for row in rows:
+        budget = _numeric_value(row.get("budget"))
+        value = _numeric_value(row.get("certified_fraction"))
+        if budget is None or value is None:
+            continue
+        key = _budget_config_key(row)
+        grouped.setdefault(key, {})[budget] = value
+    if not grouped:
+        return None, "no numeric budget rows"
+    budget_sets = [set(values) for values in grouped.values()]
+    common_budgets = sorted(set.intersection(*budget_sets))
+    if not common_budgets:
+        return None, "no common budget range across configurations"
+    nonmonotonic_groups = 0
+    for values in grouped.values():
+        ys = [values[budget] for budget in common_budgets]
+        if not _is_nonincreasing(ys):
+            nonmonotonic_groups += 1
+    ys = [float(np.mean([values[budget] for values in grouped.values()])) for budget in common_budgets]
+    diagnostic = None
+    if nonmonotonic_groups:
+        diagnostic = f"{nonmonotonic_groups} config group(s) are non-monotonic"
+    return (common_budgets, ys), diagnostic
+
+
+def _budget_config_key(row: dict[str, object]) -> tuple[tuple[str, object], ...]:
+    ignored = {
+        "budget",
+        "certified_fraction",
+        "attacked_fraction",
+        "mean_radius",
+        "median_radius",
+        "min_radius",
+        "max_radius",
+        "num_certified",
+        "num_known",
+        "num_unknown",
+        "num_total",
+    }
+    return tuple(sorted((key, value) for key, value in row.items() if key not in ignored))
+
+
+def _is_nonincreasing(values: list[float]) -> bool:
+    return all(right <= left + 1e-12 for left, right in zip(values, values[1:]))
 
 
 def _certificate_budget_curve_series(
@@ -557,6 +608,8 @@ def _certificate_budget_curve_series(
             skipped.append(f"{label}: missing or empty column {metric}")
             continue
         ys = [100.0 * float(np.mean([budget < certificate for certificate in certificates])) for budget in budgets]
+        if not _is_nonincreasing(ys):
+            skipped.append(f"{label}: warning non-monotonic certificate-derived series")
         series[label] = (budgets, ys)
     return series, skipped
 
@@ -569,12 +622,21 @@ def _metric_series(
     series: dict[str, tuple[list[float], list[float]]] = {}
     skipped: list[str] = []
     for label, metric in metrics.items():
-        metric_series = _mean_series_by_axis(rows, axis_name, metric)
+        metric_rows = rows
+        if metric in {"dpa_val_row_strong_q1", "dpa_val_row_strong_qN"}:
+            metric_rows = [row for row in rows if not _is_sentinel_budget(row.get(metric), row.get("K"))]
+        metric_series = _mean_series_by_axis(metric_rows, axis_name, metric)
         if metric_series is None:
             skipped.append(f"{label}: missing or empty column {metric}")
             continue
         series[label] = metric_series
     return series, skipped
+
+
+def _is_sentinel_budget(value: object, K: object) -> bool:
+    numeric_value = _numeric_value(value)
+    numeric_k = _numeric_value(K)
+    return numeric_value is not None and numeric_k is not None and numeric_value > numeric_k
 
 
 def _write_default_plot_audit(path: Path, csv_path: Path, audit: list[dict[str, object]]) -> None:
@@ -823,7 +885,7 @@ def save_validity_demo_plot(rows: list[dict[str, object]], output_dir: Path, csv
             print(f"Warning: skipping validity_demo series '{label}' because column '{column}' is missing or empty.")
             continue
         series[label] = metric_series
-    plot_name = f"{generator}_baseline_vs_milp.svg"
+    plot_name = f"{generator}_baseline_vs_milp.png"
     if len(series) >= 2:
         _save_line_plot(
             output_dir / plot_name,
@@ -838,15 +900,38 @@ def save_validity_demo_plot(rows: list[dict[str, object]], output_dir: Path, csv
 
 
 def plot_validity_demo_csv(csv_path: str, save_dir: str | None = None) -> list[dict[str, object]]:
-    """Read a validity_demo benchmark CSV and write only validity_demo SVG plots."""
+    """Read a validity_demo benchmark CSV and write only validity_demo PNG plots."""
     path = Path(csv_path)
     output_dir = Path(save_dir) if save_dir is not None else path.parent
     output_dir.mkdir(parents=True, exist_ok=True)
     rows = _read_rows_csv(path)
+    _validate_validity_demo_plot_rows(rows, csv_path=path)
     save_validity_demo_plot(rows, output_dir, csv_path=path, generator="validity_demo")
     save_validity_demo_budget_curve_plots(output_dir, source_dir=path.parent)
     print(f"Wrote validity_demo plots under: {output_dir}")
     return rows
+
+
+def _validate_validity_demo_plot_rows(rows: list[dict[str, object]], csv_path: Path) -> None:
+    demo_rows = [row for row in rows if row.get("generator") == "validity_demo"]
+    if not demo_rows:
+        return
+    l_values = _sorted_unique_values(demo_rows, "L")
+    missing_l = []
+    infeasible_l = []
+    for L in l_values:
+        matching = [row for row in demo_rows if row.get("L") == L]
+        values = [_numeric_value(row.get("row_col_val_q1")) for row in matching]
+        statuses = {row.get("row_col_val_q1_status") for row in matching}
+        if not any(value is not None for value in values):
+            missing_l.append(L)
+            if "INFEASIBLE" in statuses:
+                infeasible_l.append(L)
+    if missing_l:
+        raise SystemExit(
+            f"validity_demo shared MILP full-sequence results are missing for L={missing_l} in {csv_path}. "
+            f"INFEASIBLE L values: {infeasible_l or 'none reported'}. Regenerate data after fixing the validity_demo config/generator."
+        )
 
 
 def save_validity_demo_budget_curve_plots(output_dir: Path, source_dir: Path | None = None) -> None:
@@ -854,25 +939,23 @@ def save_validity_demo_budget_curve_plots(output_dir: Path, source_dir: Path | N
     budget_rows = _read_optional_csv(csv_dir / "benchmark_budget_curves.csv")
     _save_certified_fraction_budget_plot(
         budget_rows,
-        output_dir / "validity_demo_budget_curve.svg",
+        output_dir / "validity_demo_budget_curve.png",
         "validity_demo certified fraction by budget",
         [
             ("Shared MILP full sequence", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
             ("TPA max-token sequence", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
             ("DPA weakest harmful token", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
-            ("DPA most difficult harmful token", "DPA most difficult harmful token", "most_difficult_harmful_token_not_full_sequence_validity", "radius_derived"),
         ],
     )
     result_rows = _read_optional_csv(csv_dir / "benchmark_results.csv")
     _save_focused_plot(
         result_rows,
-        output_dir / "validity_demo_certificate_vs_K.svg",
+        output_dir / "validity_demo_certificate_vs_K.png",
         title="validity_demo certificate vs K",
         axis_name="K",
         y_label="Mean certified budget B*",
         metrics={
             "DPA weakest harmful token": "dpa_val_row_weak_q1",
-            "DPA most difficult harmful token": "dpa_val_row_strong_q1",
             "TPA max-token sequence": "tpa_val_sequence_q1",
             "Shared MILP full sequence": "row_col_val_q1",
         },
@@ -1038,7 +1121,8 @@ def _compute_benchmark_baselines(data: ToyData, make_stability_objectives: bool,
         return compute_reference_baselines(data)
     rows: dict[str, int | float] = {}
     if make_validity_objectives:
-        validity_cell_budgets = _cell_validity_budgets(data)
+        validity_cell_budgets = _cell_validity_budgets(data).astype(float)
+        validity_cell_budgets[validity_cell_budgets > data.val_votes.shape[0]] = np.nan
         targeted_validity_cell_budgets = _targeted_validity_token_budgets(data)
         phrase_row_budgets = _atomic_phrase_validity_row_budgets(data)
         row_validity_weak_radii = validity_cell_budgets.min(axis=1)
@@ -1160,6 +1244,23 @@ def certified_fraction_from_radii(radii: np.ndarray, budgets: Iterable[int]) -> 
     return rows
 
 
+def _row_nanmin_or_unknown(values: np.ndarray) -> np.ndarray:
+    result = np.full(values.shape[0], np.nan, dtype=float)
+    for idx, row in enumerate(values):
+        finite = row[np.isfinite(row)]
+        if finite.size:
+            result[idx] = float(np.min(finite))
+    return result
+
+
+def _row_nanmax_all_known(values: np.ndarray) -> np.ndarray:
+    result = np.full(values.shape[0], np.nan, dtype=float)
+    for idx, row in enumerate(values):
+        if np.all(np.isfinite(row)):
+            result[idx] = float(np.max(row))
+    return result
+
+
 def compute_radius_derived_budget_curve_rows(
     data: ToyData,
     T: int,
@@ -1202,12 +1303,12 @@ def compute_radius_derived_budget_curve_rows(
                 (
                     "DPA weakest harmful token",
                     "weakest_harmful_token_not_full_sequence_validity",
-                    validity_cell_budgets.min(axis=1),
+                    _row_nanmin_or_unknown(validity_cell_budgets),
                 ),
                 (
                     "DPA most difficult harmful token",
                     "most_difficult_harmful_token_not_full_sequence_validity",
-                    validity_cell_budgets.max(axis=1),
+                    _row_nanmax_all_known(validity_cell_budgets),
                 ),
                 (
                     "TPA max-token sequence",
@@ -1781,11 +1882,24 @@ def load_experiment_config(path: str | Path) -> dict[str, object]:
                 raise ConfigError(f"field `{key}` in {config_path} must be a boolean")
             benchmark_config[key] = value
     if generator == "validity_demo":
+        group_size = _require_int(config, config_path, "group_size")
+        overlap = _require_int(config, config_path, "overlap")
+        stride = group_size - overlap
+        if stride <= 0:
+            raise ConfigError(f"field `overlap` in {config_path} must be smaller than group_size")
+        max_required_k = group_size + (max(benchmark_config["lengths"]) - 1) * stride
+        min_config_k = min(benchmark_config["Ks"])
+        if min_config_k < max_required_k:
+            raise ConfigError(
+                f"validity_demo config {config_path} requires every K >= {max_required_k} "
+                f"for max L={max(benchmark_config['lengths'])}, group_size={group_size}, overlap={overlap}; "
+                f"smallest K is {min_config_k}"
+            )
         benchmark_config.update(
             {
-                "group_size": _require_int(config, config_path, "group_size"),
+                "group_size": group_size,
                 "target_gap": _require_int(config, config_path, "target_gap"),
-                "overlap": _require_int(config, config_path, "overlap"),
+                "overlap": overlap,
             }
         )
     return benchmark_config
