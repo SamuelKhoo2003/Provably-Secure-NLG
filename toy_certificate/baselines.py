@@ -10,35 +10,40 @@ from .data import ToyData, stability_margins
 def compute_reference_baselines(data: ToyData) -> dict[str, int | float]:
     """Compute baseline columns for the report-facing taxonomy."""
     stability_cell_budgets = cell_stability_budgets(data)
-    validity_cell_budgets = cell_validity_budgets(data)
+    validity_cell_budgets = cell_validity_budgets(data).astype(float)
+    validity_cell_budgets[validity_cell_budgets > data.val_votes.shape[0]] = np.nan
+    plain_dpa_cell_budgets = plain_dpa_validity_token_budgets(data)
     targeted_validity_cell_budgets = targeted_validity_token_budgets(data)
     phrase_row_budgets = atomic_phrase_validity_row_budgets(data)
     row_stability_radii = stability_cell_budgets.min(axis=1)
-    row_validity_weak_radii = validity_cell_budgets.min(axis=1)
-    row_validity_strong_radii = validity_cell_budgets.max(axis=1)
+    row_validity_weak_radii = _row_nanmin_or_unknown(validity_cell_budgets)
+    row_validity_strong_radii = _row_nanmax_all_known(validity_cell_budgets)
     targeted_sequence_baselines = aggregate_tpa_sequence_baselines(targeted_validity_cell_budgets)
+    plain_dpa_sequence_baselines = aggregate_plain_dpa_sequence_baselines(plain_dpa_cell_budgets)
     independent_stability_row_costs = stability_cell_budgets.sum(axis=1)
-    independent_validity_row_costs = validity_cell_budgets.sum(axis=1)
+    independent_validity_row_costs = np.sum(validity_cell_budgets, axis=1)
     return {
         "raw_dpa_stab_min_cell": int(np.min(phd_margin_stability_budgets(data))),
         "dpa_stab_cell_min": int(np.min(stability_cell_budgets)),
         "dpa_stab_row_radius_q1": int(np.min(row_stability_radii)),
         "dpa_stab_row_radius_qN": int(np.max(row_stability_radii)),
-        "dpa_val_cell_min": int(np.min(validity_cell_budgets)),
-        "dpa_val_row_weak_q1": int(np.min(row_validity_weak_radii)),
-        "dpa_val_row_weak_qN": int(np.max(row_validity_weak_radii)),
-        "dpa_val_row_strong_q1": int(np.min(row_validity_strong_radii)),
-        "dpa_val_row_strong_qN": int(np.max(row_validity_strong_radii)),
-        "raw_dpa_val_min_cell": int(np.min(validity_cell_budgets)),
+        "dpa_val_cell_min": _finite_int_min(validity_cell_budgets),
+        "dpa_val_row_weak_q1": _finite_int_min(row_validity_weak_radii),
+        "dpa_val_row_weak_qN": _finite_int_max(row_validity_weak_radii),
+        "dpa_val_row_strong_q1": _finite_int_min(row_validity_strong_radii),
+        "dpa_val_row_strong_qN": _finite_int_max(row_validity_strong_radii),
+        "raw_dpa_val_min_cell": _finite_int_min(validity_cell_budgets),
+        "plain_dpa_val_cell_min": int(np.min(plain_dpa_cell_budgets)),
+        **plain_dpa_sequence_baselines,
         "tpa_val_cell_min": int(np.min(targeted_validity_cell_budgets)),
         **targeted_sequence_baselines,
         "independent_stab_full_row_q1": int(np.min(independent_stability_row_costs)),
         "independent_stab_full_row_qN": int(independent_stability_row_costs.sum()),
         "independent_stab_qN_rL": int(independent_stability_row_costs.sum()),
-        "independent_val_sequence_q1": int(np.min(independent_validity_row_costs)),
-        "independent_val_sequence_qN": int(independent_validity_row_costs.sum()),
-        "independent_val_q1": int(np.min(independent_validity_row_costs)),
-        "independent_val_qN": int(independent_validity_row_costs.sum()),
+        "independent_val_sequence_q1": _finite_int_min(independent_validity_row_costs),
+        "independent_val_sequence_qN": _finite_int_sum(independent_validity_row_costs),
+        "independent_val_q1": _finite_int_min(independent_validity_row_costs),
+        "independent_val_qN": _finite_int_sum(independent_validity_row_costs),
         "phrase_dpa_val_q1": int(np.min(phrase_row_budgets)),
         "phrase_dpa_val_qN": int(np.max(phrase_row_budgets)),
         "phrase_independent_val_q1": int(np.min(phrase_row_budgets)),
@@ -69,7 +74,12 @@ def cell_stability_budgets(data: ToyData) -> np.ndarray:
 
 
 def cell_validity_budgets(data: ToyData) -> np.ndarray:
-    """Compute independent token-level harmful-target validity budgets."""
+    """Compute independent shard-aware token-level harmful-target budgets.
+
+    This is not the plain DPA count-margin baseline: it uses shard votes and the
+    influence mask, and may return ``K + 1`` when no feasible shard subset exists.
+    Treat values above ``K`` as unknown before plotting ordinary certificates.
+    """
     K, N, L = data.val_votes.shape
     T = data.val_counts.shape[2]
     budgets = np.zeros((N, L), dtype=np.int64)
@@ -120,6 +130,49 @@ def targeted_partition_radius(counts: np.ndarray, target: int, *, tie_wins: bool
     return total_non_target_votes
 
 
+def plain_dpa_count_margin_radius(counts: np.ndarray, target: int, *, tie_wins: bool = True) -> int:
+    """Return a count-only top-vs-target DPA validity radius.
+
+    This deliberately ignores the multi-competitor targeted overtaking condition
+    used by TPA. It only asks how many transferred votes are needed for the
+    target to catch the current highest-count non-target token.
+    """
+    counts = np.asarray(counts, dtype=np.int64)
+    if counts.ndim != 1:
+        raise ValueError("counts must be a one-dimensional token count vector")
+    if not 0 <= target < counts.shape[0]:
+        raise ValueError("target must index counts")
+    if np.any(counts < 0):
+        raise ValueError("counts must be non-negative")
+
+    target_count = int(counts[target])
+    competitor_counts = np.delete(counts, target).astype(np.int64)
+    if competitor_counts.size == 0:
+        return 0
+    top_competitor_count = int(np.max(competitor_counts))
+    if (target_count >= top_competitor_count) if tie_wins else (target_count > top_competitor_count):
+        return 0
+    gap = top_competitor_count - target_count
+    if tie_wins:
+        return int((gap + 1) // 2)
+    return int((gap + 2) // 2)
+
+
+def aggregate_plain_dpa_sequence_baselines(token_radii: np.ndarray) -> dict[str, int | float]:
+    """Aggregate plain count-margin token radii into phrase-blocker baselines."""
+    token_radii = np.asarray(token_radii, dtype=np.int64)
+    if token_radii.ndim != 2:
+        raise ValueError("token_radii must have shape (N, L)")
+    if token_radii.size == 0:
+        raise ValueError("token_radii must be non-empty")
+    row_sequence_radii = token_radii.max(axis=1)
+    return {
+        "plain_dpa_val_sequence_q1": int(np.min(row_sequence_radii)),
+        "plain_dpa_val_sequence_qN": int(np.max(row_sequence_radii)),
+        "plain_dpa_val_sequence_mean": float(np.mean(row_sequence_radii)),
+    }
+
+
 def aggregate_tpa_sequence_baselines(token_radii: np.ndarray) -> dict[str, int | float]:
     """Aggregate token-level targeted radii into sequence-level TPA baselines."""
     token_radii = np.asarray(token_radii, dtype=np.int64)
@@ -142,6 +195,16 @@ def targeted_validity_token_budgets(data: ToyData) -> np.ndarray:
     for i in range(N):
         for j in range(L):
             budgets[i, j] = targeted_partition_radius(data.val_counts[i, j], int(data.target[i, j]))
+    return budgets
+
+
+def plain_dpa_validity_token_budgets(data: ToyData) -> np.ndarray:
+    """Compute count-only top-vs-target DPA validity radii per cell."""
+    N, L, _ = data.val_counts.shape
+    budgets = np.zeros((N, L), dtype=np.int64)
+    for i in range(N):
+        for j in range(L):
+            budgets[i, j] = plain_dpa_count_margin_radius(data.val_counts[i, j], int(data.target[i, j]))
     return budgets
 
 
@@ -232,3 +295,37 @@ def min_budget_satisfying_all(deficits: np.ndarray, contribs: np.ndarray, ignore
 
     search(0, 0, np.zeros_like(active_deficits))
     return int(best)
+
+
+def _row_nanmin_or_unknown(values: np.ndarray) -> np.ndarray:
+    result = np.full(values.shape[0], np.nan, dtype=float)
+    for idx, row in enumerate(values):
+        finite = row[np.isfinite(row)]
+        if finite.size:
+            result[idx] = float(np.min(finite))
+    return result
+
+
+def _row_nanmax_all_known(values: np.ndarray) -> np.ndarray:
+    result = np.full(values.shape[0], np.nan, dtype=float)
+    for idx, row in enumerate(values):
+        if np.all(np.isfinite(row)):
+            result[idx] = float(np.max(row))
+    return result
+
+
+def _finite_int_min(values: np.ndarray) -> int | float:
+    finite = np.asarray(values, dtype=float)
+    finite = finite[np.isfinite(finite)]
+    return int(np.min(finite)) if finite.size else float("nan")
+
+
+def _finite_int_max(values: np.ndarray) -> int | float:
+    finite = np.asarray(values, dtype=float)
+    finite = finite[np.isfinite(finite)]
+    return int(np.max(finite)) if finite.size else float("nan")
+
+
+def _finite_int_sum(values: np.ndarray) -> int | float:
+    finite = np.asarray(values, dtype=float)
+    return int(np.sum(finite)) if np.all(np.isfinite(finite)) else float("nan")

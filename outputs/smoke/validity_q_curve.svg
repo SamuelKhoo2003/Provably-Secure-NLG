@@ -28,6 +28,6 @@
 <circle cx="508.8" cy="168.0" r="4" fill="#2563eb"/>
 <circle cx="654.4" cy="88.0" r="4" fill="#2563eb"/>
 <circle cx="800.0" cy="88.0" r="4" fill="#2563eb"/>
-<rect x="824" y="96" width="12" height="12" fill="#2563eb"/>
+<line x1="824" y1="102" x2="838" y2="102" stroke="#2563eb" stroke-width="2.5"/>
 <text x="842" y="106" font-family="Arial, sans-serif" font-size="12" fill="#111827">shared MILP</text>
 </svg>

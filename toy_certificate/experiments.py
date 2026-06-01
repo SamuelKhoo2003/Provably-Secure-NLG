@@ -3,14 +3,13 @@
 This module is the orchestration layer for the first-party toy certificate
 implementation. It builds synthetic :class:`toy_certificate.data.ToyData`
 instances, calls the shared MILP solvers, writes benchmark CSVs, computes
-DPA/TPA/atomic-phrase/independent-composition baselines, and renders PNG/SVG
-plots. The external ``phd_reference/`` tree is not imported or modified here.
+DPA/TPA/atomic-phrase/independent-composition baselines, and renders SVG plots.
+The external ``phd_reference/`` tree is not imported or modified here.
 """
 
 from __future__ import annotations
 
 import argparse
-import os
 from collections.abc import Iterable
 from pathlib import Path
 from time import perf_counter
@@ -18,19 +17,17 @@ from time import perf_counter
 import numpy as np
 
 from .baselines import (
+    aggregate_plain_dpa_sequence_baselines,
     aggregate_tpa_sequence_baselines,
     atomic_phrase_validity_row_budgets as _atomic_phrase_validity_row_budgets,
     cell_stability_budgets as _cell_stability_budgets,
     cell_validity_budgets as _cell_validity_budgets,
     compute_reference_baselines,
-    min_budget_from_contributions as _min_budget_from_contributions,
-    min_budget_satisfying_all as _min_budget_satisfying_all,
     phd_margin_stability_budgets as _phd_margin_stability_budgets,
-    targeted_partition_radius,
+    plain_dpa_validity_token_budgets as _plain_dpa_validity_token_budgets,
     targeted_validity_token_budgets as _targeted_validity_token_budgets,
 )
 from .csv_io import (
-    looks_numeric as _looks_numeric,
     read_optional_csv as _read_optional_csv,
     read_rows_csv as _read_rows_csv,
     write_rows_csv as _write_rows_csv,
@@ -45,68 +42,6 @@ from .milp import (
 
 class ConfigError(ValueError):
     """Raised when a benchmark YAML config is missing or malformed."""
-
-
-def run_sanity(
-    K: int = 7,
-    N: int = 3,
-    L: int = 4,
-    T: int = 5,
-    delta_stab: float = 0.2,
-    delta_val: float = 0.2,
-    target_bias: float = 0.2,
-    seed: int = 0,
-    influence_mode: str = "dense",
-    stability_competitor_mode: str = "all",
-    show_grid: bool = False,
-    save_dir: str | None = None,
-) -> list[CertificateResult]:
-    """Run one toy instance and print the default certificate table."""
-    data = generate_toy_votes(
-        K=K, N=N, L=L, T=T, delta_stab=delta_stab, delta_val=delta_val, target_bias=target_bias, seed=seed, influence_mode=influence_mode
-    )
-    _print_instance_summary(data, K, N, L, T, delta_stab, delta_val, target_bias, seed, influence_mode)
-    if show_grid:
-        print_console_grid(data)
-    if save_dir is not None:
-        save_instance_plots(
-            data,
-            Path(save_dir),
-            K=K,
-            N=N,
-            L=L,
-            T=T,
-            delta_stab=delta_stab,
-            delta_val=delta_val,
-            target_bias=target_bias,
-            seed=seed,
-            influence_mode=influence_mode,
-            stability_competitor_mode=stability_competitor_mode,
-        )
-    results = solve_default_certificates(data, T, stability_competitor_mode=stability_competitor_mode)
-    print_certificate_table(results)
-    return results
-
-
-def solve_default_certificates(data: ToyData, T: int, stability_competitor_mode: str = "all") -> list[CertificateResult]:
-    """Solve the small default certificate set used by the sanity command."""
-    N, L = data.stab_votes.shape[1], data.stab_votes.shape[2]
-    return [
-        solve_structured_stability(
-            data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=1, competitor_mode=stability_competitor_mode
-        ),
-        solve_structured_stability(
-            data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=L, competitor_mode=stability_competitor_mode
-        ),
-        solve_structured_stability(
-            data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=N, r_cols=1, competitor_mode=stability_competitor_mode
-        ),
-        solve_structured_stability(
-            data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=N, r_cols=L, competitor_mode=stability_competitor_mode
-        ),
-        solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1),
-        solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=N),
-    ]
 
 
 def visualize_instance(
@@ -170,6 +105,17 @@ def benchmark_scale(
     group_size: int = 3,
     target_gap: int = 1,
     overlap: int = 0,
+    validity_demo_distribution: str = "deterministic",
+    num_competitor_min: int = 2,
+    num_competitor_max: int = 8,
+    target_count_min: int = 0,
+    target_count_max: int = 3,
+    competitor_gap_min: int = 2,
+    competitor_gap_max: int = 6,
+    competitor_jitter: int = 2,
+    row_difficulty_jitter: bool = True,
+    position_difficulty_jitter: bool = True,
+    budget_plot_num_points: int | None = None,
 ) -> list[dict[str, object]]:
     """Generate benchmark CSV rows for the configured parameter grid.
 
@@ -224,6 +170,16 @@ def benchmark_scale(
                                         T=T,
                                         seed=seed,
                                         K=K,
+                                        distribution=validity_demo_distribution,
+                                        num_competitor_min=num_competitor_min,
+                                        num_competitor_max=num_competitor_max,
+                                        target_count_min=target_count_min,
+                                        target_count_max=target_count_max,
+                                        competitor_gap_min=competitor_gap_min,
+                                        competitor_gap_max=competitor_gap_max,
+                                        competitor_jitter=competitor_jitter,
+                                        row_difficulty_jitter=row_difficulty_jitter,
+                                        position_difficulty_jitter=position_difficulty_jitter,
                                     )
                                     K_actual = int(data.val_votes.shape[0])
                                 elif generator == "toy":
@@ -265,7 +221,16 @@ def benchmark_scale(
                                     "runtime_gurobi_total": f"{runtime_total:.6f}",
                                 }
                                 if generator == "validity_demo":
-                                    row.update({"group_size": group_size, "target_gap": target_gap, "overlap": overlap})
+                                    row.update(
+                                        {
+                                            "group_size": group_size,
+                                            "overlap": overlap,
+                                            "validity_demo_distribution": validity_demo_distribution,
+                                            "budget_plot_num_points": budget_plot_num_points or "",
+                                        }
+                                    )
+                                    if validity_demo_distribution == "deterministic":
+                                        row["target_gap"] = target_gap
                                 for result in results:
                                     metric_name = _csv_metric_name(result.name, N, L)
                                     _add_certificate_columns(row, metric_name, result)
@@ -277,6 +242,8 @@ def benchmark_scale(
                                         make_validity_objectives=objective_flags["make_validity_objectives"],
                                     )
                                 )
+                                if generator == "validity_demo":
+                                    row.update(_validity_demo_diagnostics(data))
                                 _add_validity_demo_gap_columns(row)
                                 rows.append(row)
                                 budgets = list(range(0, min(K_actual, budget_max) + 1))
@@ -379,9 +346,58 @@ def _add_validity_demo_gap_columns(row: dict[str, object]) -> None:
     tpa = _numeric_value(row.get("tpa_val_sequence_q1"))
     row["validity_gap_joint_minus_tpa_q1"] = _safe_difference(joint, tpa)
     row["validity_ratio_joint_over_tpa_q1"] = _safe_ratio(joint, tpa)
-    dpa_weak = _numeric_value(row.get("dpa_val_row_weak_q1"))
-    row["validity_gap_tpa_minus_dpa_weak_q1"] = _safe_difference(tpa, dpa_weak)
-    row["validity_gap_joint_minus_dpa_weak_q1"] = _safe_difference(joint, dpa_weak)
+    plain_dpa = _numeric_value(row.get("plain_dpa_val_sequence_q1"))
+    row["validity_gap_tpa_minus_plain_dpa_q1"] = _safe_difference(tpa, plain_dpa)
+    row["validity_gap_joint_minus_plain_dpa_q1"] = _safe_difference(joint, plain_dpa)
+
+
+def _validity_demo_diagnostics(data: ToyData) -> dict[str, object]:
+    """Summarize generator-local validity diagnostics for CSV/audit output."""
+    L = data.val_votes.shape[2]
+    plain_dpa_cells = _plain_dpa_validity_token_budgets(data)
+    dpa_cells = _cell_validity_budgets(data)
+    tpa_cells = _targeted_validity_token_budgets(data)
+    plain_phrase = plain_dpa_cells.max(axis=1)
+    tpa_phrase = tpa_cells.max(axis=1)
+    groups = [_influenced_group_for_token(data, j) for j in range(L)]
+    union_size = len(set().union(*(set(group) for group in groups))) if groups else 0
+    example_positions = range(min(3, L))
+    return {
+        "validity_demo_vote_counts_row0": ";".join(",".join(str(int(value)) for value in data.val_counts[0, j]) for j in range(L)),
+        "validity_demo_vote_count_examples_row0": ";".join(
+            f"j={j}:" + ",".join(str(int(value)) for value in data.val_counts[0, j]) for j in example_positions
+        ),
+        "validity_demo_plain_dpa_token_radii_row0": ",".join(str(int(value)) for value in plain_dpa_cells[0]),
+        "validity_demo_dpa_token_radii_row0": ",".join(str(int(value)) for value in dpa_cells[0]),
+        "validity_demo_tpa_token_radii_row0": ",".join(str(int(value)) for value in tpa_cells[0]),
+        "validity_demo_tpa_phrase_radius_row0": int(np.max(tpa_cells[0])),
+        "validity_demo_plain_phrase_radii_summary": _summary_string(plain_phrase),
+        "validity_demo_tpa_phrase_radii_summary": _summary_string(tpa_phrase),
+        "validity_demo_plain_token_radii_summary": _summary_string(plain_dpa_cells.reshape(-1)),
+        "validity_demo_tpa_token_radii_summary": _summary_string(tpa_cells.reshape(-1)),
+        "validity_demo_pct_tpa_gt_plain": float(np.mean(tpa_cells > plain_dpa_cells) * 100.0),
+        "validity_demo_pct_tpa_eq_plain": float(np.mean(tpa_cells == plain_dpa_cells) * 100.0),
+        "validity_demo_pct_tpa_lt_plain": float(np.mean(tpa_cells < plain_dpa_cells) * 100.0),
+        "validity_demo_shard_groups_row0": ";".join(",".join(str(k) for k in group) for group in groups),
+        "validity_demo_required_group_union_size": union_size,
+        "validity_demo_group_feasible_all": True,
+    }
+
+
+def _summary_string(values: np.ndarray) -> str:
+    values = np.asarray(values, dtype=float)
+    finite = values[np.isfinite(values)]
+    if finite.size == 0:
+        return "none"
+    return (
+        f"min={np.min(finite):.6g},p25={np.percentile(finite, 25):.6g},"
+        f"median={np.median(finite):.6g},mean={np.mean(finite):.6g},"
+        f"p75={np.percentile(finite, 75):.6g},max={np.max(finite):.6g}"
+    )
+
+
+def _influenced_group_for_token(data: ToyData, j: int, row: int = 0) -> list[int]:
+    return [int(k) for k in np.flatnonzero(data.influence[:, row, j])]
 
 
 def plot_benchmark_csv(csv_path: str, save_dir: str | None = None) -> list[dict[str, object]]:
@@ -463,9 +479,9 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
     validity_series, validity_skipped = _budget_curve_series(
         budget_rows,
         [
-            ("Shared MILP full sequence", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-            ("TPA max-token sequence", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-            ("DPA weakest harmful token", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
+            ("Shared shard-aware MILP full sequence", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("TPA max-token phrase blocker", "TPA max-token phrase blocker", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("Plain DPA max-token phrase blocker", "Plain DPA max-token phrase blocker", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
         ],
     )
     if validity_series:
@@ -623,7 +639,7 @@ def _metric_series(
     skipped: list[str] = []
     for label, metric in metrics.items():
         metric_rows = rows
-        if metric in {"dpa_val_row_strong_q1", "dpa_val_row_strong_qN"}:
+        if metric in SENTINEL_VALIDITY_METRICS:
             metric_rows = [row for row in rows if not _is_sentinel_budget(row.get(metric), row.get("K"))]
         metric_series = _mean_series_by_axis(metric_rows, axis_name, metric)
         if metric_series is None:
@@ -631,6 +647,16 @@ def _metric_series(
             continue
         series[label] = metric_series
     return series, skipped
+
+
+SENTINEL_VALIDITY_METRICS = {
+    "dpa_val_cell_min",
+    "dpa_val_row_weak_q1",
+    "dpa_val_row_weak_qN",
+    "dpa_val_row_strong_q1",
+    "dpa_val_row_strong_qN",
+    "raw_dpa_val_min_cell",
+}
 
 
 def _is_sentinel_budget(value: object, K: object) -> bool:
@@ -665,63 +691,6 @@ def _write_default_plot_audit(path: Path, csv_path: Path, audit: list[dict[str, 
         if skipped:
             lines.append(f"  skipped: {'; '.join(skipped)}")
     path.write_text("\n".join(lines))
-
-
-AUDIT_CURVE_SELECTIONS: list[tuple[str, str, str, str]] = [
-    ("DPA weakest token, radius-derived", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
-    ("TPA max-token sequence, radius-derived", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-    ("Shared full sequence, radius-derived", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-    ("DPA most difficult harmful token, radius-derived", "DPA most difficult harmful token", "most_difficult_harmful_token_not_full_sequence_validity", "radius_derived"),
-]
-
-
-def audit_curve_csvs(csv_dir: str) -> list[dict[str, object]]:
-    """Print diagnostics for active budget-curve sidecar CSVs."""
-    base = Path(csv_dir)
-    budget_rows = _read_optional_csv(base / "benchmark_budget_curves.csv")
-    diagnostics: list[dict[str, object]] = []
-
-    print(f"Curve audit: {base}")
-    print(f"Rows: budget={len(budget_rows)}")
-    print()
-    print("Plotted certified-fraction series")
-    series_by_label: dict[str, dict[float, float]] = {}
-    for label, method, objective, curve_type in AUDIT_CURVE_SELECTIONS:
-        rows = _select_curve_rows(budget_rows, method, objective, curve_type)
-        source = "benchmark_budget_curves.csv"
-        metric_series = _mean_series_by_axis(rows, "budget", "certified_fraction")
-        point_count = 0 if metric_series is None else len(metric_series[0])
-        print(f"- {label}: source={source}, rows={len(rows)}, plotted_points={point_count}")
-        if metric_series is not None:
-            xs, ys = metric_series
-            series_by_label[label] = {x: y for x, y in zip(xs, ys)}
-        diagnostics.append(
-            {
-                "check": "series_source",
-                "label": label,
-                "source": source,
-                "rows": len(rows),
-                "plotted_points": point_count,
-            }
-        )
-
-    print()
-    print("Identical plotted series")
-    for left_label, left_series in series_by_label.items():
-        for right_label, right_series in series_by_label.items():
-            if left_label >= right_label:
-                continue
-            shared_budgets = sorted(set(left_series) & set(right_series))
-            if not shared_budgets:
-                continue
-            identical = all(np.isclose(left_series[budget], right_series[budget]) for budget in shared_budgets)
-            if identical and len(left_series) == len(right_series) == len(shared_budgets):
-                print(f"- identical: {left_label} == {right_label} over {len(shared_budgets)} budget point(s)")
-                diagnostics.append({"check": "identical_series", "left_label": left_label, "right_label": right_label, "points": len(shared_budgets)})
-
-    if not diagnostics:
-        print("No diagnostics produced.")
-    return diagnostics
 
 
 def _safe_difference(left: float | None, right: float | None) -> float | str:
@@ -838,7 +807,7 @@ def save_instance_plots(
 CANONICAL_METHODS = (
     "Shared MILP full matrix",
     "DPA weakest token",
-    "TPA max-token sequence",
+    "TPA max-token phrase blocker",
 )
 
 CANONICAL_COLORS = {
@@ -847,11 +816,18 @@ CANONICAL_COLORS = {
     "Shared MILP all prompts, one token each": "#9467bd",
     "Shared MILP full matrix": "#08519c",
     "Shared MILP full sequence": "#1f77b4",
+    "Shared shard-aware MILP full sequence": "#1f77b4",
     "Shared MILP all harmful sequences": "#08519c",
     "DPA weakest token": "#d62728",
+    "Plain DPA count-margin phrase blocker": "#d62728",
+    "Plain DPA max-token phrase blocker": "#d62728",
     "DPA weakest harmful token": "#8c564b",
     "DPA most difficult harmful token": "#e377c2",
     "TPA max-token sequence": "#2ca02c",
+    "TPA max-token phrase blocker": "#2ca02c",
+    "Shard-aware weakest-token diagnostic": "#8c564b",
+    "Shard-aware independent max-token diagnostic": "#e377c2",
+    "Independent shard-aware composition diagnostic": "#7f7f7f",
 }
 
 MAIN_STABILITY_METRICS = {
@@ -860,10 +836,15 @@ MAIN_STABILITY_METRICS = {
 }
 
 MAIN_VALIDITY_METRICS = {
-    "Shared MILP all harmful sequences": "row_col_val_qN",
-    "DPA weakest harmful token": "dpa_val_row_weak_qN",
-    "DPA most difficult harmful token": "dpa_val_row_strong_qN",
-    "TPA max-token sequence": "tpa_val_sequence_qN",
+    "Shared shard-aware MILP full sequence": "row_col_val_qN",
+    "TPA max-token phrase blocker": "tpa_val_sequence_qN",
+    "Plain DPA max-token phrase blocker": "plain_dpa_val_sequence_qN",
+}
+
+VALIDITY_DIAGNOSTIC_METRICS = {
+    "Shard-aware weakest-token diagnostic": "dpa_val_row_weak_qN",
+    "Shard-aware independent max-token diagnostic": "dpa_val_row_strong_qN",
+    "Independent shard-aware composition diagnostic": "independent_val_sequence_qN",
 }
 
 def save_validity_demo_plot(rows: list[dict[str, object]], output_dir: Path, csv_path: Path, generator: str) -> None:
@@ -872,9 +853,9 @@ def save_validity_demo_plot(rows: list[dict[str, object]], output_dir: Path, csv
     if not demo_rows:
         return
     series_specs = [
-        ("TPA max-token sequence", "tpa_val_sequence_q1"),
-        ("Shared MILP full sequence", "row_col_val_q1"),
-        ("DPA weakest harmful token", "dpa_val_row_weak_q1"),
+        ("Shared shard-aware MILP full sequence", "row_col_val_q1"),
+        ("TPA max-token phrase blocker", "tpa_val_sequence_q1"),
+        ("Plain DPA max-token phrase blocker", "plain_dpa_val_sequence_q1"),
     ]
     series: dict[str, tuple[list[float], list[float]]] = {}
     skipped: list[str] = []
@@ -882,32 +863,39 @@ def save_validity_demo_plot(rows: list[dict[str, object]], output_dir: Path, csv
         metric_series = _mean_series_by_axis(demo_rows, "L", column)
         if metric_series is None:
             skipped.append(f"{label}: {column}")
-            print(f"Warning: skipping validity_demo series '{label}' because column '{column}' is missing or empty.")
             continue
         series[label] = metric_series
-    plot_name = f"{generator}_baseline_vs_milp.png"
-    if len(series) >= 2:
-        _save_line_plot(
-            output_dir / plot_name,
-            f"{generator} baseline vs shard-aware MILP",
-            "sequence length L",
-            "Mean certified budget B*",
-            series,
-        )
-    else:
-        print(f"Warning: skipped {plot_name}; fewer than two plottable series.")
-    write_validity_demo_audit(output_dir / f"audit_{generator}.txt", demo_rows, csv_path=csv_path, plotted=list(series), skipped=skipped, generator=generator)
+    missing = [label for label, _column in series_specs if label not in series]
+    if missing:
+        raise SystemExit(f"{generator} plot is missing required series: {missing}. Details: {skipped}")
+    _assert_same_x_values(series, f"{generator}_baseline_vs_milp.svg")
+    _save_line_plot(
+        output_dir / f"{generator}_baseline_vs_milp.svg",
+        "Synthetic validity stress test: baseline vs shard-aware MILP",
+        "sequence length L",
+        "Mean certified budget B*",
+        series,
+    )
 
 
 def plot_validity_demo_csv(csv_path: str, save_dir: str | None = None) -> list[dict[str, object]]:
-    """Read a validity_demo benchmark CSV and write only validity_demo PNG plots."""
+    """Read a validity_demo benchmark CSV and write only validity_demo SVG plots."""
     path = Path(csv_path)
     output_dir = Path(save_dir) if save_dir is not None else path.parent
     output_dir.mkdir(parents=True, exist_ok=True)
     rows = _read_rows_csv(path)
     _validate_validity_demo_plot_rows(rows, csv_path=path)
     save_validity_demo_plot(rows, output_dir, csv_path=path, generator="validity_demo")
-    save_validity_demo_budget_curve_plots(output_dir, source_dir=path.parent)
+    demo_rows = [row for row in rows if row.get("generator") == "validity_demo"]
+    curve_checks = save_validity_demo_budget_curve_plots(output_dir, source_dir=path.parent, result_rows=demo_rows)
+    write_validity_demo_audit(
+        output_dir / "audit_validity_demo.md",
+        demo_rows,
+        csv_path=path,
+        generator="validity_demo",
+        curve_checks=curve_checks,
+        budget_rows=_read_optional_csv(path.parent / "benchmark_budget_curves.csv"),
+    )
     print(f"Wrote validity_demo plots under: {output_dir}")
     return rows
 
@@ -919,56 +907,81 @@ def _validate_validity_demo_plot_rows(rows: list[dict[str, object]], csv_path: P
     l_values = _sorted_unique_values(demo_rows, "L")
     missing_l = []
     infeasible_l = []
+    nonoptimal_l = []
+    missing_methods: list[str] = []
+    required_metrics = {
+        "Plain DPA max-token phrase blocker": "plain_dpa_val_sequence_q1",
+        "TPA max-token phrase blocker": "tpa_val_sequence_q1",
+        "Shared shard-aware MILP full sequence": "row_col_val_q1",
+    }
     for L in l_values:
         matching = [row for row in demo_rows if row.get("L") == L]
+        for label, metric in required_metrics.items():
+            if not any(_numeric_value(row.get(metric)) is not None for row in matching):
+                missing_methods.append(f"{label} at L={L}")
         values = [_numeric_value(row.get("row_col_val_q1")) for row in matching]
         statuses = {row.get("row_col_val_q1_status") for row in matching}
         if not any(value is not None for value in values):
             missing_l.append(L)
             if "INFEASIBLE" in statuses:
                 infeasible_l.append(L)
-    if missing_l:
+        if statuses and statuses != {"OPTIMAL"}:
+            nonoptimal_l.append((L, sorted(str(status) for status in statuses)))
+    if missing_l or nonoptimal_l or missing_methods:
         raise SystemExit(
             f"validity_demo shared MILP full-sequence results are missing for L={missing_l} in {csv_path}. "
-            f"INFEASIBLE L values: {infeasible_l or 'none reported'}. Regenerate data after fixing the validity_demo config/generator."
+            f"INFEASIBLE L values: {infeasible_l or 'none reported'}. "
+            f"Non-OPTIMAL L statuses: {nonoptimal_l or 'none'}. "
+            f"Missing plotted methods: {missing_methods or 'none'}. "
+            "Regenerate data after fixing the validity_demo config/generator."
         )
 
 
-def save_validity_demo_budget_curve_plots(output_dir: Path, source_dir: Path | None = None) -> None:
+def _assert_same_x_values(series: dict[str, tuple[list[float], list[float]]], plot_name: str) -> None:
+    expected: list[float] | None = None
+    for label, (xs, _ys) in series.items():
+        if expected is None:
+            expected = list(xs)
+            continue
+        if list(xs) != expected:
+            raise SystemExit(f"{plot_name} would silently drop or misalign x-values for {label}: {xs} != {expected}")
+
+
+def save_validity_demo_budget_curve_plots(
+    output_dir: Path,
+    source_dir: Path | None = None,
+    result_rows: list[dict[str, object]] | None = None,
+) -> dict[str, bool]:
     csv_dir = source_dir if source_dir is not None else output_dir
     budget_rows = _read_optional_csv(csv_dir / "benchmark_budget_curves.csv")
-    _save_certified_fraction_budget_plot(
+    budget_plot_num_points = _validity_demo_budget_plot_num_points(result_rows or [])
+    return _save_required_certified_fraction_budget_plot(
         budget_rows,
-        output_dir / "validity_demo_budget_curve.png",
+        output_dir / "validity_demo_certified_fraction_by_budget.svg",
         "validity_demo certified fraction by budget",
         [
-            ("Shared MILP full sequence", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-            ("TPA max-token sequence", "TPA max-token sequence", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-            ("DPA weakest harmful token", "DPA weakest harmful token", "weakest_harmful_token_not_full_sequence_validity", "radius_derived"),
+            ("Shared shard-aware MILP full sequence", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("TPA max-token phrase blocker", "TPA max-token phrase blocker", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("Plain DPA max-token phrase blocker", "Plain DPA max-token phrase blocker", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
         ],
-    )
-    result_rows = _read_optional_csv(csv_dir / "benchmark_results.csv")
-    _save_focused_plot(
-        result_rows,
-        output_dir / "validity_demo_certificate_vs_K.png",
-        title="validity_demo certificate vs K",
-        axis_name="K",
-        y_label="Mean certified budget B*",
-        metrics={
-            "DPA weakest harmful token": "dpa_val_row_weak_q1",
-            "TPA max-token sequence": "tpa_val_sequence_q1",
-            "Shared MILP full sequence": "row_col_val_q1",
-        },
+        max_points=budget_plot_num_points,
     )
 
 
-def write_validity_demo_audit(path: Path, rows: list[dict[str, object]], csv_path: Path, plotted: list[str], skipped: list[str], generator: str) -> None:
+def write_validity_demo_audit(
+    path: Path,
+    rows: list[dict[str, object]],
+    csv_path: Path,
+    generator: str,
+    curve_checks: dict[str, bool],
+    budget_rows: list[dict[str, object]] | None = None,
+) -> None:
     gap_series = _mean_series_by_axis(rows, "L", "validity_gap_joint_minus_tpa_q1")
     if gap_series is None:
         gap_series = _computed_gap_series(rows, "row_col_val_q1", "tpa_val_sequence_q1")
-    tpa_minus_dpa_series = _mean_series_by_axis(rows, "L", "validity_gap_tpa_minus_dpa_weak_q1")
+    tpa_minus_dpa_series = _mean_series_by_axis(rows, "L", "validity_gap_tpa_minus_plain_dpa_q1")
     if tpa_minus_dpa_series is None:
-        tpa_minus_dpa_series = _computed_gap_series(rows, "tpa_val_sequence_q1", "dpa_val_row_weak_q1")
+        tpa_minus_dpa_series = _computed_gap_series(rows, "tpa_val_sequence_q1", "plain_dpa_val_sequence_q1")
     gap_observed = any((_numeric_value(row.get("validity_gap_joint_minus_tpa_q1")) or 0) > 0 for row in rows)
     if not gap_observed:
         gap_observed = any((_safe_numeric_difference(row.get("row_col_val_q1"), row.get("tpa_val_sequence_q1")) or 0) > 0 for row in rows)
@@ -976,49 +989,222 @@ def write_validity_demo_audit(path: Path, rows: list[dict[str, object]], csv_pat
     if gap_series is not None and len(gap_series[1]) >= 2:
         gap_grows = gap_series[1][-1] > gap_series[1][0]
     ordering_observed = all(
-        (_numeric_value(row.get("dpa_val_row_weak_q1")) or float("inf"))
+        (_numeric_value(row.get("plain_dpa_val_sequence_q1")) or float("inf"))
         < (_numeric_value(row.get("tpa_val_sequence_q1")) or -float("inf"))
         < (_numeric_value(row.get("row_col_val_q1")) or -float("inf"))
         for row in rows
     )
+    no_milp_drops = _validity_demo_no_milp_drops(rows)
+    plotted_budget_points = curve_checks.get("plotted_budget_points")
     lines = [
-        f"{generator} audit",
+        f"# {generator} synthetic validity stress-test audit",
         "",
         f"CSV used: {csv_path}",
         f"Generator: {generator}",
+        "Scope: artificial controlled validity-only demo, not a natural language benchmark.",
         f"K values: {_sorted_unique_values(rows, 'K')}",
         f"N values: {_sorted_unique_values(rows, 'N')}",
         f"L values: {_sorted_unique_values(rows, 'L')}",
         f"T values: {_sorted_unique_values(rows, 'T')}",
-        f"Series plotted: {plotted}",
-        f"Series skipped: {skipped or ['none']}",
         "",
-        "TPA max-token sequence values by L:",
+        "## Main plotted budgets",
+        f"Certified-fraction plotted budget points: {plotted_budget_points if plotted_budget_points is not None else 'all available'}",
+        "",
+        "Plain DPA max-token phrase blocker by L:",
+        *_format_mean_series(rows, "plain_dpa_val_sequence_q1"),
+        "",
+        "TPA max-token phrase blocker values by L:",
         *_format_mean_series(rows, "tpa_val_sequence_q1"),
         "",
-        "DPA weakest harmful-token values by L:",
-        *_format_mean_series(rows, "dpa_val_row_weak_q1"),
+        "Shared shard-aware MILP full sequence values by L:",
+        *_format_mean_series(rows, "row_col_val_q1"),
         "",
-        "Shared MILP full sequence values by L:",
+        "## Token diagnostics",
+        "Per-token vote count examples by L, row 0:",
+        *_format_first_value_by_axis(rows, "validity_demo_vote_count_examples_row0"),
+        "",
+        "Plain DPA token radii by L, row 0:",
+        *_format_first_value_by_axis(rows, "validity_demo_plain_dpa_token_radii_row0"),
+        "",
+        "TPA token radii by L, row 0:",
+        *_format_first_value_by_axis(rows, "validity_demo_tpa_token_radii_row0"),
+        "",
+        "Plain DPA token radii summary by L:",
+        *_format_first_value_by_axis(rows, "validity_demo_plain_token_radii_summary"),
+        "",
+        "TPA token radii summary by L:",
+        *_format_first_value_by_axis(rows, "validity_demo_tpa_token_radii_summary"),
+        "",
+        "Plain DPA phrase radii summary by L:",
+        *_format_first_value_by_axis(rows, "validity_demo_plain_phrase_radii_summary"),
+        "",
+        "TPA phrase radii summary by L:",
+        *_format_first_value_by_axis(rows, "validity_demo_tpa_phrase_radii_summary"),
+        "",
+        "Shared MILP per-row phrase radii summary by L:",
+        *_format_budget_radius_summary_by_l(budget_rows or [], "Shared MILP", "validity_full_harmful_sequence_per_prompt"),
+        "",
+        "Cell percentages where TPA compares to Plain DPA by L:",
+        *_format_tpa_plain_percentages(rows),
+        "",
+        "Phrase-level TPA max-token radii by L, row 0:",
+        *_format_first_value_by_axis(rows, "validity_demo_tpa_phrase_radius_row0"),
+        "",
+        "Shard group assignments by token position, row 0:",
+        *_format_first_value_by_axis(rows, "validity_demo_shard_groups_row0"),
+        "",
+        "Union size of required shard groups by L:",
+        *_format_first_value_by_axis(rows, "validity_demo_required_group_union_size"),
+        "",
+        "## MILP diagnostics",
+        "Shared MILP q1 status by L:",
+        *_format_status_series(rows, "row_col_val_q1_status"),
+        "",
+        "Shared MILP q1 value by L:",
         *_format_mean_series(rows, "row_col_val_q1"),
         "",
         "Joint minus TPA gap by L:",
         *(_format_series(gap_series) if gap_series is not None else ["- no numeric rows"]),
         "",
-        "TPA minus DPA weakest-token diagnostic gap by L:",
+        "Shared MILP mean-radius minus TPA mean-radius by L:",
+        *_format_budget_mean_gap_by_l(budget_rows or [], "Shared MILP", "TPA max-token phrase blocker", "validity_full_harmful_sequence_per_prompt"),
+        "",
+        "TPA minus plain DPA count-margin gap by L:",
         *(_format_series(tpa_minus_dpa_series) if tpa_minus_dpa_series is not None else ["- no numeric rows"]),
         "",
-        f"Expected DPA < TPA < joint ordering observed: {ordering_observed}",
+        "## Fail-fast confirmations",
+        f"Budget curves monotone non-increasing: {curve_checks.get('monotone_nonincreasing', False)}",
+        f"No MILP values silently dropped: {no_milp_drops}",
+        f"Shared MILP q1 status OPTIMAL for every plotted L: {_all_status_optimal(rows, 'row_col_val_q1_status')}",
+        f"Expected Plain DPA max-token phrase blocker < TPA max-token phrase blocker < Shared shard-aware MILP ordering observed: {ordering_observed}",
         f"Expected gap observed: {gap_observed}",
         f"Gap grows with L: {gap_grows}",
         "",
-        "Explanation:",
+        "Generated cells individually feasible under intended shard group by L:",
+        *_format_first_value_by_axis(rows, "validity_demo_group_feasible_all"),
+        "",
+        "## Explanation",
         f"{generator} is artificial and controlled. It is not intended to model a natural language distribution.",
-        "TPA is count-based and sees each harmful target token as individually cheap from aggregate counts.",
+        "Plain DPA max-token phrase blocker only reads the top-vs-target count margin at each token, so it misses the cost of overtaking many tied competitors.",
+        "TPA is count-based and sees each harmful target token as individually cheap after targeted count transfer.",
         "The full shared MILP is shard-aware and must use one shared poisoned-shard allocation across target positions.",
         "The demo assigns cheap target-token attacks to different shard groups, so the full harmful sequence requires more shared poisoned shards than TPA's count-only sequence baseline suggests.",
     ]
     path.write_text("\n".join(lines))
+
+
+def _format_status_series(rows: list[dict[str, object]], metric: str, axis_name: str = "L") -> list[str]:
+    grouped: dict[float, set[str]] = {}
+    for row in rows:
+        axis_value = _numeric_value(row.get(axis_name))
+        status = row.get(metric)
+        if axis_value is None or status in {None, ""}:
+            continue
+        grouped.setdefault(axis_value, set()).add(str(status))
+    if not grouped:
+        return ["- no rows"]
+    return [f"- {axis_name}={x:g}: {', '.join(sorted(grouped[x]))}" for x in sorted(grouped)]
+
+
+def _all_status_optimal(rows: list[dict[str, object]], metric: str) -> bool:
+    statuses = [row.get(metric) for row in rows]
+    return bool(statuses) and all(status == "OPTIMAL" for status in statuses)
+
+
+def _validity_demo_no_milp_drops(rows: list[dict[str, object]]) -> bool:
+    l_values = _sorted_unique_values(rows, "L")
+    for L in l_values:
+        matching = [row for row in rows if row.get("L") == L]
+        if not matching:
+            return False
+        if not all(row.get("row_col_val_q1_status") == "OPTIMAL" for row in matching):
+            return False
+        if not all(_numeric_value(row.get("row_col_val_q1")) is not None for row in matching):
+            return False
+    return True
+
+
+def _format_first_value_by_axis(rows: list[dict[str, object]], metric: str, axis_name: str = "L") -> list[str]:
+    grouped: dict[float, object] = {}
+    for row in rows:
+        axis_value = _numeric_value(row.get(axis_name))
+        value = row.get(metric)
+        if axis_value is None or value in {None, ""} or axis_value in grouped:
+            continue
+        grouped[axis_value] = value
+    if not grouped:
+        return ["- no rows"]
+    return [f"- {axis_name}={x:g}: {grouped[x]}" for x in sorted(grouped)]
+
+
+def _format_tpa_plain_percentages(rows: list[dict[str, object]]) -> list[str]:
+    grouped: dict[float, dict[str, float]] = {}
+    for row in rows:
+        axis_value = _numeric_value(row.get("L"))
+        if axis_value is None:
+            continue
+        gt = _numeric_value(row.get("validity_demo_pct_tpa_gt_plain"))
+        eq = _numeric_value(row.get("validity_demo_pct_tpa_eq_plain"))
+        lt = _numeric_value(row.get("validity_demo_pct_tpa_lt_plain"))
+        if gt is None or eq is None or lt is None:
+            continue
+        grouped[axis_value] = {"gt": gt, "eq": eq, "lt": lt}
+    if not grouped:
+        return ["- no rows"]
+    return [
+        f"- L={x:g}: TPA>Plain {grouped[x]['gt']:.3g}%, TPA=Plain {grouped[x]['eq']:.3g}%, TPA<Plain {grouped[x]['lt']:.3g}%"
+        for x in sorted(grouped)
+    ]
+
+
+def _format_budget_radius_summary_by_l(rows: list[dict[str, object]], method: str, objective: str) -> list[str]:
+    selected = [
+        row
+        for row in rows
+        if row.get("method") == method
+        and row.get("objective") == objective
+        and row.get("curve_type") == "radius_derived"
+        and _numeric_value(row.get("budget")) == 0
+    ]
+    if not selected:
+        return ["- no rows"]
+    lines = []
+    for row in sorted(selected, key=lambda item: _numeric_value(item.get("L")) or 0):
+        l_value = _numeric_value(row.get("L"))
+        if l_value is None:
+            continue
+        lines.append(
+            f"- L={l_value:g}: min={_numeric_value(row.get('min_radius')):.6g},"
+            f"median={_numeric_value(row.get('median_radius')):.6g},"
+            f"mean={_numeric_value(row.get('mean_radius')):.6g},"
+            f"max={_numeric_value(row.get('max_radius')):.6g}"
+        )
+    return lines or ["- no rows"]
+
+
+def _format_budget_mean_gap_by_l(rows: list[dict[str, object]], left_method: str, right_method: str, objective: str) -> list[str]:
+    means: dict[tuple[str, float], float] = {}
+    for row in rows:
+        if row.get("objective") != objective or row.get("curve_type") != "radius_derived":
+            continue
+        if _numeric_value(row.get("budget")) != 0:
+            continue
+        method = str(row.get("method"))
+        if method not in {left_method, right_method}:
+            continue
+        l_value = _numeric_value(row.get("L"))
+        mean = _numeric_value(row.get("mean_radius"))
+        if l_value is None or mean is None:
+            continue
+        means[(method, l_value)] = mean
+    l_values = sorted({l_value for method, l_value in means if method in {left_method, right_method}})
+    lines = []
+    for l_value in l_values:
+        left = means.get((left_method, l_value))
+        right = means.get((right_method, l_value))
+        if left is not None and right is not None:
+            lines.append(f"- L={l_value:g}: {left - right:.6g}")
+    return lines or ["- no rows"]
 
 
 def _computed_gap_series(rows: list[dict[str, object]], left_metric: str, right_metric: str) -> tuple[list[float], list[float]] | None:
@@ -1049,17 +1235,6 @@ def _safe_numeric_difference(left: object, right: object) -> float | None:
 def _format_series(series: tuple[list[float], list[float]]) -> list[str]:
     xs, ys = series
     return [f"- L={x:g}: {y:.6g}" for x, y in zip(xs, ys)]
-
-
-def print_certificate_table(results: list[CertificateResult]) -> None:
-    """Print certificate names, budgets, and solver statuses."""
-    print()
-    print(f"{'Certificate':34} B*   Status")
-    print("-" * 52)
-    for result in results:
-        b_star = "NA" if result.B_star is None else str(result.B_star)
-        print(f"{result.name:34} {b_star:>2}   {result.status_name}")
-
 
 def _print_instance_summary(
     data: ToyData, K: int, N: int, L: int, T: int, delta_stab: float, delta_val: float, target_bias: float, seed: int, influence_mode: str
@@ -1123,25 +1298,28 @@ def _compute_benchmark_baselines(data: ToyData, make_stability_objectives: bool,
     if make_validity_objectives:
         validity_cell_budgets = _cell_validity_budgets(data).astype(float)
         validity_cell_budgets[validity_cell_budgets > data.val_votes.shape[0]] = np.nan
+        plain_dpa_cell_budgets = _plain_dpa_validity_token_budgets(data)
         targeted_validity_cell_budgets = _targeted_validity_token_budgets(data)
         phrase_row_budgets = _atomic_phrase_validity_row_budgets(data)
-        row_validity_weak_radii = validity_cell_budgets.min(axis=1)
-        row_validity_strong_radii = validity_cell_budgets.max(axis=1)
-        independent_validity_row_costs = validity_cell_budgets.sum(axis=1)
+        row_validity_weak_radii = _row_nanmin_or_unknown(validity_cell_budgets)
+        row_validity_strong_radii = _row_nanmax_all_known(validity_cell_budgets)
+        independent_validity_row_costs = np.sum(validity_cell_budgets, axis=1)
         rows.update(
             {
-                "dpa_val_cell_min": int(np.min(validity_cell_budgets)),
-                "dpa_val_row_weak_q1": int(np.min(row_validity_weak_radii)),
-                "dpa_val_row_weak_qN": int(np.max(row_validity_weak_radii)),
-                "dpa_val_row_strong_q1": int(np.min(row_validity_strong_radii)),
-                "dpa_val_row_strong_qN": int(np.max(row_validity_strong_radii)),
-                "raw_dpa_val_min_cell": int(np.min(validity_cell_budgets)),
+                "dpa_val_cell_min": _finite_int_min(validity_cell_budgets),
+                "dpa_val_row_weak_q1": _finite_int_min(row_validity_weak_radii),
+                "dpa_val_row_weak_qN": _finite_int_max(row_validity_weak_radii),
+                "dpa_val_row_strong_q1": _finite_int_min(row_validity_strong_radii),
+                "dpa_val_row_strong_qN": _finite_int_max(row_validity_strong_radii),
+                "raw_dpa_val_min_cell": _finite_int_min(validity_cell_budgets),
+                "plain_dpa_val_cell_min": int(np.min(plain_dpa_cell_budgets)),
+                **aggregate_plain_dpa_sequence_baselines(plain_dpa_cell_budgets),
                 "tpa_val_cell_min": int(np.min(targeted_validity_cell_budgets)),
                 **aggregate_tpa_sequence_baselines(targeted_validity_cell_budgets),
-                "independent_val_sequence_q1": int(np.min(independent_validity_row_costs)),
-                "independent_val_sequence_qN": int(independent_validity_row_costs.sum()),
-                "independent_val_q1": int(np.min(independent_validity_row_costs)),
-                "independent_val_qN": int(independent_validity_row_costs.sum()),
+                "independent_val_sequence_q1": _finite_int_min(independent_validity_row_costs),
+                "independent_val_sequence_qN": _finite_int_sum(independent_validity_row_costs),
+                "independent_val_q1": _finite_int_min(independent_validity_row_costs),
+                "independent_val_qN": _finite_int_sum(independent_validity_row_costs),
                 "phrase_dpa_val_q1": int(np.min(phrase_row_budgets)),
                 "phrase_dpa_val_qN": int(np.max(phrase_row_budgets)),
                 "phrase_independent_val_q1": int(np.min(phrase_row_budgets)),
@@ -1261,6 +1439,23 @@ def _row_nanmax_all_known(values: np.ndarray) -> np.ndarray:
     return result
 
 
+def _finite_int_min(values: np.ndarray) -> int | float:
+    finite = np.asarray(values, dtype=float)
+    finite = finite[np.isfinite(finite)]
+    return int(np.min(finite)) if finite.size else float("nan")
+
+
+def _finite_int_max(values: np.ndarray) -> int | float:
+    finite = np.asarray(values, dtype=float)
+    finite = finite[np.isfinite(finite)]
+    return int(np.max(finite)) if finite.size else float("nan")
+
+
+def _finite_int_sum(values: np.ndarray) -> int | float:
+    finite = np.asarray(values, dtype=float)
+    return int(np.sum(finite)) if np.all(np.isfinite(finite)) else float("nan")
+
+
 def compute_radius_derived_budget_curve_rows(
     data: ToyData,
     T: int,
@@ -1295,23 +1490,30 @@ def compute_radius_derived_budget_curve_rows(
             ]
         )
     if make_validity_curves:
-        validity_cell_budgets = _cell_validity_budgets(data)
+        validity_cell_budgets = _cell_validity_budgets(data).astype(float)
+        validity_cell_budgets[validity_cell_budgets > data.val_votes.shape[0]] = np.nan
+        plain_dpa_cell_budgets = _plain_dpa_validity_token_budgets(data)
         targeted_validity_cell_budgets = _targeted_validity_token_budgets(data)
         phrase_row_budgets = _atomic_phrase_validity_row_budgets(data)
         curves.extend(
             [
                 (
-                    "DPA weakest harmful token",
+                    "Plain DPA max-token phrase blocker",
+                    "validity_full_harmful_sequence_per_prompt",
+                    plain_dpa_cell_budgets.max(axis=1),
+                ),
+                (
+                    "Shard-aware weakest-token diagnostic",
                     "weakest_harmful_token_not_full_sequence_validity",
                     _row_nanmin_or_unknown(validity_cell_budgets),
                 ),
                 (
-                    "DPA most difficult harmful token",
+                    "Shard-aware independent max-token diagnostic",
                     "most_difficult_harmful_token_not_full_sequence_validity",
                     _row_nanmax_all_known(validity_cell_budgets),
                 ),
                 (
-                    "TPA max-token sequence",
+                    "TPA max-token phrase blocker",
                     "validity_full_harmful_sequence_per_prompt",
                     targeted_validity_cell_budgets.max(axis=1),
                 ),
@@ -1326,7 +1528,7 @@ def compute_radius_derived_budget_curve_rows(
                     phrase_row_budgets,
                 ),
                 (
-                    "Independent composition",
+                    "Independent shard-aware composition diagnostic",
                     "validity_full_harmful_sequence_per_prompt",
                     validity_cell_budgets.sum(axis=1),
                 ),
@@ -1443,51 +1645,68 @@ def _benchmark_metadata(
     }
 
 
-def _save_focused_plot(rows: list[dict[str, object]], path: Path, title: str, axis_name: str, y_label: str, metrics: dict[str, str]) -> None:
-    """Save a mean-by-axis line plot for selected benchmark metric columns."""
-    series = {}
-    for label, metric in metrics.items():
-        metric_series = _mean_series_by_axis(rows, axis_name, metric)
-        if metric_series is None:
-            print(f"Warning: skipping {path.name} curve '{label}' because metric '{metric}' is missing or empty.")
-            continue
-        series[label] = metric_series
-    if not series:
-        print(f"Warning: skipped {path.name}; none of the requested metric columns were available.")
-        return
-    _save_line_plot(path, title, _axis_label(axis_name), y_label, series)
-
-
-def _save_certified_fraction_budget_plot(
+def _save_required_certified_fraction_budget_plot(
     rows: list[dict[str, object]],
     path: Path,
     title: str,
     selections: list[tuple[str, str, str, str]],
-) -> None:
+    max_points: int | None = None,
+) -> dict[str, bool]:
     if not rows:
-        print(f"Warning: skipped {path.name}; no budget curve CSV rows were available.")
-        return
-    series = {}
-    for label, method, objective, curve_type in selections:
-        selected = [
-            row
-            for row in rows
-            if row.get("method") == method and row.get("objective") == objective and row.get("curve_type") == curve_type
-        ]
-        metric_series = _mean_series_by_axis(selected, "budget", "certified_fraction")
-        if metric_series is None:
-            print(f"Warning: skipping {path.name} curve '{label}' because matching rows are missing.")
-            continue
-        xs, ys = metric_series
-        series[label] = (xs, [100.0 * y for y in ys])
+        raise SystemExit(f"{path.name} requires benchmark_budget_curves.csv rows, but none were available.")
+    series, skipped = _budget_curve_series(rows, selections)
+    missing = [label for label, _method, _objective, _curve_type in selections if label not in series]
+    if missing:
+        raise SystemExit(f"{path.name} is missing required certified-fraction series: {missing}. Details: {skipped}")
+    _assert_same_x_values(series, path.name)
+    monotone = all(_is_nonincreasing(ys) for _xs, ys in series.values())
+    if not monotone:
+        raise SystemExit(f"{path.name} has a non-monotone certified-fraction curve.")
+    if max_points is not None:
+        series = _sample_budget_plot_series(series, max_points=max_points)
+        _assert_same_x_values(series, path.name)
+    _save_line_plot(path, title, "Poisoned shard budget B", "Certified fraction (%)", series)
+    point_counts = {len(xs) for xs, _ys in series.values()}
+    plotted_points = point_counts.pop() if len(point_counts) == 1 else None
+    return {"monotone_nonincreasing": monotone, "missing_required_series": False, "plotted_budget_points": plotted_points}
+
+
+def _validity_demo_budget_plot_num_points(rows: list[dict[str, object]]) -> int | None:
+    values = {
+        int(value)
+        for row in rows
+        if (value := _numeric_value(row.get("budget_plot_num_points"))) is not None
+    }
+    if not values:
+        return None
+    if len(values) != 1:
+        raise SystemExit(f"validity_demo has inconsistent budget_plot_num_points values: {sorted(values)}")
+    value = values.pop()
+    if value < 2:
+        raise SystemExit("validity_demo budget_plot_num_points must be at least 2")
+    return value
+
+
+def _sample_budget_plot_series(
+    series: dict[str, tuple[list[float], list[float]]],
+    *,
+    max_points: int,
+) -> dict[str, tuple[list[float], list[float]]]:
     if not series:
-        print(f"Warning: skipped {path.name}; none of the requested curves were available.")
-        return
-    _save_line_plot(path, title, "Poisoned shard budget", "Certified fraction (%)", series)
-
-
-def _select_curve_rows(rows: list[dict[str, object]], method: str, objective: str, curve_type: str) -> list[dict[str, object]]:
-    return [row for row in rows if row.get("method") == method and row.get("objective") == objective and row.get("curve_type") == curve_type]
+        return series
+    first_xs = next(iter(series.values()))[0]
+    if len(first_xs) <= max_points:
+        return series
+    selected_indexes = np.linspace(0, len(first_xs) - 1, num=max_points, dtype=int)
+    indexes = sorted(set(int(index) for index in selected_indexes))
+    if indexes[0] != 0:
+        indexes.insert(0, 0)
+    if indexes[-1] != len(first_xs) - 1:
+        indexes.append(len(first_xs) - 1)
+    sampled: dict[str, tuple[list[float], list[float]]] = {}
+    for label, (xs, ys) in series.items():
+        sampled[label] = ([xs[index] for index in indexes], [ys[index] for index in indexes])
+    return sampled
 
 
 def _mean_series_by_axis(rows: list[dict[str, object]], axis_name: str, metric: str) -> tuple[list[float], list[float]] | None:
@@ -1511,8 +1730,6 @@ def _mean_series_by_axis(rows: list[dict[str, object]], axis_name: str, metric: 
 def _axis_label(axis_name: str) -> str:
     if axis_name == "L":
         return "sequence length L"
-    if axis_name == "target_bias":
-        return "target bias"
     return axis_name
 
 
@@ -1599,45 +1816,8 @@ def _save_heatmap_svg(
 
 
 def _save_line_plot(path: Path, title: str, x_label: str, y_label: str, series: dict[str, tuple[list[float], list[float]]]) -> None:
-    """Save a thesis-facing line plot.
-
-    PNG is used for the cleaned report outputs. If matplotlib is unavailable,
-    the lightweight SVG renderer is used as a compatibility fallback.
-    """
-    if path.suffix.lower() != ".png":
-        _save_line_plot_svg(path, title, x_label, y_label, series)
-        return
-    try:
-        cache_dir = Path(os.environ.get("TMPDIR", "/tmp")) / "provably_secure_nlg_plot_cache"
-        os.environ.setdefault("MPLCONFIGDIR", str(cache_dir / "matplotlib"))
-        os.environ.setdefault("XDG_CACHE_HOME", str(cache_dir / "xdg"))
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except Exception as exc:  # pragma: no cover - depends on local plotting deps.
-        fallback = path.with_suffix(".svg")
-        print(f"Warning: matplotlib unavailable ({exc}); writing SVG fallback {fallback.name}.")
-        _save_line_plot_svg(fallback, title, x_label, y_label, series)
-        return
-
-    fig, ax = plt.subplots(figsize=(8.0, 5.2), dpi=220)
-    for label, (xs, ys) in series.items():
-        color = CANONICAL_COLORS.get(label)
-        linestyle = _line_style_for_label(label)
-        marker = "s" if "PHD" in label else "o"
-        ax.plot(xs, ys, label=label, color=color, linestyle=linestyle, marker=marker, linewidth=2.2, markersize=4.8)
-    ax.set_title(title, fontsize=12, pad=10)
-    ax.set_xlabel(x_label, fontsize=11)
-    ax.set_ylabel(y_label, fontsize=11)
-    ax.grid(True, color="#e5e7eb", linewidth=0.8)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.legend(frameon=False, fontsize=9)
-    fig.tight_layout()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(path, dpi=220)
-    plt.close(fig)
+    """Save a report-facing line plot as SVG."""
+    _save_line_plot_svg(path, title, x_label, y_label, series)
 
 
 def _save_line_plot_svg(path: Path, title: str, x_label: str, y_label: str, series: dict[str, tuple[list[float], list[float]]]) -> None:
@@ -1710,7 +1890,9 @@ def _save_line_plot_svg(path: Path, title: str, x_label: str, y_label: str, seri
 
 
 def _line_style_for_label(label: str) -> str:
-    if label == "DPA most difficult harmful token":
+    if label == "Plain DPA max-token phrase blocker":
+        return ":"
+    if label in {"DPA most difficult harmful token", "Shard-aware independent max-token diagnostic"}:
         return ":"
     if "baseline" in label:
         return "--"
@@ -1718,7 +1900,9 @@ def _line_style_for_label(label: str) -> str:
 
 
 def _svg_dash_attr_for_label(label: str) -> str:
-    if label == "DPA most difficult harmful token":
+    if label == "Plain DPA max-token phrase blocker":
+        return ' stroke-dasharray="2 7" stroke-linecap="round"'
+    if label in {"DPA most difficult harmful token", "Shard-aware independent max-token diagnostic"}:
         return ' stroke-dasharray="2 7" stroke-linecap="round"'
     if "baseline" in label:
         return ' stroke-dasharray="7 5"'
@@ -1836,6 +2020,35 @@ def _require_bool(config: dict[str, object], path: Path, key: str) -> bool:
     return value
 
 
+def _optional_str(config: dict[str, object], path: Path, key: str, default: str, allowed: set[str] | None = None) -> str:
+    if key not in config:
+        return default
+    value = config[key]
+    if not isinstance(value, str):
+        raise ConfigError(f"field `{key}` in {path} must be a string")
+    if allowed is not None and value not in allowed:
+        raise ConfigError(f"field `{key}` in {path} must be one of {sorted(allowed)}")
+    return value
+
+
+def _optional_int(config: dict[str, object], path: Path, key: str, default: int) -> int:
+    if key not in config:
+        return default
+    value = config[key]
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ConfigError(f"field `{key}` in {path} must be an integer")
+    return int(value)
+
+
+def _optional_bool(config: dict[str, object], path: Path, key: str, default: bool) -> bool:
+    if key not in config:
+        return default
+    value = config[key]
+    if not isinstance(value, bool):
+        raise ConfigError(f"field `{key}` in {path} must be a boolean")
+    return bool(value)
+
+
 def _require_number_list(config: dict[str, object], path: Path, key: str, item_type: type) -> list[int] | list[float]:
     value = _require_field(config, path, key)
     if not isinstance(value, list) or not value:
@@ -1858,18 +2071,33 @@ def load_experiment_config(path: str | Path) -> dict[str, object]:
         "Ns": _require_number_list(config, config_path, "N_values", int),
         "lengths": _require_number_list(config, config_path, "L_values", int),
         "Ts": _require_number_list(config, config_path, "T_values", int),
-        "delta_stabs": _require_number_list(config, config_path, "delta_stab_values", float),
-        "delta_vals": _require_number_list(config, config_path, "delta_val_values", float),
-        "target_biases": _require_number_list(config, config_path, "target_bias_values", float),
         "generator": generator,
         "seed": _require_int(config, config_path, "seed"),
         "budget_max": _require_int(config, config_path, "budget_max"),
         "save_dir": _require_str(config, config_path, "output_dir"),
-        "influence_mode": _require_str(config, config_path, "influence_mode", {"dense", "row-local", "column-local", "validity_demo"}),
-        "stability_competitor_mode": _require_str(config, config_path, "stability_competitor_mode", {"all", "runner_up"}),
         "objective_family": _require_str(config, config_path, "objective_family", {"full", "validity_only"}),
         "make_budget_curves": _require_bool(config, config_path, "make_budget_curves"),
     }
+    if generator == "toy":
+        benchmark_config.update(
+            {
+                "delta_stabs": _require_number_list(config, config_path, "delta_stab_values", float),
+                "delta_vals": _require_number_list(config, config_path, "delta_val_values", float),
+                "target_biases": _require_number_list(config, config_path, "target_bias_values", float),
+                "influence_mode": _require_str(config, config_path, "influence_mode", {"dense", "row-local", "column-local"}),
+                "stability_competitor_mode": _require_str(config, config_path, "stability_competitor_mode", {"all", "runner_up"}),
+            }
+        )
+    else:
+        benchmark_config.update(
+            {
+                "delta_stabs": [0.0],
+                "delta_vals": [0.0],
+                "target_biases": [0.0],
+                "influence_mode": _optional_str(config, config_path, "influence_mode", "validity_demo", {"validity_demo"}),
+                "stability_competitor_mode": _optional_str(config, config_path, "stability_competitor_mode", "all", {"all", "runner_up"}),
+            }
+        )
     for key in [
         "make_stability_objectives",
         "make_validity_objectives",
@@ -1898,10 +2126,30 @@ def load_experiment_config(path: str | Path) -> dict[str, object]:
         benchmark_config.update(
             {
                 "group_size": group_size,
-                "target_gap": _require_int(config, config_path, "target_gap"),
                 "overlap": overlap,
+                "validity_demo_distribution": _optional_str(
+                    config,
+                    config_path,
+                    "validity_demo_distribution",
+                    "deterministic",
+                    {"deterministic", "heterogeneous"},
+                ),
+                "num_competitor_min": _optional_int(config, config_path, "num_competitor_min", 2),
+                "num_competitor_max": _optional_int(config, config_path, "num_competitor_max", 8),
+                "target_count_min": _optional_int(config, config_path, "target_count_min", 0),
+                "target_count_max": _optional_int(config, config_path, "target_count_max", 3),
+                "competitor_gap_min": _optional_int(config, config_path, "competitor_gap_min", 2),
+                "competitor_gap_max": _optional_int(config, config_path, "competitor_gap_max", min(6, group_size)),
+                "competitor_jitter": _optional_int(config, config_path, "competitor_jitter", 2),
+                "row_difficulty_jitter": _optional_bool(config, config_path, "row_difficulty_jitter", True),
+                "position_difficulty_jitter": _optional_bool(config, config_path, "position_difficulty_jitter", True),
+                "budget_plot_num_points": _optional_int(config, config_path, "budget_plot_num_points", 0),
             }
         )
+        if "target_gap" in config:
+            benchmark_config["target_gap"] = _require_int(config, config_path, "target_gap")
+        if benchmark_config["budget_plot_num_points"] == 0:
+            benchmark_config["budget_plot_num_points"] = None
     return benchmark_config
 
 
@@ -1991,12 +2239,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "command",
         choices=[
-            "sanity",
             "visualize",
             "benchmark",
             "plot-csv",
             "plot-validity-demo",
-            "audit-curves",
         ],
     )
     parser.add_argument("--K", type=int, default=7)
@@ -2012,8 +2258,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--save-dir", default=None)
     parser.add_argument("--csv", default="outputs/results/benchmark_results.csv")
-    parser.add_argument("--csv-dir", default="outputs/results")
-    parser.add_argument("--show-grid", action="store_true")
     parser.add_argument("--make-plots", action="store_true", help="Also render benchmark plots after running Gurobi.")
     parser.add_argument("--config", default=None, help="YAML benchmark config. Required for benchmark runs.")
     parser.add_argument("--dry-run", action="store_true", help="Validate config and print solve estimates without running Gurobi.")
@@ -2027,22 +2271,7 @@ def main() -> None:
     delta_stab = args.delta if args.delta_stab is None else args.delta_stab
     delta_val = args.delta if args.delta_val is None else args.delta_val
     target_bias = args.target_bias if args.target_bias is not None else 0.2
-    if args.command == "sanity":
-        run_sanity(
-            K=args.K,
-            N=args.N,
-            L=args.L,
-            T=args.T,
-            delta_stab=delta_stab,
-            delta_val=delta_val,
-            target_bias=target_bias,
-            seed=args.seed,
-            influence_mode=args.influence_mode,
-            stability_competitor_mode=args.stability_competitor_mode,
-            show_grid=args.show_grid,
-            save_dir=(args.save_dir or "outputs/smoke") if args.show_grid else None,
-        )
-    elif args.command == "visualize":
+    if args.command == "visualize":
         visualize_instance(
             K=args.K,
             N=args.N,
@@ -2089,13 +2318,22 @@ def main() -> None:
             group_size=config.get("group_size", 3),
             target_gap=config.get("target_gap", 1),
             overlap=config.get("overlap", 0),
+            validity_demo_distribution=config.get("validity_demo_distribution", "deterministic"),
+            num_competitor_min=config.get("num_competitor_min", 2),
+            num_competitor_max=config.get("num_competitor_max", 8),
+            target_count_min=config.get("target_count_min", 0),
+            target_count_max=config.get("target_count_max", 3),
+            competitor_gap_min=config.get("competitor_gap_min", 2),
+            competitor_gap_max=config.get("competitor_gap_max", 6),
+            competitor_jitter=config.get("competitor_jitter", 2),
+            row_difficulty_jitter=config.get("row_difficulty_jitter", True),
+            position_difficulty_jitter=config.get("position_difficulty_jitter", True),
+            budget_plot_num_points=config.get("budget_plot_num_points"),
         )
     elif args.command == "plot-csv":
         plot_benchmark_csv(args.csv, save_dir=args.save_dir)
     elif args.command == "plot-validity-demo":
         plot_validity_demo_csv(args.csv, save_dir=args.save_dir)
-    elif args.command == "audit-curves":
-        audit_curve_csvs(args.csv_dir)
     else:
         raise ValueError(f"Unknown command: {args.command}")
 
