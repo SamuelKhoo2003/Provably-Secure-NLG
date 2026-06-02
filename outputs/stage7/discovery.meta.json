@@ -1,0 +1,27 @@
+{
+  "adapter_dir": "/data/samuelkhoo/output/adapters_last3_lora",
+  "adapter_dir_exists": false,
+  "chosen_num_shards": 1,
+  "first_shard_ids": [],
+  "num_shard_adapter_dirs_found": 0,
+  "num_test_examples": null,
+  "output_dir": "/data/samuelkhoo/output/vpa_integration_smoke",
+  "output_dir_exists": false,
+  "real_model_loading_attempted": false,
+  "safety": {
+    "cluster_username": "samuelkhoo",
+    "concurrency_mode": "sequential",
+    "home_write_forbidden": true,
+    "max_concurrent_jobs": 1,
+    "messages": [
+      {
+        "field": "dataset_dir",
+        "level": "warning",
+        "message": "cluster path is outside preferred root /data/samuelkhoo/datasets",
+        "path": "/data/samuelkhoo/VPA/data"
+      }
+    ]
+  },
+  "test_path": "/data/samuelkhoo/VPA/data/test.jsonl",
+  "test_path_exists": false
+}

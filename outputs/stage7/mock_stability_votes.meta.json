@@ -1,0 +1,34 @@
+{
+  "backend": "mock",
+  "created_at": "2026-06-01T22:12:15.956579+00:00",
+  "mode": "stability",
+  "notes": "Mock stability export; no real model inference. Majority tokens are committed to the next clean prefix.",
+  "num_examples": 3,
+  "num_positions": 4,
+  "num_shards": 6,
+  "output_path": "outputs/stage7/mock_stability_votes.jsonl",
+  "safety": {
+    "cluster_username": null,
+    "concurrency_mode": "sequential",
+    "home_write_forbidden": true,
+    "max_concurrent_jobs": 1,
+    "real_inference_enabled": false
+  },
+  "schema_version": "vpa-token-votes/v1",
+  "selected_shard_ids": [
+    "shard_0000",
+    "shard_0001",
+    "shard_0002",
+    "shard_0003",
+    "shard_0004",
+    "shard_0005"
+  ],
+  "shard_ids": [
+    "shard_0000",
+    "shard_0001",
+    "shard_0002",
+    "shard_0003",
+    "shard_0004",
+    "shard_0005"
+  ]
+}
