@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# Data and outputs (too large for git)
+data/
+output/
+cache/
+*.pt
+*.bin
+
+# Environment
+.env
+venv/
+
+# Misc
+.DS_Store
+*.log
+vpa_colab_data.tar.gz

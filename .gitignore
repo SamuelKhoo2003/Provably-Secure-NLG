@@ -1,5 +1,28 @@
 .venv/
-external/
 __pycache__/
 *.py[cod]
 .DS_Store
+
+# Repository-level generated outputs are not committed.
+/outputs/
+
+# Large binary/array vote artifacts should stay out of Git.
+*.npz
+
+# VPA large-experiment generated outputs. Keep directory placeholders.
+large_experiments/vpa/outputs/*
+!large_experiments/vpa/outputs/.gitkeep
+large_experiments/vpa/artifacts/*
+!large_experiments/vpa/artifacts/.gitkeep
+
+# Optional VPA-main checkout for real adapter inference. This is an external
+# dependency, not project source.
+large_experiments/vpa/external/VPA-main/
+
+# Legacy external/VPA-main generated data and model outputs. Keep source code
+# visible, but do not commit datasets, JSONL data, adapters, or checkpoints.
+external/VPA-main/output/
+external/VPA-main/data/
+external/VPA-main/datasets/
+external/VPA-main/**/*.jsonl
+external/VPA-main/**/adapters*/
