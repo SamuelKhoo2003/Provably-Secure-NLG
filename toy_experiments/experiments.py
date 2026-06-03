@@ -419,6 +419,8 @@ DEFAULT_REPORT_PLOT_FILENAMES = (
     "validity_certificate_vs_K.svg",
 )
 
+RELATIVE_LIFT_PERCENT_REPORTING_THRESHOLD = 1.0
+
 def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, csv_path: Path) -> None:
     """Write only the simplified default report plot set."""
     _clean_default_plot_dir(output_dir)
@@ -447,6 +449,18 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
         {
             "plot": "stability_one_token_per_row_budget_curve.svg",
             "series": list(stability_all_prompts_series),
+            "series_data": stability_all_prompts_series,
+            "comparisons": _performance_comparison_lines(
+                stability_all_prompts_series,
+                [
+                    (
+                        "Shared MILP all prompts, one token each",
+                        "DPA weakest token",
+                        "average certified-fraction lift",
+                        "percentage points",
+                    )
+                ],
+            ),
             "skipped": stability_all_prompts_skipped,
         }
     )
@@ -472,6 +486,18 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
         {
             "plot": "stability_one_prompt_budget_curve.svg",
             "series": list(stability_one_prompt_series),
+            "series_data": stability_one_prompt_series,
+            "comparisons": _performance_comparison_lines(
+                stability_one_prompt_series,
+                [
+                    (
+                        "Shared MILP one prompt, full sequence",
+                        "DPA weakest token",
+                        "average certified-fraction lift",
+                        "percentage points",
+                    )
+                ],
+            ),
             "skipped": stability_one_prompt_skipped,
         }
     )
@@ -488,7 +514,37 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
         _save_line_plot(output_dir / "main_validity_budget_curve.svg", "Main validity budget curve", "Poisoned shard budget B", "Certified fraction (%)", validity_series)
     else:
         print("Warning: skipped main_validity_budget_curve.svg; no requested budget-curve series were available.")
-    audit.append({"plot": "main_validity_budget_curve.svg", "series": list(validity_series), "skipped": validity_skipped})
+    audit.append(
+        {
+            "plot": "main_validity_budget_curve.svg",
+            "series": list(validity_series),
+            "series_data": validity_series,
+            "comparisons": _performance_comparison_lines(
+                validity_series,
+                [
+                    (
+                        "Shared shard-aware MILP full sequence",
+                        "TPA max-token phrase blocker",
+                        "average certified-fraction lift",
+                        "percentage points",
+                    ),
+                    (
+                        "TPA max-token phrase blocker",
+                        "Plain DPA max-token phrase blocker",
+                        "average certified-fraction lift",
+                        "percentage points",
+                    ),
+                    (
+                        "Shared shard-aware MILP full sequence",
+                        "Plain DPA max-token phrase blocker",
+                        "average certified-fraction lift",
+                        "percentage points",
+                    ),
+                ],
+            ),
+            "skipped": validity_skipped,
+        }
+    )
 
     metric_specs = [
         (
@@ -508,9 +564,18 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
             _save_line_plot(output_dir / filename, title, _axis_label("K"), "Mean certified budget B*", series)
         else:
             print(f"Warning: skipped {filename}; no requested benchmark-result series were available.")
-        audit.append({"plot": filename, "series": list(series), "skipped": skipped})
+        audit.append(
+            {
+                "plot": filename,
+                "series": list(series),
+                "series_data": series,
+                "comparisons": _metric_plot_comparison_lines(filename, series),
+                "skipped": skipped,
+            }
+        )
 
     _write_default_plot_audit(output_dir / "audit_plot_outputs.txt", csv_path, audit)
+    _write_comparison_report(output_dir / "comparisons.txt", csv_path, audit)
 
 
 def _clean_default_plot_dir(output_dir: Path) -> None:
@@ -665,6 +730,76 @@ def _is_sentinel_budget(value: object, K: object) -> bool:
     return numeric_value is not None and numeric_k is not None and numeric_value > numeric_k
 
 
+def _metric_plot_comparison_lines(filename: str, series: dict[str, tuple[list[float], list[float]]]) -> list[str]:
+    if filename == "stability_certificate_vs_K.svg":
+        return _performance_comparison_lines(
+            series,
+            [("Shared MILP full matrix", "DPA weakest token", "mean certified-budget lift", "budget units")],
+        )
+    if filename == "validity_certificate_vs_K.svg":
+        return _performance_comparison_lines(
+            series,
+            [
+                (
+                    "Shared shard-aware MILP full sequence",
+                    "TPA max-token phrase blocker",
+                    "mean certified-budget lift",
+                    "budget units",
+                ),
+                (
+                    "TPA max-token phrase blocker",
+                    "Plain DPA max-token phrase blocker",
+                    "mean certified-budget lift",
+                    "budget units",
+                ),
+                (
+                    "Shared shard-aware MILP full sequence",
+                    "Plain DPA max-token phrase blocker",
+                    "mean certified-budget lift",
+                    "budget units",
+                ),
+            ],
+        )
+    return []
+
+
+def _performance_comparison_lines(
+    series: dict[str, tuple[list[float], list[float]]],
+    comparisons: list[tuple[str, str, str, str]],
+) -> list[str]:
+    lines = []
+    for better_label, baseline_label, quantity_label, unit_label in comparisons:
+        comparison = _series_relative_improvement(series, better_label, baseline_label)
+        if comparison is None:
+            lines.append(f"{better_label} vs {baseline_label}: unavailable")
+            continue
+        lift, percent = comparison
+        lines.append(
+            f"{better_label} vs {baseline_label}: {quantity_label} {lift:.3g} {unit_label}; relative lift {percent:.3g}%"
+        )
+    return lines
+
+
+def _series_relative_improvement(
+    series: dict[str, tuple[list[float], list[float]]],
+    better_label: str,
+    baseline_label: str,
+) -> tuple[float, float] | None:
+    if better_label not in series or baseline_label not in series:
+        return None
+    left_xs, left_ys = series[better_label]
+    right_xs, right_ys = series[baseline_label]
+    left_by_x = {x: y for x, y in zip(left_xs, left_ys)}
+    right_by_x = {x: y for x, y in zip(right_xs, right_ys)}
+    common_xs = sorted(set(left_by_x) & set(right_by_x))
+    if not common_xs:
+        return None
+    left_mean = float(np.mean([left_by_x[x] for x in common_xs]))
+    right_mean = float(np.mean([right_by_x[x] for x in common_xs]))
+    lift = max(0.0, left_mean - right_mean)
+    return lift, _relative_lift_percent(lift, right_mean)
+
+
 def _write_default_plot_audit(path: Path, csv_path: Path, audit: list[dict[str, object]]) -> None:
     generated = [item["plot"] for item in audit if (path.parent / str(item["plot"])).exists()]
     lines = [
@@ -687,10 +822,77 @@ def _write_default_plot_audit(path: Path, csv_path: Path, audit: list[dict[str, 
     ]
     for item in audit:
         lines.append(f"- {item['plot']}: {', '.join(item['series']) if item['series'] else 'none'}")
+        comparisons = item.get("comparisons") or []
+        for comparison in comparisons:
+            lines.append(f"  comparison: {comparison}")
         skipped = item["skipped"]
         if skipped:
             lines.append(f"  skipped: {'; '.join(skipped)}")
     path.write_text("\n".join(lines))
+
+
+def _write_comparison_report(path: Path, csv_path: Path, audit: list[dict[str, object]]) -> None:
+    lines = [
+        "Toy experiment strategy comparisons",
+        "",
+        f"CSV file used: {csv_path}",
+        "Generated by plotting only: yes",
+        "Reruns Gurobi or regenerates experiments: no",
+        "",
+        "Math:",
+        "absolute lift = max(0, mean(strategy A) - mean(strategy B))",
+        "relative lift = 100 * absolute_lift / abs(mean(strategy B))",
+        f"relative lifts below {RELATIVE_LIFT_PERCENT_REPORTING_THRESHOLD:g}% are reported as 0%",
+        "",
+        "Expected ordering checks:",
+        f"- Stability MILP > DPA observed in mean-budget plots: {_comparison_is_positive(audit, 'stability_certificate_vs_K.svg', 'Shared MILP full matrix', 'DPA weakest token')}",
+        f"- Validity MILP > TPA observed in mean-budget plots: {_comparison_is_positive(audit, 'validity_certificate_vs_K.svg', 'Shared shard-aware MILP full sequence', 'TPA max-token phrase blocker')}",
+        f"- Validity TPA > DPA observed in mean-budget plots: {_comparison_is_positive(audit, 'validity_certificate_vs_K.svg', 'TPA max-token phrase blocker', 'Plain DPA max-token phrase blocker')}",
+        "",
+        "Comparison summary:",
+    ]
+    for item in audit:
+        comparisons = item.get("comparisons") or []
+        if not comparisons:
+            continue
+        lines.append(f"- {item['plot']}")
+        for comparison in comparisons:
+            lines.append(f"  - {comparison}")
+    lines.extend(["", "Series summary stats:"])
+    for item in audit:
+        series_data = item.get("series_data") or {}
+        if not series_data:
+            continue
+        lines.append(f"- {item['plot']}")
+        lines.extend(f"  - {line}" for line in _series_summary_stat_lines(series_data))
+    path.write_text("\n".join(lines))
+
+
+def _comparison_is_positive(
+    audit: list[dict[str, object]],
+    plot_name: str,
+    left_label: str,
+    right_label: str,
+) -> bool:
+    for item in audit:
+        if item.get("plot") != plot_name:
+            continue
+        comparison = _series_relative_improvement(item.get("series_data") or {}, left_label, right_label)
+        return bool(comparison is not None and comparison[0] > 1e-12)
+    return False
+
+
+def _series_summary_stat_lines(series: dict[str, tuple[list[float], list[float]]]) -> list[str]:
+    lines = []
+    for label, (xs, ys) in series.items():
+        if not ys:
+            continue
+        values = np.asarray(ys, dtype=float)
+        lines.append(
+            f"{label}: n={len(ys)}, x={min(xs):.6g}..{max(xs):.6g}, "
+            f"mean={np.mean(values):.6g}, min={np.min(values):.6g}, max={np.max(values):.6g}"
+        )
+    return lines or ["no numeric series"]
 
 
 def _safe_difference(left: float | None, right: float | None) -> float | str:
@@ -1066,11 +1268,25 @@ def write_validity_demo_audit(
         "Joint minus TPA gap by L:",
         *(_format_series(gap_series) if gap_series is not None else ["- no numeric rows"]),
         "",
+        "Shared MILP relative lift over TPA by L:",
+        *_format_relative_lift_by_axis(rows, "row_col_val_q1", "tpa_val_sequence_q1"),
+        "",
         "Shared MILP mean-radius minus TPA mean-radius by L:",
         *_format_budget_mean_gap_by_l(budget_rows or [], "Shared MILP", "TPA max-token phrase blocker", "validity_full_harmful_sequence_per_prompt"),
         "",
+        "Shared MILP mean-radius relative lift over TPA by L:",
+        *_format_budget_mean_relative_lift_by_l(
+            budget_rows or [],
+            "Shared MILP",
+            "TPA max-token phrase blocker",
+            "validity_full_harmful_sequence_per_prompt",
+        ),
+        "",
         "TPA minus plain DPA count-margin gap by L:",
         *(_format_series(tpa_minus_dpa_series) if tpa_minus_dpa_series is not None else ["- no numeric rows"]),
+        "",
+        "TPA relative lift over plain DPA by L:",
+        *_format_relative_lift_by_axis(rows, "tpa_val_sequence_q1", "plain_dpa_val_sequence_q1"),
         "",
         "## Fail-fast confirmations",
         f"Budget curves monotone non-increasing: {curve_checks.get('monotone_nonincreasing', False)}",
@@ -1091,6 +1307,7 @@ def write_validity_demo_audit(
         "The demo assigns cheap target-token attacks to different shard groups, so the full harmful sequence requires more shared poisoned shards than TPA's count-only sequence baseline suggests.",
     ]
     path.write_text("\n".join(lines))
+    _write_validity_demo_comparison_report(path.parent / "comparisons.txt", rows, csv_path, budget_rows or [])
 
 
 def _format_status_series(rows: list[dict[str, object]], metric: str, axis_name: str = "L") -> list[str]:
@@ -1157,6 +1374,51 @@ def _format_tpa_plain_percentages(rows: list[dict[str, object]]) -> list[str]:
     ]
 
 
+def _write_validity_demo_comparison_report(path: Path, rows: list[dict[str, object]], csv_path: Path, budget_rows: list[dict[str, object]]) -> None:
+    lines = [
+        "Validity demo strategy comparisons",
+        "",
+        f"CSV file used: {csv_path}",
+        "Generated by plotting only: yes",
+        "Reruns Gurobi or regenerates experiments: no",
+        "",
+        "Math:",
+        "absolute lift = max(0, mean(strategy A) - mean(strategy B))",
+        "relative lift = 100 * absolute_lift / abs(mean(strategy B))",
+        f"relative lifts below {RELATIVE_LIFT_PERCENT_REPORTING_THRESHOLD:g}% are reported as 0%",
+        "",
+        "Mean certified-budget comparisons by L:",
+        "Shared MILP over TPA:",
+        *_format_relative_lift_by_axis(rows, "row_col_val_q1", "tpa_val_sequence_q1"),
+        "",
+        "TPA over Plain DPA:",
+        *_format_relative_lift_by_axis(rows, "tpa_val_sequence_q1", "plain_dpa_val_sequence_q1"),
+        "",
+        "Mean per-row radius comparisons by L:",
+        "Shared MILP over TPA:",
+        *_format_budget_mean_relative_lift_by_l(
+            budget_rows,
+            "Shared MILP",
+            "TPA max-token phrase blocker",
+            "validity_full_harmful_sequence_per_prompt",
+        ),
+        "",
+        "Token-level TPA vs Plain DPA percentages:",
+        *_format_tpa_plain_percentages(rows),
+        "",
+        "Raw mean budgets by L:",
+        "Plain DPA:",
+        *_format_mean_series(rows, "plain_dpa_val_sequence_q1"),
+        "",
+        "TPA:",
+        *_format_mean_series(rows, "tpa_val_sequence_q1"),
+        "",
+        "Shared MILP:",
+        *_format_mean_series(rows, "row_col_val_q1"),
+    ]
+    path.write_text("\n".join(lines))
+
+
 def _format_budget_radius_summary_by_l(rows: list[dict[str, object]], method: str, objective: str) -> list[str]:
     selected = [
         row
@@ -1205,6 +1467,65 @@ def _format_budget_mean_gap_by_l(rows: list[dict[str, object]], left_method: str
         if left is not None and right is not None:
             lines.append(f"- L={l_value:g}: {left - right:.6g}")
     return lines or ["- no rows"]
+
+
+def _format_budget_mean_relative_lift_by_l(rows: list[dict[str, object]], left_method: str, right_method: str, objective: str) -> list[str]:
+    means: dict[tuple[str, float], float] = {}
+    for row in rows:
+        if row.get("objective") != objective or row.get("curve_type") != "radius_derived":
+            continue
+        if _numeric_value(row.get("budget")) != 0:
+            continue
+        method = str(row.get("method"))
+        if method not in {left_method, right_method}:
+            continue
+        l_value = _numeric_value(row.get("L"))
+        mean = _numeric_value(row.get("mean_radius"))
+        if l_value is None or mean is None:
+            continue
+        means[(method, l_value)] = mean
+    l_values = sorted({l_value for method, l_value in means if method in {left_method, right_method}})
+    lines = []
+    for l_value in l_values:
+        left = means.get((left_method, l_value))
+        right = means.get((right_method, l_value))
+        if left is None or right is None:
+            continue
+        lift, percent = _relative_lift(left, right)
+        lines.append(f"- L={l_value:g}: +{lift:.6g} mean budget units ({percent:.6g}%)")
+    return lines or ["- no rows"]
+
+
+def _format_relative_lift_by_axis(rows: list[dict[str, object]], left_metric: str, right_metric: str, axis_name: str = "L") -> list[str]:
+    grouped: dict[float, list[tuple[float, float]]] = {}
+    for row in rows:
+        axis_value = _numeric_value(row.get(axis_name))
+        left = _numeric_value(row.get(left_metric))
+        right = _numeric_value(row.get(right_metric))
+        if axis_value is None or left is None or right is None:
+            continue
+        grouped.setdefault(axis_value, []).append((left, right))
+    lines = []
+    for axis_value in sorted(grouped):
+        left_mean = float(np.mean([left for left, _right in grouped[axis_value]]))
+        right_mean = float(np.mean([right for _left, right in grouped[axis_value]]))
+        lift, percent = _relative_lift(left_mean, right_mean)
+        lines.append(f"- {axis_name}={axis_value:g}: +{lift:.6g} mean budget units ({percent:.6g}%)")
+    return lines or ["- no rows"]
+
+
+def _relative_lift(left: float, right: float) -> tuple[float, float]:
+    lift = max(0.0, left - right)
+    return lift, _relative_lift_percent(lift, right)
+
+
+def _relative_lift_percent(lift: float, baseline: float) -> float:
+    if lift <= 1e-12 or abs(baseline) <= 1e-12:
+        return 0.0
+    percent = float(100.0 * lift / abs(baseline))
+    if percent < RELATIVE_LIFT_PERCENT_REPORTING_THRESHOLD:
+        return 0.0
+    return percent
 
 
 def _computed_gap_series(rows: list[dict[str, object]], left_metric: str, right_metric: str) -> tuple[list[float], list[float]] | None:

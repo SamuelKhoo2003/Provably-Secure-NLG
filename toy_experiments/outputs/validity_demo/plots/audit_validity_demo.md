@@ -1,6 +1,6 @@
 # validity_demo synthetic validity stress-test audit
 
-CSV used: outputs/validity_demo/results/benchmark_results.csv
+CSV used: toy_experiments/outputs/validity_demo/results/benchmark_results.csv
 Generator: validity_demo
 Scope: artificial controlled validity-only demo, not a natural language benchmark.
 K values: [96]
@@ -103,15 +103,30 @@ Joint minus TPA gap by L:
 - L=9: 14
 - L=27: 49
 
+Shared MILP relative lift over TPA by L:
+- L=3: +1 mean budget units (25%)
+- L=9: +14 mean budget units (200%)
+- L=27: +49 mean budget units (612.5%)
+
 Shared MILP mean-radius minus TPA mean-radius by L:
 - L=3: 4.125
 - L=9: 19.0938
 - L=27: 62.9375
 
+Shared MILP mean-radius relative lift over TPA by L:
+- L=3: +4.125 mean budget units (57.8947%)
+- L=9: +19.0938 mean budget units (233.206%)
+- L=27: +62.9375 mean budget units (727.076%)
+
 TPA minus plain DPA count-margin gap by L:
 - L=3: 1
 - L=9: 2
 - L=27: 3
+
+TPA relative lift over plain DPA by L:
+- L=3: +1 mean budget units (33.3333%)
+- L=9: +2 mean budget units (40%)
+- L=27: +3 mean budget units (60%)
 
 ## Fail-fast confirmations
 Budget curves monotone non-increasing: True

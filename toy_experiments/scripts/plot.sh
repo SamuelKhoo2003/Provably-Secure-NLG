@@ -62,6 +62,7 @@ plot_one() {
   echo
   echo "Plots: $out_dir/*.svg"
   echo "Audit: $out_dir/audit_plot_outputs.txt"
+  echo "Comparisons: $out_dir/comparisons.txt"
 }
 
 if [[ -n "${CSV_PATH:-}" ]]; then

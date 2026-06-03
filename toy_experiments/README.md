@@ -94,6 +94,11 @@ toy_experiments/outputs/medium/plots/
 toy_experiments/outputs/large/plots/
 ```
 
+Each plot directory also gets `audit_plot_outputs.txt` and `comparisons.txt`.
+`comparisons.txt` is derived from the existing CSV outputs and reports stability
+and validity relative-lift summaries such as MILP vs DPA and MILP vs TPA. Running
+`plot.sh` regenerates it without rerunning Gurobi or regenerating experiment CSVs.
+
 To plot one specific CSV:
 
 ```bash
