@@ -26,3 +26,6 @@ external/VPA-main/data/
 external/VPA-main/datasets/
 external/VPA-main/**/*.jsonl
 external/VPA-main/**/adapters*/
+
+#PHD Reference
+external/phd_reference
