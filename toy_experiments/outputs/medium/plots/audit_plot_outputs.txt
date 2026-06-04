@@ -1,0 +1,34 @@
+Default report plot audit
+
+CSV file used: toy_experiments/outputs/medium/results/benchmark_results.csv
+plot.sh reruns Gurobi: no
+
+Certified fraction definition:
+certified_fraction(B) = 100 * mean[ B < B_star ]
+B_star is the minimum attack budget returned by the corresponding baseline or MILP certificate.
+If B equals B_star, the attack is feasible, so the region is not certified at that budget.
+For stability, this is the percentage of evaluated stability regions where the clean output is guaranteed not to change under budget B.
+For validity, this is the percentage of evaluated validity regions where the harmful target output is guaranteed not to be forceable under budget B.
+
+Plots generated:
+- stability_one_token_per_row_budget_curve.svg
+- stability_one_prompt_budget_curve.svg
+- main_validity_budget_curve.svg
+- stability_certificate_vs_K.svg
+- validity_certificate_vs_K.svg
+
+Plot series:
+- stability_one_token_per_row_budget_curve.svg: Shared MILP all prompts, one token each, DPA weakest token
+  comparison: Shared MILP all prompts, one token each vs DPA weakest token: average certified-fraction lift 0.403 percentage points; relative lift 1.69%
+- stability_one_prompt_budget_curve.svg: Shared MILP one prompt, full sequence, DPA weakest token
+  comparison: Shared MILP one prompt, full sequence vs DPA weakest token: average certified-fraction lift 22 percentage points; relative lift 55.4%
+- main_validity_budget_curve.svg: Shared shard-aware MILP full sequence, TPA max-token phrase blocker, Plain DPA max-token phrase blocker
+  comparison: Shared shard-aware MILP full sequence vs TPA max-token phrase blocker: average certified-fraction lift 0 percentage points; relative lift 0%
+  comparison: TPA max-token phrase blocker vs Plain DPA max-token phrase blocker: average certified-fraction lift 0 percentage points; relative lift 0%
+  comparison: Shared shard-aware MILP full sequence vs Plain DPA max-token phrase blocker: average certified-fraction lift 0 percentage points; relative lift 0%
+- stability_certificate_vs_K.svg: Shared MILP full matrix, DPA weakest token
+  comparison: Shared MILP full matrix vs DPA weakest token: mean certified-budget lift 3.38 budget units; relative lift 45.8%
+- validity_certificate_vs_K.svg: Shared shard-aware MILP full sequence, TPA max-token phrase blocker, Plain DPA max-token phrase blocker
+  comparison: Shared shard-aware MILP full sequence vs TPA max-token phrase blocker: mean certified-budget lift 0.25 budget units; relative lift 3.45%
+  comparison: TPA max-token phrase blocker vs Plain DPA max-token phrase blocker: mean certified-budget lift 0 budget units; relative lift 0%
+  comparison: Shared shard-aware MILP full sequence vs Plain DPA max-token phrase blocker: mean certified-budget lift 0.25 budget units; relative lift 3.45%

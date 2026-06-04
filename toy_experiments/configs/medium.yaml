@@ -1,17 +1,17 @@
 name: medium
 generator: toy
 
-K_values: [10, 15, 20]
-N_values: [2, 3, 4]
-L_values: [3, 5, 7]
-T_values: [6]
+K_values: [15, 30]
+N_values: [5, 10]
+L_values: [5, 10]
+T_values: [7]
 
 delta_stab_values: [0.2]
 delta_val_values: [0.2]
 target_bias_values: [0.3]
 
 seed: 0
-budget_max: 25
+budget_max: 30
 
 influence_mode: dense
 stability_competitor_mode: all
@@ -19,6 +19,6 @@ objective_family: full
 make_budget_curves: true
 
 solver:
-  gurobi_threads: 0
+  gurobi_threads: 8
 
 output_dir: toy_experiments/outputs/medium/results
