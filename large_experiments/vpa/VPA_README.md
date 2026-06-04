@@ -64,11 +64,12 @@ Do not commit VPA-main generated data, adapters, model checkpoints, or output
 artifacts.
 
 Use environment variables for machine-specific storage. On Ada, use
-`/data2/$USER/Provably-Secure-NLG` as the large-experiment workspace so the
-source repo, virtualenv, caches, outputs, adapters, artifacts, and intermediate
-files all live under the same large-storage directory. See
+`/data2/$USER/Provably-Secure-NLG` as the experiment workspace so the source
+repo, shared `.venv`, caches, outputs, adapters, artifacts, and intermediate
+files all live under the same large-storage directory. The same `.venv` is used
+for toy experiments and large experiments. See
 `large_experiments/large_experiment_README.md` for the consolidated Ada setup
-and output-redirection workflow.
+and output-path workflow.
 
 ## Discovery
 
@@ -76,8 +77,8 @@ Discovery inspects paths without loading models:
 
 ```bash
 python -m large_experiments.vpa.integration.discover_vpa \
-  --adapter-dir "$FYP_LARGE_OUTPUT_ROOT/vpa/adapters_last3_lora" \
-  --test-path "$FYP_LARGE_OUTPUT_ROOT/vpa/data/test.jsonl" \
+  --adapter-dir "$FYP_LARGE_ROOT/vpa/adapters_last3_lora" \
+  --test-path "$FYP_LARGE_ROOT/vpa/data/test.jsonl" \
   --num-shards 1 \
   --output-dir large_experiments/vpa/outputs/vpa_integration_smoke \
   --cluster-username "$USER"
@@ -92,7 +93,7 @@ python -m large_experiments.vpa.integration.export_votes \
   --backend vpa \
   --enable-real-inference \
   --mode stability \
-  --adapter-dir "$FYP_LARGE_OUTPUT_ROOT/vpa/adapters_last3_lora" \
+  --adapter-dir "$FYP_LARGE_ROOT/vpa/adapters_last3_lora" \
   --model-name allenai/OLMo-2-0425-1B-Instruct \
   --output large_experiments/vpa/outputs/vpa_integration_smoke/stability_votes.jsonl \
   --num-examples 1 \
@@ -104,8 +105,9 @@ python -m large_experiments.vpa.integration.export_votes \
 This path must remain sequential: one process, one shard adapter at a time, no
 training, no multiprocessing, no thread pools, no process pools, and no job
 packing. Do not write large outputs to home directories. On Ada, run from the
-`/data2` workspace and use `FYP_LARGE_OUTPUT_ROOT` for generated experiment
-outputs and other regenerable large files.
+`/data2` workspace. Repo-relative outputs stay under `large_experiments/` when
+`FYP_LARGE_OUTPUT_ROOT` is unset; set it only when you explicitly want
+redirection.
 
 ## Gitignore Policy
 

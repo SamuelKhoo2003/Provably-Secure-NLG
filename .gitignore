@@ -1,5 +1,4 @@
 .venv/
-.venv-large/
 __pycache__/
 *.py[cod]
 .DS_Store
