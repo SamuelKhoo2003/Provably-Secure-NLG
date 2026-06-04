@@ -65,22 +65,8 @@ artifacts.
 
 Use environment variables for machine-specific storage. On Ada, keep the Git
 checkout in home and put bulky regenerable files under `/vol/bitbucket/$USER`.
-The helper scripts in `scripts/` create and configure that bitbucket
-environment:
-
-```bash
-cd ~/Projects/Provably-Secure-NLG
-bash large_experiments/scripts/setup_ada_large_experiments.sh
-source /vol/bitbucket/$USER/Provably-Secure-NLG/venvs/large-experiments/bin/activate
-source large_experiments/scripts/activate_ada_large_experiments.sh
-```
-
-The mock export, discovery, validation, schemas, and IO paths do not need
-PyTorch or model caches. `FYP_LARGE_OUTPUT_ROOT` redirects relative large
-experiment output paths only; local runs continue using the repository-relative
-defaults when the variable is unset. For example,
-`large_experiments/vpa/outputs/mock_stability_votes.jsonl` resolves to
-`$FYP_LARGE_OUTPUT_ROOT/vpa/outputs/mock_stability_votes.jsonl` on Ada.
+See `large_experiments/large_experiment_README.md` for the consolidated Ada
+setup and output-redirection workflow.
 
 ## Discovery
 
