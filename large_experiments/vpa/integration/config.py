@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from large_experiments.storage import resolve_large_output_path
+
 
 @dataclass(frozen=True)
 class VPAIntegrationConfig:
@@ -61,7 +63,7 @@ class VPAIntegrationConfig:
             dataset_dir=dataset_dir,
             test_path=dataset_dir / "test.jsonl",
             adapter_dir=resolved_vpa_dir / adapter_subdir,
-            output_dir=root / "large_experiments" / "vpa" / "outputs",
+            output_dir=resolve_large_output_path("large_experiments/vpa/outputs", base_dir=root),
             model_name=model_name,
             num_shards=num_shards,
             num_samples=num_samples,

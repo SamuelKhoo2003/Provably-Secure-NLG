@@ -6,6 +6,8 @@ import argparse
 import random
 from pathlib import Path
 
+from large_experiments.storage import resolve_large_output_path
+
 from .io import write_jsonl
 from .schemas import StabilityVoteRow, ValidityVoteRow
 
@@ -109,7 +111,7 @@ def write_mock_votes(
     if num_shards < 1:
         raise ValueError("num_shards must be at least 1")
 
-    output_path = Path(output_dir)
+    output_path = resolve_large_output_path(output_dir)
     stability_path = output_path / "stability_votes.jsonl"
     validity_path = output_path / "validity_votes.jsonl"
     write_jsonl(

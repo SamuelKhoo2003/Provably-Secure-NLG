@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from large_experiments.storage import resolve_large_output_path
+
 from .backends import TokenVoteBackend, VoteRequest, make_backend
 from .io import write_jsonl
 from .metadata import build_export_metadata, metadata_path_for_output, write_metadata
@@ -29,7 +31,7 @@ def export_stability_votes(
     """Export stability rows using clean sequential majority-prefix decoding."""
 
     _validate_dimensions(num_examples, num_positions, num_shards)
-    output_path = Path(output)
+    output_path = resolve_large_output_path(output)
     backend = backend or make_backend(backend_name, seed=seed)
     shard_ids = _select_shard_ids(backend, num_shards)
     rows: list[StabilityVoteRow] = []
@@ -95,7 +97,7 @@ def export_validity_votes(
     """Export validity rows using target-prefix decoding."""
 
     _validate_dimensions(num_examples, num_positions, num_shards)
-    output_path = Path(output)
+    output_path = resolve_large_output_path(output)
     backend = backend or make_backend(backend_name, seed=seed)
     shard_ids = _select_shard_ids(backend, num_shards)
     rows: list[ValidityVoteRow] = []
@@ -168,6 +170,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dtype", type=str, default="float16")
     parser.add_argument("--cluster-username", type=str, default=None)
     args = parser.parse_args(argv)
+    args.output = resolve_large_output_path(args.output)
 
     if args.backend == "vpa":
         setup = _build_vpa_backend_from_args(args)

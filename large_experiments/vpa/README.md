@@ -63,6 +63,25 @@ VPA-main can be supplied in one of three ways:
 Do not commit VPA-main generated data, adapters, model checkpoints, or output
 artifacts.
 
+Use environment variables for machine-specific storage. On Ada, the helper
+scripts in `scripts/` create and activate a bitbucket environment. A typical
+scratch setup is:
+
+```bash
+export FYP_BITBUCKET_ROOT="/vol/bitbucket/$USER/Provably-Secure-NLG"
+export FYP_LARGE_OUTPUT_ROOT="$FYP_BITBUCKET_ROOT/outputs/large_experiments"
+export PIP_CACHE_DIR="$FYP_BITBUCKET_ROOT/pip-cache"
+export TORCH_HOME="$FYP_BITBUCKET_ROOT/torch-cache"
+export HF_HOME="$FYP_BITBUCKET_ROOT/hf-cache"
+export TRANSFORMERS_CACHE="$HF_HOME"
+export XDG_CACHE_HOME="$FYP_BITBUCKET_ROOT/cache"
+```
+
+The mock export, discovery, validation, schemas, and IO paths do not need
+PyTorch or model caches. `FYP_LARGE_OUTPUT_ROOT` redirects relative large
+experiment output paths only; local runs continue using the repository-relative
+defaults when the variable is unset.
+
 ## Discovery
 
 Discovery inspects paths without loading models:

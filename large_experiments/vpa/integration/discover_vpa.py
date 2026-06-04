@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from large_experiments.storage import resolve_large_output_path
+
 from .metadata import write_metadata
 from .safety import validate_configured_paths
 
@@ -23,7 +25,7 @@ def discover_vpa(
 
     adapter_path = Path(adapter_dir)
     test_file = Path(test_path)
-    output_path = Path(output_dir)
+    output_path = resolve_large_output_path(output_dir)
     shard_ids = _discover_shard_ids(adapter_path)
     safety_report = validate_configured_paths(
         adapter_dir=adapter_path,
@@ -56,6 +58,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--cluster-username", type=str, default=None)
     parser.add_argument("--metadata-output", type=Path, default=None, help="Optional JSON file for discovery metadata")
     args = parser.parse_args(argv)
+    args.output_dir = resolve_large_output_path(args.output_dir)
+    if args.metadata_output is not None:
+        args.metadata_output = resolve_large_output_path(args.metadata_output)
 
     result = discover_vpa(
         adapter_dir=args.adapter_dir,
