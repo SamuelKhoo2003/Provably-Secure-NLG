@@ -64,10 +64,10 @@ Do not commit VPA-main generated data, adapters, model checkpoints, or output
 artifacts.
 
 Use environment variables for machine-specific storage. On Ada, use
-`/data2/$USER/Provably-Secure-NLG` as the experiment workspace so the source
-repo, shared `.venv`, caches, outputs, adapters, artifacts, and intermediate
-files all live under the same large-storage directory. The same `.venv` is used
-for toy experiments and large experiments. See
+`/data2/$USER/Projects/Provably-Secure-NLG` as the experiment workspace so the
+source repo, shared `.venv`, caches, outputs, adapters, artifacts, and
+intermediate files all live under the same large-storage directory. The same
+`.venv` is used for toy experiments and large experiments. See
 `large_experiments/large_experiment_README.md` for the consolidated Ada setup
 and output-path workflow.
 

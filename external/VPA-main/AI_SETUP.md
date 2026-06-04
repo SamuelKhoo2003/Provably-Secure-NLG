@@ -14,21 +14,28 @@
 > - If you need speed, optimize batch size, NOT concurrency.
 
 ## 1. File System Geography (Strict)
-We are running on a cluster with strict storage quotas. You must respect these paths:
+Use the repo-local workspace under `/data2/$USER/Projects/Provably-Secure-NLG` and keep shared runtime state inside the repository:
 
 | Purpose | Path | Persistence | Notes |
 | :--- | :--- | :--- | :--- |
-| **Code & Repos** | `/data/mwicker/` | **Permanent** | **WORKSPACE ROOT.** All git cloning, script writing, and project files MUST go here. |
-| **Datasets** | `/data/mwicker/datasets/` | **Permanent** | Store heavy raw data here. |
-| **Experiments** | `/data/mwicker/output/` | **Permanent** | Save model checkpoints, logs, and graphs here. |
-| **Virtual Env** | `/vol/bitbucket/mwicker/antigravity-env` | **Ephemeral** | The python environment lives here. |
-| **Home (`~`)** | `/homes/mwicker` | **FORBIDDEN** | **DO NOT WRITE HERE.** 2GB Limit. Writing here will crash the session. |
-
----
+| **Code & Repos** | `/data2/$USER/Projects/Provably-Secure-NLG` | **Permanent** | **WORKSPACE ROOT.** All git cloning, script writing, and project files MUST go here. |
+| **Virtual Env** | `/data2/$USER/Projects/Provably-Secure-NLG/.venv` | **Permanent** | Shared repo-local environment for toy and large experiments. |
+| **Caches** | `/data2/$USER/Projects/Provably-Secure-NLG/caches` | **Permanent** | Repo-local pip, torch, HF, and model caches. |
 
 ## 2. Environment Activation
-The system Python is broken. You **must** activate the virtual environment for every new terminal session or execution context.
+Activate the shared repo-local environment in every shell before running Python commands.
 
-**Activation Command:**
 ```bash
-source /vol/bitbucket/mwicker/antigravity-env/bin/activate
+cd /data2/$USER/Projects/Provably-Secure-NLG
+python3 -m virtualenv .venv
+source .venv/bin/activate
+
+mkdir -p caches/pip-cache caches/torch-cache caches/hf-cache caches/model-cache caches/cache
+
+export PIP_CACHE_DIR="$PWD/caches/pip-cache"
+export TORCH_HOME="$PWD/caches/torch-cache"
+export HF_HOME="$PWD/caches/hf-cache"
+export TRANSFORMERS_CACHE="$PWD/caches/model-cache"
+export XDG_CACHE_HOME="$PWD/caches/cache"
+export MODEL_CACHE_DIR="$PWD/caches/model-cache"
+```

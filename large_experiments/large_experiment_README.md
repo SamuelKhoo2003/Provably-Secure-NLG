@@ -1,19 +1,14 @@
 # Large Experiments
 
-This folder contains large-scale experiment integrations and machine setup
-helpers. The large-scale work shares the same repo-level environment as
-`toy_experiments/`.
+This folder contains large-scale experiment integrations and setup notes. The
+large-scale work shares the same repo-local `.venv/` and `caches/` directories
+as `toy_experiments/`.
 
 ## Layout
 
 ```text
 large_experiments/
   large_experiment_README.md
-  scripts/
-    setup_data2_experiments.sh
-    activate_data2_experiments.sh
-    setup_ada_large_experiments.sh      # deprecated compatibility helper
-    activate_ada_large_experiments.sh   # deprecated compatibility helper
   vpa/
     VPA_README.md
     integration/
@@ -28,14 +23,15 @@ Generated outputs and artifacts under `large_experiments/vpa/outputs/` and
 
 ## Ada /data2 Setup
 
-Use `/data2/$USER/Provably-Secure-NLG` as the Ada experiment workspace. The
-source repo, shared `.venv`, caches, generated vote artifacts, outputs,
-adapters, and intermediate files should all live inside that workspace.
+Use `/data2/$USER/Projects/Provably-Secure-NLG` as the Ada experiment
+workspace. The source repo, shared `.venv`, caches, generated vote artifacts,
+outputs, adapters, and intermediate files should all live inside that
+workspace.
 
 Target layout:
 
 ```text
-/data2/$USER/Provably-Secure-NLG/
+/data2/$USER/Projects/Provably-Secure-NLG/
   .venv/
   caches/
     pip-cache/
@@ -53,19 +49,22 @@ Target layout:
 Clone and set up the workspace:
 
 ```bash
-cd /data2/$USER
+cd /data2/$USER/Projects
 git clone <repo-url> Provably-Secure-NLG
 cd Provably-Secure-NLG
 
-bash large_experiments/scripts/setup_data2_experiments.sh
+python3 -m virtualenv .venv
 source .venv/bin/activate
-source large_experiments/scripts/activate_data2_experiments.sh
-```
 
-The setup script uses `python3 -m virtualenv .venv` because Ada Python
-installations may not support `python3 -m venv` when `ensurepip` is
-unavailable. It creates the shared repo virtualenv only if it does not already
-exist.
+mkdir -p caches/pip-cache caches/torch-cache caches/hf-cache caches/model-cache caches/cache
+
+export PIP_CACHE_DIR="$PWD/caches/pip-cache"
+export TORCH_HOME="$PWD/caches/torch-cache"
+export HF_HOME="$PWD/caches/hf-cache"
+export TRANSFORMERS_CACHE="$PWD/caches/model-cache"
+export XDG_CACHE_HOME="$PWD/caches/cache"
+export MODEL_CACHE_DIR="$PWD/caches/model-cache"
+```
 
 Both toy experiments and large experiments use this same `.venv`.
 
@@ -87,40 +86,29 @@ python -m large_experiments.vpa.integration.export_votes \
   --num-shards 3
 ```
 
-The activation helper exports:
-
-```bash
-FYP_PROJECT_ROOT
-FYP_LARGE_ROOT
-PIP_CACHE_DIR
-TORCH_HOME
-HF_HOME
-TRANSFORMERS_CACHE
-XDG_CACHE_HOME
-MODEL_CACHE_DIR
-```
-
 It intentionally does not set `FYP_LARGE_OUTPUT_ROOT` by default. With that
 variable unset, repo-relative large experiment outputs naturally stay under:
 
 ```text
-/data2/$USER/Provably-Secure-NLG/large_experiments/
+/data2/$USER/Projects/Provably-Secure-NLG/large_experiments/
 ```
 
 Verify the active environment:
 
 ```bash
 which python
-echo "$FYP_PROJECT_ROOT"
-echo "$FYP_LARGE_ROOT"
-echo "${FYP_LARGE_OUTPUT_ROOT:-<unset>}"
 echo "$PIP_CACHE_DIR"
+echo "$TORCH_HOME"
+echo "$HF_HOME"
+echo "$TRANSFORMERS_CACHE"
+echo "$XDG_CACHE_HOME"
+echo "$MODEL_CACHE_DIR"
 ```
 
 `which python` should point to:
 
 ```text
-/data2/$USER/Provably-Secure-NLG/.venv/bin/python
+/data2/$USER/Projects/Provably-Secure-NLG/.venv/bin/python
 ```
 
 Install dependencies after activating `.venv`:
@@ -132,9 +120,8 @@ pip install numpy pandas matplotlib pyyaml scipy gurobipy
 PyTorch is not installed automatically. Install it only if needed for real
 model or adapter inference.
 
-The old Ada setup and activation helpers are deprecated compatibility shims.
-They now print a deprecation message and delegate to the shared `/data2`
-helpers.
+The shared repo-local `.venv` and `caches/` setup is the supported path for
+both toy and large experiments.
 
 ## Output Paths
 
