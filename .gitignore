@@ -22,6 +22,9 @@ large_experiments/vpa/artifacts/*
 # dependency, not project source.
 large_experiments/vpa/external/VPA-main/
 
+# Historical Outputs
+toy_experiments/outputs/historical
+
 # Legacy external/VPA-main generated data and model outputs. Keep source code
 # visible, but do not commit datasets, JSONL data, adapters, or checkpoints.
 external/VPA-main/output/
