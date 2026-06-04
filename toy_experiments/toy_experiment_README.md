@@ -39,9 +39,15 @@ toy_experiments/configs/small.yaml
 toy_experiments/configs/medium.yaml
 toy_experiments/configs/large.yaml
 toy_experiments/configs/validity_demo.yaml
+toy_experiments/configs/smoke.yaml
 ```
 
 Each config writes results inside `toy_experiments/outputs/`.
+
+The `solver.gurobi_threads` config key controls Gurobi's internal solver
+threads. `0` uses Gurobi automatic mode; positive integers request a fixed
+thread limit. `GUROBI_THREADS` can override the YAML value for a run. On shared
+machines, avoid blindly setting very high values.
 
 ## Run A Benchmark
 

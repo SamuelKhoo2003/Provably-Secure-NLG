@@ -18,4 +18,7 @@ stability_competitor_mode: all
 objective_family: full
 make_budget_curves: true
 
+solver:
+  gurobi_threads: 0
+
 output_dir: toy_experiments/outputs/medium/results

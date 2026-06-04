@@ -1,24 +1,24 @@
-name: small
+name: smoke
 generator: toy
 
-K_values: [6,8,10]
-N_values: [1,2,3]
-L_values: [2,4,6]
-T_values: [4]
+K_values: [4]
+N_values: [1]
+L_values: [2]
+T_values: [3]
 
 delta_stab_values: [0.2]
 delta_val_values: [0.2]
 target_bias_values: [0.3]
 
 seed: 0
-budget_max: 12
+budget_max: 4
 
 influence_mode: dense
 stability_competitor_mode: all
 objective_family: full
-make_budget_curves: true
+make_budget_curves: false
 
 solver:
   gurobi_threads: 0
 
-output_dir: toy_experiments/outputs/small/results
+output_dir: toy_experiments/outputs/smoke/results

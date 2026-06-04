@@ -27,4 +27,6 @@ make_stability_objectives: false
 make_validity_objectives: true
 make_stability_budget_curves: false
 make_validity_budget_curves: true
+solver:
+  gurobi_threads: 0
 output_dir: toy_experiments/outputs/validity_demo/results

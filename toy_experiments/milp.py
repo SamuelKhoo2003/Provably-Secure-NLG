@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from typing import Any
 
 import gurobipy as gp
@@ -53,6 +54,7 @@ def solve_structured_stability(
     q_rows: int = 1,
     r_cols: int = 1,
     competitor_mode: str = "all",
+    gurobi_threads: int | None = None,
 ) -> CertificateResult:
     """Minimize poisoned shards needed to destabilize q rows by r token positions."""
     K, N, L, _ = _validate_stability_shapes(votes, clean_counts, clean_pred, runner_up, influence)
@@ -61,7 +63,7 @@ def solve_structured_stability(
     if r_cols < 1 or r_cols > L:
         raise ValueError(f"r_cols must be in [1, {L}]")
 
-    model, a = _make_model(K, f"row_col_stability_q{q_rows}_r{r_cols}")
+    model, a = _make_model(K, f"row_col_stability_q{q_rows}_r{r_cols}", gurobi_threads=gurobi_threads)
     z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up, influence, competitor_mode)
     y_row = model.addVars(N, vtype=GRB.BINARY, name="y_row")
     _add_at_least_r_row_constraints(model, z, y_row, N, L, q_rows=q_rows, r_cols=r_cols)
@@ -78,6 +80,7 @@ def solve_row_col_validity(
     definition: str = "at_least_q_rows",
     *,
     clean_counts: np.ndarray | None = None,
+    gurobi_threads: int | None = None,
 ) -> CertificateResult:
     """Minimize poisoned shards needed to force harmful target sequences."""
     counts, target, T = _resolve_validity_args(counts, clean_counts, target, T)
@@ -85,7 +88,7 @@ def solve_row_col_validity(
     if q_rows < 1 or q_rows > N:
         raise ValueError(f"q_rows must be in [1, {N}]")
 
-    model, a = _make_model(K, f"row_col_validity_{definition}")
+    model, a = _make_model(K, f"row_col_validity_{definition}", gurobi_threads=gurobi_threads)
     z = _add_validity_cell_constraints(model, a, votes, counts, target, T, influence)
     y_row = None
     if definition == "at_least_q_rows":
@@ -100,11 +103,43 @@ def solve_row_col_validity(
     return _optimize_and_extract(result_name, model, a, z, y_row=y_row)
 
 
-def _make_model(K: int, name: str) -> tuple[gp.Model, gp.tupledict]:
+def resolve_gurobi_threads(gurobi_threads: int | None = None) -> int:
+    """Resolve Gurobi Threads with explicit argument > env var > default 0.
+
+    ``0`` is Gurobi automatic mode. Positive integers request a fixed maximum
+    thread count. Negative values are intentionally rejected.
+    """
+    if gurobi_threads is not None:
+        return _validate_gurobi_threads(gurobi_threads, "gurobi_threads")
+    env_value = os.environ.get("GUROBI_THREADS")
+    if env_value is not None:
+        return _validate_gurobi_threads(env_value, "GUROBI_THREADS")
+    return 0
+
+
+def _validate_gurobi_threads(value: object, source: str) -> int:
+    if isinstance(value, bool):
+        raise ValueError(f"{source} must be an integer >= 0")
+    if isinstance(value, int):
+        threads = value
+    elif isinstance(value, str):
+        try:
+            threads = int(value)
+        except ValueError as exc:
+            raise ValueError(f"{source} must be an integer >= 0") from exc
+    else:
+        raise ValueError(f"{source} must be an integer >= 0")
+    if threads < 0:
+        raise ValueError(f"{source} must be >= 0; use 0 for Gurobi automatic mode")
+    return threads
+
+
+def _make_model(K: int, name: str, gurobi_threads: int | None = None) -> tuple[gp.Model, gp.tupledict]:
     env = gp.Env(empty=True)
     env.setParam("OutputFlag", 0)
     env.start()
     model = gp.Model(name, env=env)
+    model.setParam("Threads", resolve_gurobi_threads(gurobi_threads))
     model._env = env
     a = model.addVars(K, vtype=GRB.BINARY, name="a")
     model.setObjective(gp.quicksum(a[k] for k in range(K)), GRB.MINIMIZE)

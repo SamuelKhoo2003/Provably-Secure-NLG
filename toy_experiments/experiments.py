@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Iterable
+import os
 from pathlib import Path
 from time import perf_counter
 
@@ -35,6 +36,7 @@ from .csv_io import (
 from .data import ToyData, generate_toy_votes, generate_validity_demo_votes, stability_margins
 from .milp import (
     CertificateResult,
+    resolve_gurobi_threads,
     solve_row_col_validity,
     solve_structured_stability,
 )
@@ -116,6 +118,7 @@ def benchmark_scale(
     row_difficulty_jitter: bool = True,
     position_difficulty_jitter: bool = True,
     budget_plot_num_points: int | None = None,
+    gurobi_threads: int | None = None,
 ) -> list[dict[str, object]]:
     """Generate benchmark CSV rows for the configured parameter grid.
 
@@ -148,6 +151,8 @@ def benchmark_scale(
             verbose=verbose,
         )
         return []
+    resolved_gurobi_threads = resolve_gurobi_threads(gurobi_threads)
+    print(f"Gurobi Threads = {resolved_gurobi_threads}")
     output_dir = Path(save_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     rows: list[dict[str, object]] = []
@@ -204,6 +209,7 @@ def benchmark_scale(
                                     stability_competitor_mode=stability_competitor_mode,
                                     make_stability_objectives=objective_flags["make_stability_objectives"],
                                     make_validity_objectives=objective_flags["make_validity_objectives"],
+                                    gurobi_threads=resolved_gurobi_threads,
                                 )
                                 runtime_total = perf_counter() - start
                                 row = {
@@ -269,6 +275,7 @@ def benchmark_scale(
                                             stability_competitor_mode=stability_competitor_mode,
                                             make_stability_curves=objective_flags["make_stability_budget_curves"],
                                             make_validity_curves=objective_flags["make_validity_budget_curves"],
+                                            gurobi_threads=resolved_gurobi_threads,
                                         )
                                     )
                                 print(
@@ -1671,6 +1678,7 @@ def _solve_benchmark_certificates(
     stability_competitor_mode: str = "all",
     make_stability_objectives: bool = True,
     make_validity_objectives: bool = True,
+    gurobi_threads: int | None = None,
 ) -> list[CertificateResult]:
     """Solve the certificate set stored in benchmark CSV rows."""
     N = data.stab_votes.shape[1]
@@ -1680,24 +1688,56 @@ def _solve_benchmark_certificates(
         results.extend(
             [
                 solve_structured_stability(
-                    data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=1, competitor_mode=stability_competitor_mode
+                    data.stab_votes,
+                    data.stab_counts,
+                    data.clean_pred,
+                    data.runner_up,
+                    data.influence,
+                    q_rows=1,
+                    r_cols=1,
+                    competitor_mode=stability_competitor_mode,
+                    gurobi_threads=gurobi_threads,
                 ),
                 solve_structured_stability(
-                    data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=1, r_cols=L, competitor_mode=stability_competitor_mode
+                    data.stab_votes,
+                    data.stab_counts,
+                    data.clean_pred,
+                    data.runner_up,
+                    data.influence,
+                    q_rows=1,
+                    r_cols=L,
+                    competitor_mode=stability_competitor_mode,
+                    gurobi_threads=gurobi_threads,
                 ),
                 solve_structured_stability(
-                    data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=N, r_cols=1, competitor_mode=stability_competitor_mode
+                    data.stab_votes,
+                    data.stab_counts,
+                    data.clean_pred,
+                    data.runner_up,
+                    data.influence,
+                    q_rows=N,
+                    r_cols=1,
+                    competitor_mode=stability_competitor_mode,
+                    gurobi_threads=gurobi_threads,
                 ),
                 solve_structured_stability(
-                    data.stab_votes, data.stab_counts, data.clean_pred, data.runner_up, data.influence, q_rows=N, r_cols=L, competitor_mode=stability_competitor_mode
+                    data.stab_votes,
+                    data.stab_counts,
+                    data.clean_pred,
+                    data.runner_up,
+                    data.influence,
+                    q_rows=N,
+                    r_cols=L,
+                    competitor_mode=stability_competitor_mode,
+                    gurobi_threads=gurobi_threads,
                 ),
             ]
         )
     if make_validity_objectives:
         results.extend(
             [
-                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1),
-                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=N),
+                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=1, gurobi_threads=gurobi_threads),
+                solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=N, gurobi_threads=gurobi_threads),
             ]
         )
     return results
@@ -1785,6 +1825,7 @@ def compute_radius_derived_budget_curve_rows(
     stability_competitor_mode: str = "all",
     make_stability_curves: bool = True,
     make_validity_curves: bool = True,
+    gurobi_threads: int | None = None,
 ) -> list[dict[str, object]]:
     """Build long-format radius-derived certified-fraction curve rows."""
     del T
@@ -1801,12 +1842,17 @@ def compute_radius_derived_budget_curve_rows(
                 (
                     "Shared MILP",
                     "stability_one_token_per_prompt",
-                    _shared_stability_row_radii(data, r_cols=1, competitor_mode=stability_competitor_mode),
+                    _shared_stability_row_radii(data, r_cols=1, competitor_mode=stability_competitor_mode, gurobi_threads=gurobi_threads),
                 ),
                 (
                     "Shared MILP",
                     "stability_full_sequence_per_prompt",
-                    _shared_stability_row_radii(data, r_cols=data.stab_votes.shape[2], competitor_mode=stability_competitor_mode),
+                    _shared_stability_row_radii(
+                        data,
+                        r_cols=data.stab_votes.shape[2],
+                        competitor_mode=stability_competitor_mode,
+                        gurobi_threads=gurobi_threads,
+                    ),
                 ),
             ]
         )
@@ -1841,7 +1887,7 @@ def compute_radius_derived_budget_curve_rows(
                 (
                     "Shared MILP",
                     "validity_full_harmful_sequence_per_prompt",
-                    _shared_validity_row_radii(data),
+                    _shared_validity_row_radii(data, gurobi_threads=gurobi_threads),
                 ),
                 (
                     "Atomic phrase aggregation",
@@ -1870,7 +1916,7 @@ def compute_radius_derived_budget_curve_rows(
     return rows
 
 
-def compute_structured_stability_grid(data: ToyData, competitor_mode: str = "all") -> np.ndarray:
+def compute_structured_stability_grid(data: ToyData, competitor_mode: str = "all", gurobi_threads: int | None = None) -> np.ndarray:
     """Compute ``B*(q,r)`` for every prompt-row/token-position stability objective."""
     N = data.stab_votes.shape[1]
     L = data.stab_votes.shape[2]
@@ -1886,22 +1932,23 @@ def compute_structured_stability_grid(data: ToyData, competitor_mode: str = "all
                 q_rows=q_rows,
                 r_cols=r_cols,
                 competitor_mode=competitor_mode,
+                gurobi_threads=gurobi_threads,
             )
             grid[q_rows - 1, r_cols - 1] = -1 if result.B_star is None else result.B_star
     return grid
 
 
-def compute_validity_q_curve(data: ToyData, T: int) -> list[int]:
+def compute_validity_q_curve(data: ToyData, T: int, gurobi_threads: int | None = None) -> list[int]:
     """Compute validity budgets for one harmful sequence through all prompts."""
     N = data.val_votes.shape[1]
     values = []
     for q_rows in range(1, N + 1):
-        result = solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=q_rows)
+        result = solve_row_col_validity(data.val_votes, data.val_counts, data.target, T, data.influence, q_rows=q_rows, gurobi_threads=gurobi_threads)
         values.append(-1 if result.B_star is None else result.B_star)
     return values
 
 
-def _shared_stability_row_radii(data: ToyData, r_cols: int, competitor_mode: str = "all") -> np.ndarray:
+def _shared_stability_row_radii(data: ToyData, r_cols: int, competitor_mode: str = "all", gurobi_threads: int | None = None) -> np.ndarray:
     _, N, _ = data.stab_votes.shape
     radii = np.full(N, np.nan, dtype=float)
     for i in range(N):
@@ -1915,13 +1962,14 @@ def _shared_stability_row_radii(data: ToyData, r_cols: int, competitor_mode: str
             q_rows=1,
             r_cols=r_cols,
             competitor_mode=competitor_mode,
+            gurobi_threads=gurobi_threads,
         )
         if result.is_optimal and result.B_star is not None:
             radii[i] = float(result.B_star)
     return radii
 
 
-def _shared_validity_row_radii(data: ToyData) -> np.ndarray:
+def _shared_validity_row_radii(data: ToyData, gurobi_threads: int | None = None) -> np.ndarray:
     _, N, _ = data.val_votes.shape
     T = data.val_counts.shape[2]
     radii = np.full(N, np.nan, dtype=float)
@@ -1934,6 +1982,7 @@ def _shared_validity_row_radii(data: ToyData) -> np.ndarray:
             T,
             data.influence[:, row_slice, :],
             q_rows=1,
+            gurobi_threads=gurobi_threads,
         )
         if result.is_optimal and result.B_star is not None:
             radii[i] = float(result.B_star)
@@ -2296,8 +2345,10 @@ def _read_flat_yaml_config(path: str | Path) -> dict[str, object]:
     if not config_path.exists():
         raise ConfigError(f"config file not found: {config_path}")
     config: dict[str, object] = {}
+    current_section: str | None = None
     for line_number, raw_line in enumerate(config_path.read_text().splitlines(), start=1):
-        line = raw_line.split("#", maxsplit=1)[0].strip()
+        uncommented = raw_line.split("#", maxsplit=1)[0]
+        line = uncommented.strip()
         if not line:
             continue
         if ":" not in line:
@@ -2306,8 +2357,20 @@ def _read_flat_yaml_config(path: str | Path) -> dict[str, object]:
         key = key.strip()
         if not key:
             raise ConfigError(f"invalid config line {line_number} in {config_path}: empty key")
+        is_indented = uncommented[: len(uncommented) - len(uncommented.lstrip())] != ""
+        if is_indented:
+            if current_section is None:
+                raise ConfigError(f"invalid config line {line_number} in {config_path}: nested field without section")
+            key = f"{current_section}.{key}"
+        else:
+            current_section = None
         if key == "preset":
             raise ConfigError(f"field `preset` in {config_path} is not supported in YAML configs; use `name` for metadata")
+        if value.strip() == "":
+            if is_indented:
+                raise ConfigError(f"invalid config line {line_number} in {config_path}: nested sections are not supported")
+            current_section = key
+            continue
         config[key] = _parse_scalar_config_value(value)
     return config
 
@@ -2361,6 +2424,27 @@ def _optional_int(config: dict[str, object], path: Path, key: str, default: int)
     return int(value)
 
 
+def _optional_nonnegative_int(config: dict[str, object], path: Path, key: str, default: int) -> int:
+    value = _optional_int(config, path, key, default)
+    if value < 0:
+        raise ConfigError(f"field `{key}` in {path} must be >= 0; use 0 for Gurobi automatic mode")
+    return value
+
+
+def _resolve_config_gurobi_threads(config: dict[str, object], path: Path) -> int:
+    yaml_threads = _optional_nonnegative_int(config, path, "solver.gurobi_threads", 0)
+    env_value = os.environ.get("GUROBI_THREADS")
+    if env_value is None:
+        return yaml_threads
+    # Benchmark config priority is GUROBI_THREADS env var > YAML
+    # solver.gurobi_threads > default 0. Direct solver calls can still pass an
+    # explicit gurobi_threads argument, which has priority inside milp.py.
+    try:
+        return resolve_gurobi_threads(None)
+    except ValueError as exc:
+        raise ConfigError(str(exc)) from exc
+
+
 def _optional_bool(config: dict[str, object], path: Path, key: str, default: bool) -> bool:
     if key not in config:
         return default
@@ -2398,6 +2482,7 @@ def load_experiment_config(path: str | Path) -> dict[str, object]:
         "save_dir": _require_str(config, config_path, "output_dir"),
         "objective_family": _require_str(config, config_path, "objective_family", {"full", "validity_only"}),
         "make_budget_curves": _require_bool(config, config_path, "make_budget_curves"),
+        "gurobi_threads": _resolve_config_gurobi_threads(config, config_path),
     }
     if generator == "toy":
         benchmark_config.update(
@@ -2650,6 +2735,7 @@ def main() -> None:
             row_difficulty_jitter=config.get("row_difficulty_jitter", True),
             position_difficulty_jitter=config.get("position_difficulty_jitter", True),
             budget_plot_num_points=config.get("budget_plot_num_points"),
+            gurobi_threads=config["gurobi_threads"],
         )
     elif args.command == "plot-csv":
         plot_benchmark_csv(args.csv, save_dir=args.save_dir)
