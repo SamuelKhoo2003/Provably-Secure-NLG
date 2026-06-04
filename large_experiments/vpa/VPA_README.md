@@ -63,10 +63,12 @@ VPA-main can be supplied in one of three ways:
 Do not commit VPA-main generated data, adapters, model checkpoints, or output
 artifacts.
 
-Use environment variables for machine-specific storage. On Ada, keep the Git
-checkout in home and put bulky regenerable files under `/vol/bitbucket/$USER`.
-See `large_experiments/large_experiment_README.md` for the consolidated Ada
-setup and output-redirection workflow.
+Use environment variables for machine-specific storage. On Ada, use
+`/data2/$USER/Provably-Secure-NLG` as the large-experiment workspace so the
+source repo, virtualenv, caches, outputs, adapters, artifacts, and intermediate
+files all live under the same large-storage directory. See
+`large_experiments/large_experiment_README.md` for the consolidated Ada setup
+and output-redirection workflow.
 
 ## Discovery
 
@@ -101,9 +103,9 @@ python -m large_experiments.vpa.integration.export_votes \
 
 This path must remain sequential: one process, one shard adapter at a time, no
 training, no multiprocessing, no thread pools, no process pools, and no job
-packing. Do not write large outputs to home directories. On Ada, use
-`FYP_LARGE_OUTPUT_ROOT` for generated experiment outputs and other regenerable
-large files.
+packing. Do not write large outputs to home directories. On Ada, run from the
+`/data2` workspace and use `FYP_LARGE_OUTPUT_ROOT` for generated experiment
+outputs and other regenerable large files.
 
 ## Gitignore Policy
 

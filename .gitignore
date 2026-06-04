@@ -1,4 +1,5 @@
 .venv/
+.venv-large/
 __pycache__/
 *.py[cod]
 .DS_Store
@@ -8,6 +9,9 @@ __pycache__/
 
 # Large binary/array vote artifacts should stay out of Git.
 *.npz
+
+# Repo-local large-experiment caches.
+caches/
 
 # VPA large-experiment generated outputs. Keep directory placeholders.
 large_experiments/vpa/outputs/*

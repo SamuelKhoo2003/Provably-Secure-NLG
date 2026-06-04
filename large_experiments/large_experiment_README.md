@@ -9,8 +9,10 @@ helpers. The large-scale work is separate from `toy_experiments/`.
 large_experiments/
   large_experiment_README.md
   scripts/
-    setup_ada_large_experiments.sh
-    activate_ada_large_experiments.sh
+    setup_data2_large_experiments.sh
+    activate_data2_large_experiments.sh
+    setup_ada_large_experiments.sh      # deprecated compatibility helper
+    activate_ada_large_experiments.sh   # deprecated compatibility helper
   vpa/
     VPA_README.md
     integration/
@@ -23,44 +25,49 @@ large_experiments/
 Generated outputs and artifacts under `large_experiments/vpa/outputs/` and
 `large_experiments/vpa/artifacts/` are gitignored except for `.gitkeep`.
 
-## Ada Setup
+## Ada /data2 Setup
 
-Use this workflow when the source repo lives in your Ada home directory but
-large regenerable files need to live under bitbucket.
+Use `/data2/$USER/Provably-Secure-NLG` as the main Ada large-experiment
+workspace. The source repo, large-experiment virtualenv, caches, generated vote
+artifacts, outputs, adapters, and intermediate files should all live inside
+that workspace.
 
-Intended layout:
+Target layout:
 
 ```text
-~/Projects/Provably-Secure-NLG
-  source repo, git, scripts, configs, docs
+/data2/$USER/Provably-Secure-NLG/
+  source repo
+  .venv-large/
+  caches/
+    pip-cache/
+    torch-cache/
+    hf-cache/
+    model-cache/
+    cache/
   large_experiments/
-    scripts/
     vpa/
-
-/vol/bitbucket/$USER/Provably-Secure-NLG/
-  venvs/
-    large-experiments/
-  outputs/
-    large_experiments/
-  pip-cache/
-  torch-cache/
-  hf-cache/
-  model-cache/
-  cache/
+      outputs/
+      artifacts/
 ```
 
-Do not move the Git checkout itself to bitbucket. `/vol/bitbucket` is not backed
-up, so only put regenerable environments, downloads, caches, adapters, and
-intermediate outputs there. Keep source code and final important results in Git,
-home, or another backed-up location.
-
-Run these commands from the repository root:
+Clone and create the workspace:
 
 ```bash
-cd ~/Projects/Provably-Secure-NLG
-bash large_experiments/scripts/setup_ada_large_experiments.sh
-source /vol/bitbucket/$USER/Provably-Secure-NLG/venvs/large-experiments/bin/activate
-source large_experiments/scripts/activate_ada_large_experiments.sh
+mkdir -p /data2/$USER
+cd /data2/$USER
+git clone <repo-url> Provably-Secure-NLG
+cd Provably-Secure-NLG
+
+python3 -m virtualenv .venv-large
+source .venv-large/bin/activate
+```
+
+Or run the setup helper from the repository root:
+
+```bash
+bash large_experiments/scripts/setup_data2_large_experiments.sh
+source .venv-large/bin/activate
+source large_experiments/scripts/activate_data2_large_experiments.sh
 ```
 
 The setup script uses `python3 -m virtualenv` because Ada Python installations
@@ -70,9 +77,8 @@ the venv only if it does not already exist.
 The activation helper exports:
 
 ```bash
-FYP_BITBUCKET_ROOT
+FYP_LARGE_ROOT
 FYP_LARGE_OUTPUT_ROOT
-FYP_LARGE_VENV_DIR
 PIP_CACHE_DIR
 TORCH_HOME
 HF_HOME
@@ -85,19 +91,19 @@ Verify the active environment:
 
 ```bash
 which python
+echo "$FYP_LARGE_ROOT"
 echo "$FYP_LARGE_OUTPUT_ROOT"
 echo "$PIP_CACHE_DIR"
-quota -s
-du -sh /vol/bitbucket/$USER/Provably-Secure-NLG
+du -sh /data2/$USER/Provably-Secure-NLG
 ```
 
 `which python` should point to:
 
 ```text
-/vol/bitbucket/$USER/Provably-Secure-NLG/venvs/large-experiments/bin/python
+/data2/$USER/Provably-Secure-NLG/.venv-large/bin/python
 ```
 
-Install lightweight non-Torch dependencies after activating the bitbucket venv:
+Install lightweight non-Torch dependencies after activating `.venv-large`:
 
 ```bash
 pip install numpy pandas matplotlib pyyaml scipy gurobipy
@@ -110,7 +116,10 @@ pip install torch --index-url https://download.pytorch.org/whl/cpu
 ```
 
 CUDA PyTorch can take several GB, so install it only when needed and only into
-the bitbucket venv, not home quota.
+the `/data2` workspace.
+
+The old Ada setup and activation helpers are deprecated compatibility shims.
+They now print a deprecation message and delegate to the `/data2` helpers.
 
 ## Output Redirection
 
@@ -127,16 +136,16 @@ large_experiments/vpa/outputs/mock_stability_votes.jsonl
 
 stays relative to the repo.
 
-When `FYP_LARGE_OUTPUT_ROOT` is set:
+When the `/data2` activation helper sets `FYP_LARGE_OUTPUT_ROOT` to:
 
 ```text
-large_experiments/vpa/outputs/mock_stability_votes.jsonl
+/data2/$USER/Provably-Secure-NLG/large_experiments
 ```
 
-resolves to:
+the same repo-style output argument resolves to:
 
 ```text
-$FYP_LARGE_OUTPUT_ROOT/vpa/outputs/mock_stability_votes.jsonl
+/data2/$USER/Provably-Secure-NLG/large_experiments/vpa/outputs/mock_stability_votes.jsonl
 ```
 
 Prefer repo-style relative output arguments for integration commands:
