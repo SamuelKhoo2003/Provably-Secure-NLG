@@ -40,7 +40,7 @@ Ada large-experiment storage is ready.
 Activate it with:
 
   source "$VENV_DIR/bin/activate"
-  source "$(pwd)/scripts/activate_ada_large_experiments.sh"
+  source "$(pwd)/large_experiments/scripts/activate_ada_large_experiments.sh"
 
 Environment for this setup:
 

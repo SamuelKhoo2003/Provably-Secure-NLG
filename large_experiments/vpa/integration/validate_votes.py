@@ -6,6 +6,8 @@ import argparse
 from pathlib import Path
 from typing import Any
 
+from large_experiments.storage import resolve_large_output_path
+
 from .io import read_jsonl
 from .schemas import compute_majority_token_id, compute_vote_counts
 
@@ -87,14 +89,15 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Validate a VPA token vote JSONL artifact.")
     parser.add_argument("path", type=Path, help="Path to stability or validity vote JSONL")
     args = parser.parse_args(argv)
+    path = resolve_large_output_path(args.path)
 
     try:
-        row_count = validate_vote_file(args.path)
+        row_count = validate_vote_file(path)
     except (OSError, ValueError) as exc:
-        print(f"Validation failed for {args.path}: {exc}")
+        print(f"Validation failed for {path}: {exc}")
         return 1
 
-    print(f"Validation passed for {args.path}: {row_count} rows")
+    print(f"Validation passed for {path}: {row_count} rows")
     return 0
 
 

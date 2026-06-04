@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-  echo "This script should be sourced, not executed:" >&2
-  echo "  source scripts/activate_ada_large_experiments.sh" >&2
+  echo "This script should be sourced:" >&2
+  echo "  source large_experiments/scripts/activate_ada_large_experiments.sh" >&2
   exit 1
 fi
 

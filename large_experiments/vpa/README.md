@@ -63,24 +63,24 @@ VPA-main can be supplied in one of three ways:
 Do not commit VPA-main generated data, adapters, model checkpoints, or output
 artifacts.
 
-Use environment variables for machine-specific storage. On Ada, the helper
-scripts in `scripts/` create and activate a bitbucket environment. A typical
-scratch setup is:
+Use environment variables for machine-specific storage. On Ada, keep the Git
+checkout in home and put bulky regenerable files under `/vol/bitbucket/$USER`.
+The helper scripts in `scripts/` create and configure that bitbucket
+environment:
 
 ```bash
-export FYP_BITBUCKET_ROOT="/vol/bitbucket/$USER/Provably-Secure-NLG"
-export FYP_LARGE_OUTPUT_ROOT="$FYP_BITBUCKET_ROOT/outputs/large_experiments"
-export PIP_CACHE_DIR="$FYP_BITBUCKET_ROOT/pip-cache"
-export TORCH_HOME="$FYP_BITBUCKET_ROOT/torch-cache"
-export HF_HOME="$FYP_BITBUCKET_ROOT/hf-cache"
-export TRANSFORMERS_CACHE="$HF_HOME"
-export XDG_CACHE_HOME="$FYP_BITBUCKET_ROOT/cache"
+cd ~/Projects/Provably-Secure-NLG
+bash large_experiments/scripts/setup_ada_large_experiments.sh
+source /vol/bitbucket/$USER/Provably-Secure-NLG/venvs/large-experiments/bin/activate
+source large_experiments/scripts/activate_ada_large_experiments.sh
 ```
 
 The mock export, discovery, validation, schemas, and IO paths do not need
 PyTorch or model caches. `FYP_LARGE_OUTPUT_ROOT` redirects relative large
 experiment output paths only; local runs continue using the repository-relative
-defaults when the variable is unset.
+defaults when the variable is unset. For example,
+`large_experiments/vpa/outputs/mock_stability_votes.jsonl` resolves to
+`$FYP_LARGE_OUTPUT_ROOT/vpa/outputs/mock_stability_votes.jsonl` on Ada.
 
 ## Discovery
 
@@ -88,11 +88,11 @@ Discovery inspects paths without loading models:
 
 ```bash
 python -m large_experiments.vpa.integration.discover_vpa \
-  --adapter-dir /data/<username>/output/adapters_last3_lora \
-  --test-path /data/<username>/VPA/data/test.jsonl \
+  --adapter-dir "$FYP_LARGE_OUTPUT_ROOT/vpa/adapters_last3_lora" \
+  --test-path "$FYP_LARGE_OUTPUT_ROOT/vpa/data/test.jsonl" \
   --num-shards 1 \
-  --output-dir /data/<username>/output/vpa_integration_smoke \
-  --cluster-username <username>
+  --output-dir large_experiments/vpa/outputs/vpa_integration_smoke \
+  --cluster-username "$USER"
 ```
 
 ## Cluster-Only Real Smoke
@@ -104,20 +104,20 @@ python -m large_experiments.vpa.integration.export_votes \
   --backend vpa \
   --enable-real-inference \
   --mode stability \
-  --adapter-dir /data/<username>/output/adapters_last3_lora \
+  --adapter-dir "$FYP_LARGE_OUTPUT_ROOT/vpa/adapters_last3_lora" \
   --model-name allenai/OLMo-2-0425-1B-Instruct \
-  --output /data/<username>/output/vpa_integration_smoke/stability_votes.jsonl \
+  --output large_experiments/vpa/outputs/vpa_integration_smoke/stability_votes.jsonl \
   --num-examples 1 \
   --num-positions 1 \
   --num-shards 1 \
-  --cluster-username <username>
+  --cluster-username "$USER"
 ```
 
 This path must remain sequential: one process, one shard adapter at a time, no
 training, no multiprocessing, no thread pools, no process pools, and no job
-packing. Do not write large outputs to home directories. Use configured `/data`
-roots for datasets and `/data/<username>/output` for generated experiment
-outputs.
+packing. Do not write large outputs to home directories. On Ada, use
+`FYP_LARGE_OUTPUT_ROOT` for generated experiment outputs and other regenerable
+large files.
 
 ## Gitignore Policy
 
