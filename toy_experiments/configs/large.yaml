@@ -1,7 +1,7 @@
 name: large
 generator: toy
 
-K_values: [25, 50, 75]
+K_values: [25, 50]
 N_values: [15, 30]
 L_values: [20]
 T_values: [15]
