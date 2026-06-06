@@ -15,6 +15,7 @@ from toy_experiments.experiments import (
     ConfigError,
     build_parser,
     load_experiment_config,
+    plot_sweep_csv,
 )
 from toy_experiments.milp import solve_structured_stability
 
@@ -54,13 +55,20 @@ class StabilityCompetitorConfigTests(unittest.TestCase):
         self.assertNotIn("competitor_mode", parameters)
         self.assertNotIn("runner_up", parameters)
 
-    def test_old_csv_mode_column_is_tolerated_as_unused_metadata(self) -> None:
+    def test_plotting_tolerates_old_csv_mode_column(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "old.csv"
-            path.write_text("K,stability_competitor_mode,row_col_stab_q1_r1\n4,runner_up,2\n")
+            path.write_text(
+                "K,N,L,stability_competitor_mode,dpa_stab_row_radius_qN,"
+                "row_col_stab_qN_r1,row_col_stab_qN_rL\n"
+                "4,1,1,runner_up,1,2,2\n"
+            )
             rows = read_rows_csv(path)
+            plot_dir = Path(temp_dir) / "plots"
+            plot_sweep_csv(str(path), "K", str(plot_dir))
+            self.assertTrue((plot_dir / "sweep_K_stability_certificate_vs_K.svg").exists())
         self.assertEqual(rows[0]["stability_competitor_mode"], "runner_up")
-        self.assertEqual(rows[0]["row_col_stab_q1_r1"], 2)
+        self.assertEqual(rows[0]["row_col_stab_qN_r1"], 2)
 
     def test_report_facing_plot_labels_do_not_name_runner_up(self) -> None:
         labels = [

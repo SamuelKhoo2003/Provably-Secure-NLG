@@ -209,7 +209,7 @@ def plain_dpa_validity_token_budgets(data: ToyData) -> np.ndarray:
 
 
 def phd_margin_stability_budgets(data: ToyData) -> np.ndarray:
-    margins = stability_margins(data.stab_counts, data.clean_pred, data.runner_up)
+    margins = stability_margins(data.stab_counts, data.clean_pred)
     return ((margins + 1) // 2).astype(np.int64)
 
 

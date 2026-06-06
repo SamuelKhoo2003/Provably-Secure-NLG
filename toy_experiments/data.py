@@ -672,15 +672,19 @@ def generate_influence(K: int, N: int, L: int, mode: str = "dense", seed: int = 
     raise ValueError(f"Unknown influence mode: {mode}")
 
 
-def stability_margins(clean_counts: np.ndarray, clean_pred: np.ndarray, runner_up: np.ndarray) -> np.ndarray:
-    """Return clean winner-vs-runner-up vote margins for each cell."""
-    N, L = clean_pred.shape
+def stability_margins(clean_counts: np.ndarray, clean_pred: np.ndarray) -> np.ndarray:
+    """Return the clean winner's margin over its strongest competitor."""
+    N, L, T = clean_counts.shape
     margins = np.empty((N, L), dtype=np.int64)
     for i in range(N):
         for j in range(L):
-            w = int(clean_pred[i, j])
-            r = int(runner_up[i, j])
-            margins[i, j] = int(clean_counts[i, j, w] - clean_counts[i, j, r])
+            winner = int(clean_pred[i, j])
+            competitor_count = max(
+                int(clean_counts[i, j, competitor])
+                for competitor in range(T)
+                if competitor != winner
+            )
+            margins[i, j] = int(clean_counts[i, j, winner] - competitor_count)
     return margins
 
 

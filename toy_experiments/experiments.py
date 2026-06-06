@@ -1095,7 +1095,7 @@ def _format_mean_series(rows: list[dict[str, object]], metric: str) -> list[str]
 
 def print_console_grid(data: ToyData) -> None:
     """Print a compact per-cell grid and shard vote layers."""
-    margins = stability_margins(data.stab_counts, data.clean_pred, data.runner_up)
+    margins = stability_margins(data.stab_counts, data.clean_pred)
     winner_counts = np.take_along_axis(data.stab_counts, data.clean_pred[:, :, None], axis=2)[:, :, 0]
     target_counts = np.take_along_axis(data.val_counts, data.target[:, :, None], axis=2)[:, :, 0]
 
@@ -1146,7 +1146,7 @@ def save_instance_plots(
 ) -> None:
     """Write per-instance heatmaps and curves for one generated toy instance."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    margins = stability_margins(data.stab_counts, data.clean_pred, data.runner_up)
+    margins = stability_margins(data.stab_counts, data.clean_pred)
     target_counts = np.take_along_axis(data.val_counts, data.target[:, :, None], axis=2)[:, :, 0]
     stability_grid = compute_structured_stability_grid(data)
     q_curve = compute_validity_q_curve(data, T)
@@ -1733,7 +1733,7 @@ def _format_series(series: tuple[list[float], list[float]]) -> list[str]:
 def _print_instance_summary(
     data: ToyData, K: int, N: int, L: int, T: int, delta_stab: float, delta_val: float, target_bias: float, seed: int, influence_mode: str
 ) -> None:
-    margins = stability_margins(data.stab_counts, data.clean_pred, data.runner_up)
+    margins = stability_margins(data.stab_counts, data.clean_pred)
     print(
         f"K={K}, N={N}, L={L}, T={T}, delta_stab={delta_stab}, delta_val={delta_val}, "
         f"target_bias={target_bias}, influence_mode={influence_mode}, seed={seed}"
