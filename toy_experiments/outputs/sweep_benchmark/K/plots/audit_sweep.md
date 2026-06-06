@@ -2,13 +2,13 @@
 
 - Source CSV: `toy_experiments/outputs/sweep_benchmark/K/results/benchmark_results.csv`
 - Sweep: `K`
-- Rows: 5
+- Rows: 7
 - Expected varied parameter(s): K
 - Fixed vocabulary size `T`: yes
 
 ## Parameter values
 
-- `K`: [8, 12, 16, 20, 24]
+- `K`: [8, 12, 16, 20, 24, 28, 32]
 - `N`: [4]
 - `L`: [5]
 - `T`: [5]

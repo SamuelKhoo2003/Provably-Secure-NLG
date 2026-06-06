@@ -2,7 +2,7 @@
 
 - Source CSV: `toy_experiments/outputs/sweep_benchmark/L/results/benchmark_results.csv`
 - Sweep: `L`
-- Rows: 5
+- Rows: 9
 - Expected varied parameter(s): L
 - Fixed vocabulary size `T`: yes
 
@@ -10,7 +10,7 @@
 
 - `K`: [20]
 - `N`: [4]
-- `L`: [1, 2, 4, 6, 8]
+- `L`: [4, 6, 8, 10, 12, 14, 16, 18, 20]
 - `T`: [5]
 - `delta_stab`: [0.2]
 - `delta_val`: [0.2]

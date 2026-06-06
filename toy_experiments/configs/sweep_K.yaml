@@ -1,7 +1,7 @@
 name: sweep_K
 generator: toy
 
-K_values: [8, 12, 16, 20, 24, 28, 32, 36]
+K_values: [8, 12, 16, 20, 24, 28, 32]
 N_values: [4]
 L_values: [5]
 T_values: [5]
@@ -19,6 +19,6 @@ objective_family: full
 make_budget_curves: true
 
 solver:
-  gurobi_threads: 0
+  gurobi_threads: 4
 
 output_dir: toy_experiments/outputs/sweep_benchmark/K/results
