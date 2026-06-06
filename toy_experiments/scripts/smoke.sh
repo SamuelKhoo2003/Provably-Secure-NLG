@@ -92,15 +92,15 @@ echo
 
 mkdir -p "$OUT_DIR"
 
-expected_svgs=(
-  clean_predictions.svg
-  harmful_targets.svg
-  stability_margins.svg
-  validity_target_counts.svg
+expected_pdfs=(
+  clean_predictions.pdf
+  harmful_targets.pdf
+  stability_margins.pdf
+  validity_target_counts.pdf
 )
-for svg_name in "${expected_svgs[@]}"; do
-  if [[ ! -s "$OUT_DIR/$svg_name" ]]; then
-    echo "Error: expected visualization output missing or empty: $OUT_DIR/$svg_name" >&2
+for pdf_name in "${expected_pdfs[@]}"; do
+  if [[ ! -s "$OUT_DIR/$pdf_name" ]]; then
+    echo "Error: expected visualization output missing or empty: $OUT_DIR/$pdf_name" >&2
     exit 1
   fi
 done
@@ -121,6 +121,6 @@ done
 } > "$OUT_DIR/smoke_summary.txt"
 
 echo "Done."
-echo "Instance plots: $OUT_DIR/*.svg"
+echo "Instance plots: $OUT_DIR/*.pdf"
 echo "Summary: $OUT_DIR/smoke_summary.txt"
 echo "Run optional checks with: RUN_TESTS=1 ./toy_experiments/scripts/smoke.sh"

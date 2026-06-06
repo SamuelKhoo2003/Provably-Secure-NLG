@@ -39,5 +39,5 @@ fi
 
 echo
 echo "CSV:   $RESULTS_DIR/benchmark_results.csv"
-echo "Plots: $PLOTS_DIR/validity_demo_*.svg"
+echo "Plots: $PLOTS_DIR/validity_demo_*.pdf"
 echo "Audit: $PLOTS_DIR/audit_validity_demo.md"

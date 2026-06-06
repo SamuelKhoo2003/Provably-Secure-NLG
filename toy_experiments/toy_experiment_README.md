@@ -49,6 +49,11 @@ threads. `0` uses Gurobi automatic mode; positive integers request a fixed
 thread limit. `GUROBI_THREADS` can override the YAML value for a run. On shared
 machines, avoid blindly setting very high values.
 
+For the full scalability methodology, including model-size growth, solve-count
+growth, runtime accounting, stopping statuses, and the current absence of an
+explicit Gurobi time limit, see
+[`docs/milp_scalability.md`](docs/milp_scalability.md).
+
 Stability is always evaluated against all competing tokens. The old
 runner-up-only diagnostic has been removed because report-facing stability is
 an untargeted any-token-change property. There is no stability competitor-mode
@@ -110,6 +115,9 @@ toy_experiments/outputs/small/plots/
 toy_experiments/outputs/medium/plots/
 toy_experiments/outputs/large/plots/
 ```
+
+All generated plots are report-ready PDF files. Regenerating a default plot
+directory replaces the existing generated PDF set.
 
 Each plot directory also gets `audit_plot_outputs.txt` and `comparisons.txt`.
 `comparisons.txt` is derived from the existing CSV outputs and reports stability

@@ -1,9 +1,9 @@
-"""Experiment CLI, benchmark generation, baselines, and SVG plotting.
+"""Experiment CLI, benchmark generation, baselines, and PDF plotting.
 
 This module is the orchestration layer for the first-party toy certificate
 implementation. It builds synthetic :class:`toy_experiments.data.ToyData`
 instances, calls the shared MILP solvers, writes benchmark CSVs, computes
-DPA/TPA/atomic-phrase/independent-composition baselines, and renders SVG plots.
+DPA/TPA/atomic-phrase/independent-composition baselines, and renders PDF plots.
 The external ``phd_reference/`` tree is not imported or modified here.
 """
 
@@ -13,9 +13,20 @@ import argparse
 from collections.abc import Iterable
 import os
 from pathlib import Path
+import tempfile
 from time import perf_counter
 
+_PLOT_CACHE_DIR = Path(tempfile.gettempdir()) / "provably-secure-nlg-plot-cache"
+_PLOT_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("MPLCONFIGDIR", str(_PLOT_CACHE_DIR / "matplotlib"))
+os.environ.setdefault("XDG_CACHE_HOME", str(_PLOT_CACHE_DIR))
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import LinearSegmentedColormap
 
 from .baselines import (
     aggregate_plain_dpa_sequence_baselines,
@@ -447,10 +458,10 @@ def plot_sweep_csv(csv_path: str, sweep: str, save_dir: str | None = None) -> li
             ("runtime", {"Total Gurobi objective runtime": "runtime_gurobi_total"}),
         ]
         for plot_kind, metrics in metric_groups:
-            filename = f"sweep_{sweep_key}_{plot_kind}_certificate_vs_{sweep_key}.svg"
+            filename = f"sweep_{sweep_key}_{plot_kind}_certificate_vs_{sweep_key}.pdf"
             y_label = "Mean certified budget B*"
             if plot_kind == "runtime":
-                filename = f"sweep_{sweep_key}_runtime_vs_{sweep_key}.svg"
+                filename = f"sweep_{sweep_key}_runtime_vs_{sweep_key}.pdf"
                 y_label = "Mean Gurobi runtime (seconds)"
             series, metric_skips = _metric_series(rows, sweep_key, metrics)
             skipped.extend(f"{filename}: {message}" for message in metric_skips)
@@ -586,11 +597,11 @@ def _write_sweep_audit(
 
 
 DEFAULT_REPORT_PLOT_FILENAMES = (
-    "stability_one_token_per_row_budget_curve.svg",
-    "stability_one_prompt_budget_curve.svg",
-    "main_validity_budget_curve.svg",
-    "stability_certificate_vs_K.svg",
-    "validity_certificate_vs_K.svg",
+    "stability_one_token_per_row_budget_curve.pdf",
+    "stability_one_prompt_budget_curve.pdf",
+    "main_validity_budget_curve.pdf",
+    "stability_certificate_vs_K.pdf",
+    "validity_certificate_vs_K.pdf",
 )
 
 RELATIVE_LIFT_PERCENT_REPORTING_THRESHOLD = 1.0
@@ -611,17 +622,17 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
     )
     if stability_all_prompts_series:
         _save_line_plot(
-            output_dir / "stability_one_token_per_row_budget_curve.svg",
+            output_dir / "stability_one_token_per_row_budget_curve.pdf",
             "Stability one token per row budget curve",
             "Poisoned shard budget B",
             "Certified fraction (%)",
             stability_all_prompts_series,
         )
     else:
-        print("Warning: skipped stability_one_token_per_row_budget_curve.svg; no requested benchmark-result series were available.")
+        print("Warning: skipped stability_one_token_per_row_budget_curve.pdf; no requested benchmark-result series were available.")
     audit.append(
         {
-            "plot": "stability_one_token_per_row_budget_curve.svg",
+            "plot": "stability_one_token_per_row_budget_curve.pdf",
             "series": list(stability_all_prompts_series),
             "series_data": stability_all_prompts_series,
             "comparisons": _performance_comparison_lines(
@@ -648,17 +659,17 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
     )
     if stability_one_prompt_series:
         _save_line_plot(
-            output_dir / "stability_one_prompt_budget_curve.svg",
+            output_dir / "stability_one_prompt_budget_curve.pdf",
             "Stability one prompt budget curve",
             "Poisoned shard budget B",
             "Certified fraction (%)",
             stability_one_prompt_series,
         )
     else:
-        print("Warning: skipped stability_one_prompt_budget_curve.svg; no requested budget-curve series were available.")
+        print("Warning: skipped stability_one_prompt_budget_curve.pdf; no requested budget-curve series were available.")
     audit.append(
         {
-            "plot": "stability_one_prompt_budget_curve.svg",
+            "plot": "stability_one_prompt_budget_curve.pdf",
             "series": list(stability_one_prompt_series),
             "series_data": stability_one_prompt_series,
             "comparisons": _performance_comparison_lines(
@@ -685,12 +696,12 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
         ],
     )
     if validity_series:
-        _save_line_plot(output_dir / "main_validity_budget_curve.svg", "Main validity budget curve", "Poisoned shard budget B", "Certified fraction (%)", validity_series)
+        _save_line_plot(output_dir / "main_validity_budget_curve.pdf", "Main validity budget curve", "Poisoned shard budget B", "Certified fraction (%)", validity_series)
     else:
-        print("Warning: skipped main_validity_budget_curve.svg; no requested budget-curve series were available.")
+        print("Warning: skipped main_validity_budget_curve.pdf; no requested budget-curve series were available.")
     audit.append(
         {
-            "plot": "main_validity_budget_curve.svg",
+            "plot": "main_validity_budget_curve.pdf",
             "series": list(validity_series),
             "series_data": validity_series,
             "comparisons": _performance_comparison_lines(
@@ -722,12 +733,12 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
 
     metric_specs = [
         (
-            "stability_certificate_vs_K.svg",
+            "stability_certificate_vs_K.pdf",
             "Stability certificate vs K",
             MAIN_STABILITY_METRICS,
         ),
         (
-            "validity_certificate_vs_K.svg",
+            "validity_certificate_vs_K.pdf",
             "Validity certificate vs K",
             MAIN_VALIDITY_METRICS,
         ),
@@ -755,7 +766,7 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
 def _clean_default_plot_dir(output_dir: Path) -> None:
     """Remove old generated plot artifacts from the default plot directory."""
     for child in output_dir.iterdir():
-        if child.is_file() and (child.suffix in {".png", ".svg"} or child.name.startswith("audit_")):
+        if child.is_file() and (child.suffix == ".pdf" or child.name.startswith("audit_")):
             child.unlink()
 
 
@@ -905,12 +916,12 @@ def _is_sentinel_budget(value: object, K: object) -> bool:
 
 
 def _metric_plot_comparison_lines(filename: str, series: dict[str, tuple[list[float], list[float]]]) -> list[str]:
-    if filename == "stability_certificate_vs_K.svg":
+    if filename == "stability_certificate_vs_K.pdf":
         return _performance_comparison_lines(
             series,
             [("Shared MILP full matrix", "DPA weakest token", "mean certified-budget lift", "budget units")],
         )
-    if filename == "validity_certificate_vs_K.svg":
+    if filename == "validity_certificate_vs_K.pdf":
         return _performance_comparison_lines(
             series,
             [
@@ -1019,9 +1030,9 @@ def _write_comparison_report(path: Path, csv_path: Path, audit: list[dict[str, o
         f"relative lifts below {RELATIVE_LIFT_PERCENT_REPORTING_THRESHOLD:g}% are reported as 0%",
         "",
         "Expected ordering checks:",
-        f"- Stability MILP > DPA observed in mean-budget plots: {_comparison_is_positive(audit, 'stability_certificate_vs_K.svg', 'Shared MILP full matrix', 'DPA weakest token')}",
-        f"- Validity MILP > TPA observed in mean-budget plots: {_comparison_is_positive(audit, 'validity_certificate_vs_K.svg', 'Shared shard-aware MILP full sequence', 'TPA max-token phrase blocker')}",
-        f"- Validity TPA > DPA observed in mean-budget plots: {_comparison_is_positive(audit, 'validity_certificate_vs_K.svg', 'TPA max-token phrase blocker', 'Plain DPA max-token phrase blocker')}",
+        f"- Stability MILP > DPA observed in mean-budget plots: {_comparison_is_positive(audit, 'stability_certificate_vs_K.pdf', 'Shared MILP full matrix', 'DPA weakest token')}",
+        f"- Validity MILP > TPA observed in mean-budget plots: {_comparison_is_positive(audit, 'validity_certificate_vs_K.pdf', 'Shared shard-aware MILP full sequence', 'TPA max-token phrase blocker')}",
+        f"- Validity TPA > DPA observed in mean-budget plots: {_comparison_is_positive(audit, 'validity_certificate_vs_K.pdf', 'TPA max-token phrase blocker', 'Plain DPA max-token phrase blocker')}",
         "",
         "Comparison summary:",
     ]
@@ -1155,20 +1166,20 @@ def save_instance_plots(
         f"K={K}, N={N}, L={L}, T={T}, delta_stab={delta_stab}, delta_val={delta_val}, "
         f"target_bias={target_bias}, influence={influence_mode}, seed={seed}"
     )
-    _save_heatmap_svg(data.clean_pred, output_dir / "clean_predictions.svg", "Clean predictions | " + title_suffix)
-    _save_heatmap_svg(data.target, output_dir / "harmful_targets.svg", "Harmful targets | " + title_suffix)
-    _save_heatmap_svg(margins, output_dir / "stability_margins.svg", "Winner vs runner-up margins | " + title_suffix)
-    _save_heatmap_svg(target_counts, output_dir / "validity_target_counts.svg", "Target validity vote counts | " + title_suffix)
-    _save_heatmap_svg(
+    _save_heatmap_pdf(data.clean_pred, output_dir / "clean_predictions.pdf", "Clean predictions | " + title_suffix)
+    _save_heatmap_pdf(data.target, output_dir / "harmful_targets.pdf", "Harmful targets | " + title_suffix)
+    _save_heatmap_pdf(margins, output_dir / "stability_margins.pdf", "Winner vs runner-up margins | " + title_suffix)
+    _save_heatmap_pdf(target_counts, output_dir / "validity_target_counts.pdf", "Target validity vote counts | " + title_suffix)
+    _save_heatmap_pdf(
         stability_grid,
-        output_dir / "structured_stability_heatmap.svg",
+        output_dir / "structured_stability_heatmap.pdf",
         "Structured stability poison budget | " + title_suffix,
         x_label="affected tokens per prompt",
         y_label="affected prompts",
         colorbar_label="poison budget B*",
     )
-    _save_line_plot_svg(
-        output_dir / "validity_q_curve.svg",
+    _save_line_plot_pdf(
+        output_dir / "validity_q_curve.pdf",
         "Row-column validity B*(q) | " + title_suffix,
         "q rows compromised",
         "Poison budget B*",
@@ -1243,9 +1254,9 @@ def save_validity_demo_plot(rows: list[dict[str, object]], output_dir: Path, csv
     missing = [label for label, _column in series_specs if label not in series]
     if missing:
         raise SystemExit(f"{generator} plot is missing required series: {missing}. Details: {skipped}")
-    _assert_same_x_values(series, f"{generator}_baseline_vs_milp.svg")
+    _assert_same_x_values(series, f"{generator}_baseline_vs_milp.pdf")
     _save_line_plot(
-        output_dir / f"{generator}_baseline_vs_milp.svg",
+        output_dir / f"{generator}_baseline_vs_milp.pdf",
         "Synthetic validity stress test: baseline vs shard-aware MILP",
         "sequence length L",
         "Mean certified budget B*",
@@ -1254,7 +1265,7 @@ def save_validity_demo_plot(rows: list[dict[str, object]], output_dir: Path, csv
 
 
 def plot_validity_demo_csv(csv_path: str, save_dir: str | None = None) -> list[dict[str, object]]:
-    """Read a validity_demo benchmark CSV and write only validity_demo SVG plots."""
+    """Read a validity_demo benchmark CSV and write only validity_demo PDF plots."""
     path = Path(csv_path)
     output_dir = Path(save_dir) if save_dir is not None else path.parent
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1332,7 +1343,7 @@ def save_validity_demo_budget_curve_plots(
     budget_plot_num_points = _validity_demo_budget_plot_num_points(result_rows or [])
     return _save_required_certified_fraction_budget_plot(
         budget_rows,
-        output_dir / "validity_demo_certified_fraction_by_budget.svg",
+        output_dir / "validity_demo_certified_fraction_by_budget.pdf",
         "validity_demo certified fraction by budget",
         [
             ("Shared shard-aware MILP full sequence", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
@@ -2264,7 +2275,7 @@ def _numeric_value(value: object) -> float | None:
     return numeric
 
 
-def _save_heatmap_svg(
+def _save_heatmap_pdf(
     matrix: np.ndarray,
     path: Path,
     title: str,
@@ -2273,203 +2284,118 @@ def _save_heatmap_svg(
     y_label: str = "prompt row i",
     colorbar_label: str | None = None,
 ) -> None:
-    """Save a lightweight SVG heatmap without external plotting dependencies."""
+    """Save a report-ready PDF heatmap."""
+    _prepare_pdf_path(path)
     rows, cols = matrix.shape
-    cell = 54
-    left = 70
-    right = 96 if colorbar_label else 40
-    width = left + cols * cell + right
-    title_lines = _wrap_svg_text(title, max_chars=max(36, int((width - 56) / 7.2)))
-    title_font_size = 13
-    title_line_height = 17
-    title_start_y = 26
-    top = title_start_y + title_line_height * len(title_lines) + 22
-    height = top + rows * cell + 56
     values = matrix.astype(float)
-    vmin = float(np.min(values))
-    vmax = float(np.max(values))
+    cmap = LinearSegmentedColormap.from_list("certificate", ["#2563eb", "#14b8a6", "#eab308"])
+    fig_width = max(5.0, min(16.0, 1.0 + 0.65 * cols))
+    fig_height = max(4.0, min(14.0, 1.8 + 0.58 * rows))
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+    image = ax.imshow(values, cmap=cmap, aspect="auto")
+    ax.set_title(title, fontsize=11, wrap=True, pad=14)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_xticks(np.arange(cols), labels=[j + 1 if colorbar_label else j for j in range(cols)])
+    ax.set_yticks(np.arange(rows), labels=[i + 1 if colorbar_label else i for i in range(rows)])
+    ax.set_xticks(np.arange(-0.5, cols, 1), minor=True)
+    ax.set_yticks(np.arange(-0.5, rows, 1), minor=True)
+    ax.grid(which="minor", color="white", linewidth=1.5)
+    ax.tick_params(which="minor", bottom=False, left=False)
 
-    svg = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
-        '<rect width="100%" height="100%" fill="#ffffff"/>',
-        f'<text x="{left + cols * cell / 2:.1f}" y="{height - 12}" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#374151">{_xml_escape(x_label)}</text>',
-        f'<text x="16" y="{top + rows * cell / 2:.1f}" transform="rotate(-90 16 {top + rows * cell / 2:.1f})" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#374151">{_xml_escape(y_label)}</text>',
-    ]
-    for idx, line in enumerate(title_lines):
-        y = title_start_y + idx * title_line_height
-        svg.insert(
-            2 + idx,
-            f'<text x="{width / 2:.1f}" y="{y}" text-anchor="middle" font-family="Arial, sans-serif" font-size="{title_font_size}" fill="#111827">{_xml_escape(line)}</text>',
-        )
-    for j in range(cols):
-        svg.append(f'<text x="{left + j * cell + cell / 2}" y="{top - 10}" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">{j + 1 if colorbar_label else j}</text>')
+    midpoint = (float(np.min(values)) + float(np.max(values))) / 2
     for i in range(rows):
-        svg.append(f'<text x="{left - 12}" y="{top + i * cell + cell / 2 + 4}" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#374151">{i + 1 if colorbar_label else i}</text>')
         for j in range(cols):
-            value = float(values[i, j])
-            color = _heat_color(value, vmin, vmax)
-            x = left + j * cell
-            y = top + i * cell
-            svg.append(f'<rect x="{x}" y="{y}" width="{cell}" height="{cell}" fill="{color}" stroke="#ffffff" stroke-width="2"/>')
-            svg.append(
-                f'<text x="{x + cell / 2}" y="{y + cell / 2 + 5}" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#ffffff">{format(value, fmt)}</text>'
-            )
+            text_color = "white" if float(values[i, j]) <= midpoint else "#111827"
+            ax.text(j, i, format(float(values[i, j]), fmt), ha="center", va="center", color=text_color, fontsize=9)
     if colorbar_label is not None:
-        bar_x = left + cols * cell + 28
-        bar_y = top
-        bar_h = rows * cell
-        for step in range(24):
-            t0 = step / 24
-            y = bar_y + bar_h * (1 - (step + 1) / 24)
-            value = vmin + (vmax - vmin) * t0
-            svg.append(f'<rect x="{bar_x}" y="{y:.1f}" width="14" height="{bar_h / 24 + 0.8:.1f}" fill="{_heat_color(value, vmin, vmax)}"/>')
-        svg.append(f'<text x="{bar_x + 20}" y="{bar_y + 4}" font-family="Arial, sans-serif" font-size="10" fill="#374151">{vmax:.0f}</text>')
-        svg.append(f'<text x="{bar_x + 20}" y="{bar_y + bar_h:.1f}" font-family="Arial, sans-serif" font-size="10" fill="#374151">{vmin:.0f}</text>')
-        label_x = bar_x + 58
-        label_y = bar_y + bar_h / 2
-        svg.append(
-            f'<text x="{label_x}" y="{label_y:.1f}" transform="rotate(-90 {label_x} {label_y:.1f})" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">{_xml_escape(colorbar_label)}</text>'
-        )
-    svg.append("</svg>")
-    path.write_text("\n".join(svg))
+        colorbar = fig.colorbar(image, ax=ax, pad=0.03)
+        colorbar.set_label(colorbar_label)
+    fig.savefig(path, format="pdf", dpi=200, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
 
 
 def _save_line_plot(path: Path, title: str, x_label: str, y_label: str, series: dict[str, tuple[list[float], list[float]]]) -> None:
-    """Save a report-facing line plot as SVG."""
-    _save_line_plot_svg(path, title, x_label, y_label, series)
+    """Save a report-facing line plot as PDF."""
+    _save_line_plot_pdf(path, title, x_label, y_label, series)
 
 
-def _save_line_plot_svg(path: Path, title: str, x_label: str, y_label: str, series: dict[str, tuple[list[float], list[float]]]) -> None:
-    """Save a lightweight multi-series SVG line plot."""
-    width = 1160
-    title_lines = _wrap_svg_text(title, max_chars=max(48, int((width - 80) / 7.5)))
-    title_font_size = 14
-    title_line_height = 18
-    title_start_y = 28
-    top = title_start_y + title_line_height * len(title_lines) + 24
-    height = max(540 + title_line_height * max(0, len(title_lines) - 1), 430 + 22 * len(series) + title_line_height * max(0, len(title_lines) - 1))
-    left, right, bottom = 72, 360, 70
-    plot_w = width - left - right
-    plot_h = height - top - bottom
+def _save_line_plot_pdf(path: Path, title: str, x_label: str, y_label: str, series: dict[str, tuple[list[float], list[float]]]) -> None:
+    """Save a multi-series PDF line plot with visible coincident series."""
+    _prepare_pdf_path(path)
     all_x = [x for xs, _ in series.values() for x in xs]
     all_y = [y for _, ys in series.values() for y in ys]
     if not all_x or not all_y:
         return
     xmin, xmax = min(all_x), max(all_x)
-    ymin, ymax = min(0.0, min(all_y)), max(all_y)
-    if xmin == xmax:
-        xmin -= 1
-        xmax += 1
-    if ymin == ymax:
-        ymax += 1
     colors = ["#2563eb", "#dc2626", "#059669", "#7c3aed", "#ea580c", "#0891b2", "#be123c", "#4d7c0f", "#9333ea", "#475569"]
-
-    def sx(x: float) -> float:
-        return left + (x - xmin) / (xmax - xmin) * plot_w
-
-    def sy(y: float) -> float:
-        return top + plot_h - (y - ymin) / (ymax - ymin) * plot_h
-
-    svg = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
-        '<rect width="100%" height="100%" fill="#ffffff"/>',
-        f'<line x1="{left}" y1="{top}" x2="{left}" y2="{top + plot_h}" stroke="#111827"/>',
-        f'<line x1="{left}" y1="{top + plot_h}" x2="{left + plot_w}" y2="{top + plot_h}" stroke="#111827"/>',
-        f'<text x="{width / 2}" y="{height - 18}" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#374151">{_xml_escape(x_label)}</text>',
-        f'<text x="18" y="{top + plot_h / 2}" transform="rotate(-90 18 {top + plot_h / 2})" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#374151">{_xml_escape(y_label)}</text>',
-    ]
-    for idx, line in enumerate(title_lines):
-        y = title_start_y + idx * title_line_height
-        svg.insert(
-            2 + idx,
-            f'<text x="{width / 2}" y="{y}" text-anchor="middle" font-family="Arial, sans-serif" font-size="{title_font_size}" fill="#111827">{_xml_escape(line)}</text>',
-        )
-    for tick in range(5):
-        y_value = ymin + (ymax - ymin) * tick / 4
-        y = sy(y_value)
-        svg.append(f'<line x1="{left}" y1="{y:.1f}" x2="{left + plot_w}" y2="{y:.1f}" stroke="#e5e7eb"/>')
-        svg.append(f'<text x="{left - 8}" y="{y + 4:.1f}" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#374151">{y_value:.1f}</text>')
-    for tick in range(5):
-        x_value = xmin + (xmax - xmin) * tick / 4
-        x = sx(x_value)
-        svg.append(f'<text x="{x:.1f}" y="{top + plot_h + 18}" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#374151">{x_value:.2g}</text>')
+    markers = ["o", "s", "D", "^"]
+    fig, ax = plt.subplots(figsize=(10.5, 5.8))
+    point_groups: dict[tuple[float, float], list[int]] = {}
+    for series_idx, (_name, (xs, ys)) in enumerate(series.items()):
+        for x, y in zip(xs, ys):
+            point_groups.setdefault((float(x), float(y)), []).append(series_idx)
 
     for idx, (name, (xs, ys)) in enumerate(series.items()):
         color = CANONICAL_COLORS.get(name, colors[idx % len(colors)])
-        dash_attr = _svg_dash_attr_for_label(name)
-        points = " ".join(f"{sx(x):.1f},{sy(y):.1f}" for x, y in zip(xs, ys))
-        svg.append(f'<polyline points="{points}" fill="none" stroke="{color}" stroke-width="2.5"{dash_attr}/>')
+        line_style = _line_style_for_index(name, idx)
+        ax.plot(xs, ys, color=color, linestyle=line_style, linewidth=2.2, label=name)
+        x_span = xmax - xmin if xmax != xmin else 1.0
         for x, y in zip(xs, ys):
-            svg.append(f'<circle cx="{sx(x):.1f}" cy="{sy(y):.1f}" r="4" fill="{color}"/>')
-        legend_y = top + 18 + idx * 20
-        svg.append(f'<line x1="{left + plot_w + 24}" y1="{legend_y - 4}" x2="{left + plot_w + 38}" y2="{legend_y - 4}" stroke="{color}" stroke-width="2.5"{dash_attr}/>')
-        svg.append(f'<text x="{left + plot_w + 42}" y="{legend_y}" font-family="Arial, sans-serif" font-size="12" fill="#111827">{_xml_escape(name)}</text>')
-    svg.append("</svg>")
-    path.write_text("\n".join(svg))
+            point_key = (float(x), float(y))
+            overlapping_indices = point_groups[point_key]
+            overlap_position = overlapping_indices.index(idx)
+            marker_offset = (overlap_position - (len(overlapping_indices) - 1) / 2) * 0.012 * x_span
+            ax.scatter(
+                [x + marker_offset],
+                [y],
+                marker=markers[idx % len(markers)],
+                s=48,
+                facecolors="white",
+                edgecolors=color,
+                linewidths=1.8,
+                zorder=3 + idx,
+            )
+
+    ax.set_title(title, fontsize=13, wrap=True)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_ylim(bottom=min(0.0, min(all_y)))
+    ax.grid(axis="y", color="#e5e7eb")
+    ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5), frameon=False)
+    if any(len(indices) > 1 for indices in point_groups.values()):
+        fig.text(
+            0.99,
+            0.02,
+            "Coincident markers are offset for visibility.",
+            ha="right",
+            fontsize=8,
+            color="#4b5563",
+        )
+    fig.savefig(path, format="pdf", dpi=200, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
 
 
-def _line_style_for_label(label: str) -> str:
+def _prepare_pdf_path(path: Path) -> None:
+    if path.suffix.lower() != ".pdf":
+        raise ValueError(f"plot output must use a .pdf extension: {path}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+
+def _line_style_for_index(label: str, series_index: int = 0) -> str | tuple[int, tuple[int, ...]]:
     if label == "Plain DPA max-token phrase blocker":
         return ":"
     if label in {"DPA most difficult harmful token", "Shard-aware independent max-token diagnostic"}:
         return ":"
     if "baseline" in label:
         return "--"
-    return "-"
-
-
-def _svg_dash_attr_for_label(label: str) -> str:
-    if label == "Plain DPA max-token phrase blocker":
-        return ' stroke-dasharray="2 7" stroke-linecap="round"'
-    if label in {"DPA most difficult harmful token", "Shard-aware independent max-token diagnostic"}:
-        return ' stroke-dasharray="2 7" stroke-linecap="round"'
-    if "baseline" in label:
-        return ' stroke-dasharray="7 5"'
-    return ""
-
-
-def _wrap_svg_text(text: str, max_chars: int) -> list[str]:
-    """Wrap SVG title text into short lines without requiring SVG text layout."""
-    parts = text.split(" | ", maxsplit=1)
-    if len(parts) == 2:
-        prefix, suffix = parts
-        chunks = [prefix]
-        words = suffix.split()
-    else:
-        chunks = []
-        words = text.split()
-
-    current = ""
-    for word in words:
-        candidate = word if not current else f"{current} {word}"
-        if len(candidate) <= max_chars:
-            current = candidate
-            continue
-        if current:
-            chunks.append(current)
-        current = word
-    if current:
-        chunks.append(current)
-    return chunks or [text]
-
-
-def _heat_color(value: float, vmin: float, vmax: float) -> str:
-    if vmax == vmin:
-        t = 0.5
-    else:
-        t = (value - vmin) / (vmax - vmin)
-    start = np.array([37, 99, 235], dtype=float)
-    mid = np.array([20, 184, 166], dtype=float)
-    end = np.array([234, 179, 8], dtype=float)
-    if t < 0.5:
-        rgb = start + (mid - start) * (t / 0.5)
-    else:
-        rgb = mid + (end - mid) * ((t - 0.5) / 0.5)
-    return "#" + "".join(f"{int(round(c)):02x}" for c in rgb)
-
-
-def _xml_escape(value: str) -> str:
-    return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    dash_patterns = [
+        "-",
+        "--",
+        ":",
+        "-.",
+    ]
+    return dash_patterns[series_index % len(dash_patterns)]
 
 
 def _parse_scalar_config_value(value: str) -> object:

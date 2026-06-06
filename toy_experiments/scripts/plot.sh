@@ -60,7 +60,7 @@ plot_one() {
     --save-dir "$out_dir"
 
   echo
-  echo "Plots: $out_dir/*.svg"
+  echo "Plots: $out_dir/*.pdf"
   echo "Audit: $out_dir/audit_plot_outputs.txt"
   echo "Comparisons: $out_dir/comparisons.txt"
 }

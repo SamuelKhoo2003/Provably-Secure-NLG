@@ -5,15 +5,19 @@ the number of shards (`K`), prompts (`N`), and generated tokens (`L`). The
 vocabulary size (`T=5`) and all data-generation settings remain fixed. There is
 intentionally no `T` sweep.
 
+The solver configuration, model-growth analysis, solve-count formulas, runtime
+measurement boundary, and optimality/status interpretation are documented in
+[`milp_scalability.md`](milp_scalability.md).
+
 ## Experiment design
 
 Each standard sweep changes one parameter:
 
 | Sweep | Varied values | Fixed values |
 | --- | --- | --- |
-| `K` | `8, 12, 16, 20, 24` | `N=4`, `L=5`, `T=5` |
-| `N` | `1, 2, 4, 6, 8` | `K=20`, `L=5`, `T=5` |
-| `L` | `1, 2, 4, 6, 8` | `K=20`, `N=4`, `T=5` |
+| `K` | `8, 12, 16, 20, 24, 28, 32` | `N=4`, `L=5`, `T=5` |
+| `N` | `2, 6, 10, 14, 18` | `K=20`, `L=5`, `T=5` |
+| `L` | `4, 6, 8, 10, 12, 14, 16, 18, 20` | `K=20`, `N=4`, `T=5` |
 
 All use the dense toy generator, seed `0`, `delta_stab=0.2`,
 `delta_val=0.2`, target bias `0.3`, and the full objective family. Stability is
@@ -49,21 +53,21 @@ toy_experiments/outputs/sweep_benchmark/
 
 Each `results` directory contains `benchmark_results.csv` and, because budget
 curves are enabled, `benchmark_budget_curves.csv`. Each `plots` directory
-contains report-facing SVGs or the degeneracy LaTeX table, plus
+contains report-facing PDFs or the degeneracy LaTeX table, plus
 `audit_sweep.md`.
 
 ## Plot interpretation
 
-- `sweep_K_stability_certificate_vs_K.svg` shows how adding shard models
+- `sweep_K_stability_certificate_vs_K.pdf` shows how adding shard models
   changes DPA weakest-token stability and the two shared stability objectives.
-- `sweep_K_validity_certificate_vs_K.svg` compares the two external validity
+- `sweep_K_validity_certificate_vs_K.pdf` compares the two external validity
   baselines with the proposed shared validity MILP as the ensemble grows.
 - The `N` stability and validity plots show the effect of requiring a shared
-  poisoning objective across more prompt rows; `sweep_N_runtime_vs_N.svg`
+  poisoning objective across more prompt rows; `sweep_N_runtime_vs_N.pdf`
   reports the associated solver cost.
 - The `L` stability and validity plots show how longer generated sequences
   affect weakest-token, one-token-per-row, and full-grid certification;
-  `sweep_L_runtime_vs_L.svg` reports solver cost.
+  `sweep_L_runtime_vs_L.pdf` reports solver cost.
 - `degenerate_study_table.tex` and its compact source
   `degenerate_study.csv` compare the four cases where one or both grid
   dimensions collapse.
