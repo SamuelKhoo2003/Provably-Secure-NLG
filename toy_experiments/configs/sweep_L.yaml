@@ -1,0 +1,24 @@
+name: sweep_L
+generator: toy
+
+K_values: [20]
+N_values: [4]
+L_values: [4, 6, 8, 10, 12, 14, 16, 18, 20]
+T_values: [5]
+
+delta_stab_values: [0.2]
+delta_val_values: [0.2]
+target_bias_values: [0.3]
+
+seed: 0
+budget_max: 20
+
+influence_mode: dense
+stability_competitor_mode: all
+objective_family: full
+make_budget_curves: true
+
+solver:
+  gurobi_threads: 0
+
+output_dir: toy_experiments/outputs/sweep_benchmark/L/results

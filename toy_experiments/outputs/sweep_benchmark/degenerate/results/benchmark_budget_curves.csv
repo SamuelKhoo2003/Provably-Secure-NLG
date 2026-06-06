@@ -1,0 +1,841 @@
+seed,K,N,L,T,delta_stab,delta_val,target_bias,influence_mode,stability_competitor_mode,budget,certified_fraction,attacked_fraction,mean_radius,median_radius,min_radius,max_radius,num_certified,num_known,num_unknown,num_total,method,objective,curve_type
+0,20,1,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,3,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,4,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,5,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,3,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,4,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,5,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,3,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,4,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,5,1.0,0.0,6.0,6.0,6.0,6.0,1,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,6.0,6.0,6.0,6.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,7.0,7.0,7.0,7.0,1,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,7.0,7.0,7.0,7.0,1,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,7.0,7.0,7.0,7.0,1,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,3,1.0,0.0,7.0,7.0,7.0,7.0,1,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,4,1.0,0.0,7.0,7.0,7.0,7.0,1,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,5,1.0,0.0,7.0,7.0,7.0,7.0,1,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,6,1.0,0.0,7.0,7.0,7.0,7.0,1,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,7.0,7.0,7.0,7.0,1,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,7.0,7.0,7.0,7.0,1,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,7.0,7.0,7.0,7.0,1,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,3,1.0,0.0,7.0,7.0,7.0,7.0,1,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,4,1.0,0.0,7.0,7.0,7.0,7.0,1,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,5,1.0,0.0,7.0,7.0,7.0,7.0,1,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,6,1.0,0.0,7.0,7.0,7.0,7.0,1,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,7.0,7.0,7.0,7.0,0,1,0,1,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,9.0,9.0,9.0,9.0,1,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,9.0,9.0,9.0,9.0,1,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,9.0,9.0,9.0,9.0,1,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,3,1.0,0.0,9.0,9.0,9.0,9.0,1,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,4,1.0,0.0,9.0,9.0,9.0,9.0,1,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,5,1.0,0.0,9.0,9.0,9.0,9.0,1,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,6,1.0,0.0,9.0,9.0,9.0,9.0,1,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,7,1.0,0.0,9.0,9.0,9.0,9.0,1,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,8,1.0,0.0,9.0,9.0,9.0,9.0,1,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,9.0,9.0,9.0,9.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,9.0,9.0,9.0,9.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,9.0,9.0,9.0,9.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,9.0,9.0,9.0,9.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,9.0,9.0,9.0,9.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,9.0,9.0,9.0,9.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,9.0,9.0,9.0,9.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,9.0,9.0,9.0,9.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,9.0,9.0,9.0,9.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,9.0,9.0,9.0,9.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,9.0,9.0,9.0,9.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,9.0,9.0,9.0,9.0,0,1,0,1,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,1.0,1.0,1.0,1.0,1,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,1,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,2,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,1.0,1.0,1.0,1.0,0,1,0,1,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,3.0,3.0,3.0,3.0,1,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,3.0,3.0,3.0,3.0,0,1,0,1,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.0,2.0,2.0,2.0,1,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,2.0,2.0,2.0,2.0,1,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,2,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,2.0,2.0,2.0,2.0,0,1,0,1,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,8.0,8.0,8.0,8.0,1,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,8.0,8.0,8.0,8.0,1,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,8.0,8.0,8.0,8.0,1,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,3,1.0,0.0,8.0,8.0,8.0,8.0,1,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,4,1.0,0.0,8.0,8.0,8.0,8.0,1,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,5,1.0,0.0,8.0,8.0,8.0,8.0,1,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,6,1.0,0.0,8.0,8.0,8.0,8.0,1,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,7,1.0,0.0,8.0,8.0,8.0,8.0,1,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,8.0,8.0,8.0,8.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,8.0,8.0,8.0,8.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,8.0,8.0,8.0,8.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,8.0,8.0,8.0,8.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,8.0,8.0,8.0,8.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,8.0,8.0,8.0,8.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,8.0,8.0,8.0,8.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,8.0,8.0,8.0,8.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,8.0,8.0,8.0,8.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,8.0,8.0,8.0,8.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,8.0,8.0,8.0,8.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,8.0,8.0,8.0,8.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,1,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,8.0,8.0,8.0,8.0,0,1,0,1,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,3,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,4,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,5,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,6,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,7,0.5,0.5,7.75,7.5,7.0,9.0,2,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,8,0.25,0.75,7.75,7.5,7.0,9.0,1,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,3,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,4,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,5,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,6,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,7,0.5,0.5,7.75,7.5,7.0,9.0,2,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,8,0.25,0.75,7.75,7.5,7.0,9.0,1,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,3,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,4,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,5,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,6,1.0,0.0,7.75,7.5,7.0,9.0,4,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,7,0.5,0.5,7.75,7.5,7.0,9.0,2,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,8,0.25,0.75,7.75,7.5,7.0,9.0,1,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,7.75,7.5,7.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.0,2.0,1.0,3.0,4,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,1,0.5,0.5,2.0,2.0,1.0,3.0,2,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,2,0.5,0.5,2.0,2.0,1.0,3.0,2,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.0,2.0,1.0,3.0,4,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,1,0.5,0.5,2.0,2.0,1.0,3.0,2,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,2,0.5,0.5,2.0,2.0,1.0,3.0,2,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.0,2.0,1.0,3.0,4,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,1,0.5,0.5,2.0,2.0,1.0,3.0,2,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,2,0.5,0.5,2.0,2.0,1.0,3.0,2,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.0,2.0,1.0,3.0,4,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,1,0.5,0.5,2.0,2.0,1.0,3.0,2,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,2,0.5,0.5,2.0,2.0,1.0,3.0,2,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.0,2.0,1.0,3.0,4,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,1,0.5,0.5,2.0,2.0,1.0,3.0,2,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,2,0.5,0.5,2.0,2.0,1.0,3.0,2,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.0,2.0,1.0,3.0,4,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,1,0.5,0.5,2.0,2.0,1.0,3.0,2,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,2,0.5,0.5,2.0,2.0,1.0,3.0,2,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.0,2.0,1.0,3.0,4,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,1,0.5,0.5,2.0,2.0,1.0,3.0,2,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,2,0.5,0.5,2.0,2.0,1.0,3.0,2,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,1,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,2.0,2.0,1.0,3.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,5.5,5.5,5.0,6.0,4,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,5.5,5.5,5.0,6.0,4,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,5.5,5.5,5.0,6.0,4,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,3,1.0,0.0,5.5,5.5,5.0,6.0,4,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,4,1.0,0.0,5.5,5.5,5.0,6.0,4,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,5,0.5,0.5,5.5,5.5,5.0,6.0,2,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,DPA token margin,full_response_stable_against_any_token_change,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,5.5,5.5,5.0,6.0,4,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,5.5,5.5,5.0,6.0,4,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,5.5,5.5,5.0,6.0,4,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,3,1.0,0.0,5.5,5.5,5.0,6.0,4,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,4,1.0,0.0,5.5,5.5,5.0,6.0,4,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,5,0.5,0.5,5.5,5.5,5.0,6.0,2,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,5.5,5.5,5.0,6.0,0,4,0,4,Shared MILP,stability_one_token_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,8.75,9.0,8.0,9.0,4,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,8.75,9.0,8.0,9.0,4,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,8.75,9.0,8.0,9.0,4,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,3,1.0,0.0,8.75,9.0,8.0,9.0,4,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,4,1.0,0.0,8.75,9.0,8.0,9.0,4,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,5,1.0,0.0,8.75,9.0,8.0,9.0,4,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,6,1.0,0.0,8.75,9.0,8.0,9.0,4,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,7,1.0,0.0,8.75,9.0,8.0,9.0,4,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,8,0.75,0.25,8.75,9.0,8.0,9.0,3,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,8.75,9.0,8.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,8.75,9.0,8.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,8.75,9.0,8.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,8.75,9.0,8.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,8.75,9.0,8.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,8.75,9.0,8.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,8.75,9.0,8.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,8.75,9.0,8.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,8.75,9.0,8.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,8.75,9.0,8.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,8.75,9.0,8.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,8.75,9.0,8.0,9.0,0,4,0,4,Shared MILP,stability_full_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,3,0.75,0.25,4.0,4.0,3.0,5.0,3,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,4,0.25,0.75,4.0,4.0,3.0,5.0,1,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Plain DPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,0,0.25,0.75,0.5,0.0,0.0,2.0,1,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,1,0.25,0.75,0.5,0.0,0.0,2.0,1,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,2,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,0.5,0.0,0.0,2.0,0,4,0,4,Shard-aware weakest-token diagnostic,weakest_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,3,0.75,0.25,4.0,4.0,3.0,5.0,3,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,4,0.25,0.75,4.0,4.0,3.0,5.0,1,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shard-aware independent max-token diagnostic,most_difficult_harmful_token_not_full_sequence_validity,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,3,0.75,0.25,4.0,4.0,3.0,5.0,3,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,4,0.25,0.75,4.0,4.0,3.0,5.0,1,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,TPA max-token phrase blocker,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,4.0,4.0,3.0,5.0,4,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,3,0.75,0.25,4.0,4.0,3.0,5.0,3,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,4,0.25,0.75,4.0,4.0,3.0,5.0,1,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,4.0,4.0,3.0,5.0,0,4,0,4,Shared MILP,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,2.25,2.0,2.0,3.0,4,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,2.25,2.0,2.0,3.0,4,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,2,0.25,0.75,2.25,2.0,2.0,3.0,1,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,3,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,4,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,5,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,6,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,7,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,8,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,9,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,10,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,11,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,12,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,2.25,2.0,2.0,3.0,0,4,0,4,Atomic phrase aggregation,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,0,1.0,0.0,9.75,9.5,7.0,13.0,4,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,1,1.0,0.0,9.75,9.5,7.0,13.0,4,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,2,1.0,0.0,9.75,9.5,7.0,13.0,4,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,3,1.0,0.0,9.75,9.5,7.0,13.0,4,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,4,1.0,0.0,9.75,9.5,7.0,13.0,4,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,5,1.0,0.0,9.75,9.5,7.0,13.0,4,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,6,1.0,0.0,9.75,9.5,7.0,13.0,4,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,7,0.75,0.25,9.75,9.5,7.0,13.0,3,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,8,0.5,0.5,9.75,9.5,7.0,13.0,2,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,9,0.5,0.5,9.75,9.5,7.0,13.0,2,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,10,0.5,0.5,9.75,9.5,7.0,13.0,2,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,11,0.25,0.75,9.75,9.5,7.0,13.0,1,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,12,0.25,0.75,9.75,9.5,7.0,13.0,1,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,13,0.0,1.0,9.75,9.5,7.0,13.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,14,0.0,1.0,9.75,9.5,7.0,13.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,15,0.0,1.0,9.75,9.5,7.0,13.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,16,0.0,1.0,9.75,9.5,7.0,13.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,17,0.0,1.0,9.75,9.5,7.0,13.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,18,0.0,1.0,9.75,9.5,7.0,13.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,19,0.0,1.0,9.75,9.5,7.0,13.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived
+0,20,4,4,5,0.2,0.2,0.3,dense,all,20,0.0,1.0,9.75,9.5,7.0,13.0,0,4,0,4,Independent shard-aware composition diagnostic,validity_full_harmful_sequence_per_prompt,radius_derived

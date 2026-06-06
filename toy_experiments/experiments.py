@@ -418,6 +418,185 @@ def plot_benchmark_csv(csv_path: str, save_dir: str | None = None) -> list[dict[
     return rows
 
 
+SWEEP_STABILITY_METRICS = {
+    "DPA weakest-token stability": "dpa_stab_row_radius_qN",
+    "Shared MILP, one token per row": "row_col_stab_qN_r1",
+    "Shared MILP, full token grid": "row_col_stab_qN_rL",
+}
+
+SWEEP_VALIDITY_METRICS = {
+    "Plain DPA validity": "plain_dpa_val_sequence_qN",
+    "TPA multi-sample validity": "tpa_val_sequence_qN",
+    "Shared MILP validity": "row_col_val_qN",
+}
+
+
+def plot_sweep_csv(csv_path: str, sweep: str, save_dir: str | None = None) -> list[dict[str, object]]:
+    """Render a synthetic scaling sweep from an existing benchmark CSV."""
+    path = Path(csv_path)
+    output_dir = Path(save_dir) if save_dir is not None else path.parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+    rows = _read_rows_csv(path)
+    if not rows:
+        raise SystemExit(f"Sweep CSV is empty: {path}")
+
+    sweep_key = sweep.upper() if sweep.lower() != "degenerate" else "degenerate"
+    if sweep_key not in {"K", "N", "L", "degenerate"}:
+        raise SystemExit(f"Unknown sweep {sweep!r}; expected K, N, L, or degenerate")
+
+    generated: list[str] = []
+    skipped: list[str] = []
+    if sweep_key == "degenerate":
+        compact_csv_path = output_dir / "degenerate_study.csv"
+        table_path = output_dir / "degenerate_study_table.tex"
+        _write_degenerate_sweep_csv(compact_csv_path, rows)
+        _write_degenerate_sweep_table(table_path, rows)
+        generated.extend([compact_csv_path.name, table_path.name])
+    else:
+        metric_groups = [
+            ("stability", SWEEP_STABILITY_METRICS),
+            ("validity", SWEEP_VALIDITY_METRICS),
+            ("runtime", {"Total Gurobi objective runtime": "runtime_gurobi_total"}),
+        ]
+        for plot_kind, metrics in metric_groups:
+            filename = f"sweep_{sweep_key}_{plot_kind}_certificate_vs_{sweep_key}.svg"
+            y_label = "Mean certified budget B*"
+            if plot_kind == "runtime":
+                filename = f"sweep_{sweep_key}_runtime_vs_{sweep_key}.svg"
+                y_label = "Mean Gurobi runtime (seconds)"
+            series, metric_skips = _metric_series(rows, sweep_key, metrics)
+            skipped.extend(f"{filename}: {message}" for message in metric_skips)
+            if not series:
+                skipped.append(f"{filename}: no numeric series available")
+                continue
+            _save_line_plot(
+                output_dir / filename,
+                f"{plot_kind.capitalize()} scaling with {sweep_key}",
+                _axis_label(sweep_key),
+                y_label,
+                series,
+            )
+            generated.append(filename)
+
+    _write_sweep_audit(
+        output_dir / "audit_sweep.md",
+        rows=rows,
+        csv_path=path,
+        sweep=sweep_key,
+        generated=generated,
+        skipped=skipped,
+    )
+    print(f"Wrote {sweep_key} sweep plots under: {output_dir}")
+    return rows
+
+
+def _write_degenerate_sweep_table(path: Path, rows: list[dict[str, object]]) -> None:
+    metrics = _degenerate_sweep_metrics()
+    lines = [
+        r"\begin{tabular}{rr" + "r" * len(metrics) + "}",
+        r"\toprule",
+        "N & L & " + " & ".join(label for label, _metric in metrics) + r" \\",
+        r"\midrule",
+    ]
+    for row in sorted(rows, key=lambda item: (float(item["N"]), float(item["L"]))):
+        values = [_format_table_number(row.get(metric)) for _label, metric in metrics]
+        lines.append(f"{row['N']} & {row['L']} & " + " & ".join(values) + r" \\")
+    lines.extend([r"\bottomrule", r"\end{tabular}"])
+    path.write_text("\n".join(lines) + "\n")
+
+
+def _write_degenerate_sweep_csv(path: Path, rows: list[dict[str, object]]) -> None:
+    metrics = _degenerate_sweep_metrics()
+    compact_rows = []
+    for row in sorted(rows, key=lambda item: (float(item["N"]), float(item["L"]))):
+        compact_row = {"N": row.get("N"), "L": row.get("L")}
+        compact_row.update({metric: row.get(metric, "") for _label, metric in metrics})
+        compact_rows.append(compact_row)
+    _write_rows_csv(path, compact_rows)
+
+
+def _degenerate_sweep_metrics() -> list[tuple[str, str]]:
+    return [
+        ("DPA stability", "dpa_stab_row_radius_qN"),
+        ("Shared stability, r=1", "row_col_stab_qN_r1"),
+        ("Shared stability, r=L", "row_col_stab_qN_rL"),
+        ("Plain DPA validity", "plain_dpa_val_sequence_qN"),
+        ("TPA validity", "tpa_val_sequence_qN"),
+        ("Shared validity", "row_col_val_qN"),
+    ]
+
+
+def _format_table_number(value: object) -> str:
+    numeric = _numeric_value(value)
+    if numeric is None:
+        return "--"
+    return f"{numeric:.3f}".rstrip("0").rstrip(".")
+
+
+def _write_sweep_audit(
+    path: Path,
+    *,
+    rows: list[dict[str, object]],
+    csv_path: Path,
+    sweep: str,
+    generated: list[str],
+    skipped: list[str],
+) -> None:
+    expected_varied = {"degenerate": {"N", "L"}}.get(sweep, {sweep})
+    parameter_keys = ["K", "N", "L", "T", "delta_stab", "delta_val", "target_bias", "seed"]
+    unique_values = {key: _sorted_unique_values(rows, key) for key in parameter_keys}
+    unexpectedly_varied = [
+        key for key, values in unique_values.items() if len(values) > 1 and key not in expected_varied
+    ]
+    expected_but_fixed = [key for key in expected_varied if len(unique_values.get(key, [])) < 2]
+    status_columns = sorted({key for row in rows for key in row if key.endswith("_status")})
+    requested_metrics = {**SWEEP_STABILITY_METRICS, **SWEEP_VALIDITY_METRICS}
+    requested_metrics["Total Gurobi objective runtime"] = "runtime_gurobi_total"
+    included_methods = [
+        f"{label} (`{metric}`)"
+        for label, metric in requested_metrics.items()
+        if any(_numeric_value(row.get(metric)) is not None for row in rows)
+    ]
+    missing_metrics = [
+        f"{label} (`{metric}`)"
+        for label, metric in requested_metrics.items()
+        if not any(_numeric_value(row.get(metric)) is not None for row in rows)
+    ]
+
+    lines = [
+        "# Sweep benchmark audit",
+        "",
+        f"- Source CSV: `{csv_path}`",
+        f"- Sweep: `{sweep}`",
+        f"- Rows: {len(rows)}",
+        f"- Expected varied parameter(s): {', '.join(sorted(expected_varied))}",
+        f"- Fixed vocabulary size `T`: {'yes' if len(unique_values['T']) == 1 else 'NO'}",
+        "",
+        "## Parameter values",
+        "",
+    ]
+    lines.extend(f"- `{key}`: {values}" for key, values in unique_values.items())
+    lines.extend(["", "## Generated artifacts", ""])
+    lines.extend(f"- `{filename}`" for filename in generated)
+    if not generated:
+        lines.append("- None")
+    lines.extend(["", "## Methods and metrics", ""])
+    lines.append(f"- Included: {included_methods or 'none'}")
+    lines.append(f"- Missing or non-numeric: {missing_metrics or 'none'}")
+    lines.extend(["", "## Solver statuses", ""])
+    if status_columns:
+        for column in status_columns:
+            values = sorted({str(row.get(column, "")) for row in rows if row.get(column, "") != ""})
+            lines.append(f"- `{column}`: {values or ['missing']}")
+    else:
+        lines.append("- No `*_status` columns found.")
+    lines.extend(["", "## Checks", ""])
+    lines.append(f"- Unexpectedly varied parameters: {unexpectedly_varied or 'none'}")
+    lines.append(f"- Expected varied parameters with fewer than two values: {expected_but_fixed or 'none'}")
+    lines.append(f"- Skipped series or plots: {skipped or 'none'}")
+    path.write_text("\n".join(lines) + "\n")
+
+
 DEFAULT_REPORT_PLOT_FILENAMES = (
     "stability_one_token_per_row_budget_curve.svg",
     "stability_one_prompt_budget_curve.svg",
@@ -2649,6 +2828,7 @@ def build_parser() -> argparse.ArgumentParser:
             "benchmark",
             "plot-csv",
             "plot-validity-demo",
+            "plot-sweep",
         ],
     )
     parser.add_argument("--K", type=int, default=7)
@@ -2664,6 +2844,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--save-dir", default=None)
     parser.add_argument("--csv", default="toy_experiments/outputs/medium/results/benchmark_results.csv")
+    parser.add_argument("--sweep", choices=["K", "N", "L", "degenerate"], default=None)
     parser.add_argument("--make-plots", action="store_true", help="Also render benchmark plots after running Gurobi.")
     parser.add_argument("--config", default=None, help="YAML benchmark config. Required for benchmark runs.")
     parser.add_argument("--dry-run", action="store_true", help="Validate config and print solve estimates without running Gurobi.")
@@ -2741,6 +2922,10 @@ def main() -> None:
         plot_benchmark_csv(args.csv, save_dir=args.save_dir)
     elif args.command == "plot-validity-demo":
         plot_validity_demo_csv(args.csv, save_dir=args.save_dir)
+    elif args.command == "plot-sweep":
+        if args.sweep is None:
+            raise SystemExit("plot-sweep requires --sweep K|N|L|degenerate")
+        plot_sweep_csv(args.csv, sweep=args.sweep, save_dir=args.save_dir)
     else:
         raise ValueError(f"Unknown command: {args.command}")
 
