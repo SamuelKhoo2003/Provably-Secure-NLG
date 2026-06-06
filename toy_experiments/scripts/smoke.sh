@@ -38,7 +38,6 @@ DELTA_VAL_VALUE="${VIS_DELTA_VAL:-${VIS_DELTA:-$(config_value delta_val 0.2)}}"
 TARGET_BIAS_VALUE="${TARGET_BIAS:-$(config_value target_bias 0.3)}"
 INFLUENCE_MODE_VALUE="${INFLUENCE_MODE:-$(config_value influence_mode dense)}"
 SEED_VALUE="${SEED:-$(config_value seed 0)}"
-STABILITY_COMPETITOR_MODE="${STABILITY_COMPETITOR_MODE:-$(config_value stability_competitor_mode all)}"
 VIS_OUT_DIR="${VIS_OUT_DIR:-${OUT_DIR:-$(config_value output_dir toy_experiments/outputs/smoke)}}"
 OUT_DIR="${OUT_DIR:-$VIS_OUT_DIR}"
 
@@ -46,14 +45,6 @@ case "$INFLUENCE_MODE_VALUE" in
   dense|row-local|column-local) ;;
   *)
     echo "Error: invalid influence_mode '$INFLUENCE_MODE_VALUE' from $CONFIG_LABEL" >&2
-    exit 1
-    ;;
-esac
-
-case "$STABILITY_COMPETITOR_MODE" in
-  all|runner_up) ;;
-  *)
-    echo "Error: invalid stability_competitor_mode '$STABILITY_COMPETITOR_MODE' from $CONFIG_LABEL" >&2
     exit 1
     ;;
 esac
@@ -66,7 +57,6 @@ echo "K, N, L, T:                $K_VALUE, $N_VALUE, $L_VALUE, $T_VALUE"
 echo "delta_stab, delta_val:     $DELTA_STAB_VALUE, $DELTA_VAL_VALUE"
 echo "target_bias:               $TARGET_BIAS_VALUE"
 echo "influence_mode:            $INFLUENCE_MODE_VALUE"
-echo "stability_competitor_mode: $STABILITY_COMPETITOR_MODE"
 echo "seed:                      $SEED_VALUE"
 echo
 
@@ -96,7 +86,6 @@ echo "== Smoke instance visualization =="
   --delta-val "$DELTA_VAL_VALUE" \
   --target-bias "$TARGET_BIAS_VALUE" \
   --influence-mode "$INFLUENCE_MODE_VALUE" \
-  --stability-competitor-mode "$STABILITY_COMPETITOR_MODE" \
   --seed "$SEED_VALUE" \
   --save-dir "$OUT_DIR"
 echo
@@ -128,7 +117,6 @@ done
   echo "delta_val=$DELTA_VAL_VALUE"
   echo "target_bias=$TARGET_BIAS_VALUE"
   echo "influence_mode=$INFLUENCE_MODE_VALUE"
-  echo "stability_competitor_mode=$STABILITY_COMPETITOR_MODE"
   echo "seed=$SEED_VALUE"
 } > "$OUT_DIR/smoke_summary.txt"
 

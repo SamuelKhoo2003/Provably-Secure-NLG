@@ -14,7 +14,6 @@ seed: 0
 budget_max: 75
 
 influence_mode: dense
-stability_competitor_mode: all
 objective_family: full
 make_budget_curves: true
 

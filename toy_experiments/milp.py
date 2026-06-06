@@ -49,22 +49,20 @@ def solve_structured_stability(
     votes: np.ndarray,
     clean_counts: np.ndarray,
     clean_pred: np.ndarray,
-    runner_up: np.ndarray,
     influence: np.ndarray | None = None,
     q_rows: int = 1,
     r_cols: int = 1,
-    competitor_mode: str = "all",
     gurobi_threads: int | None = None,
 ) -> CertificateResult:
     """Minimize poisoned shards needed to destabilize q rows by r token positions."""
-    K, N, L, _ = _validate_stability_shapes(votes, clean_counts, clean_pred, runner_up, influence)
+    K, N, L, _ = _validate_stability_shapes(votes, clean_counts, clean_pred, influence)
     if q_rows < 1 or q_rows > N:
         raise ValueError(f"q_rows must be in [1, {N}]")
     if r_cols < 1 or r_cols > L:
         raise ValueError(f"r_cols must be in [1, {L}]")
 
     model, a = _make_model(K, f"row_col_stability_q{q_rows}_r{r_cols}", gurobi_threads=gurobi_threads)
-    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, runner_up, influence, competitor_mode)
+    z = _add_stability_cell_constraints(model, a, votes, clean_counts, clean_pred, influence)
     y_row = model.addVars(N, vtype=GRB.BINARY, name="y_row")
     _add_at_least_r_row_constraints(model, z, y_row, N, L, q_rows=q_rows, r_cols=r_cols)
     return _optimize_and_extract(f"row_col_stability_q{q_rows}_r{r_cols}", model, a, z, y_row=y_row)
@@ -152,13 +150,10 @@ def _add_stability_cell_constraints(
     votes: np.ndarray,
     clean_counts: np.ndarray,
     clean_pred: np.ndarray,
-    runner_up: np.ndarray,
     influence: np.ndarray | None,
-    competitor_mode: str,
 ) -> gp.tupledict:
     K, N, L = votes.shape
     T = clean_counts.shape[-1]
-    _validate_competitor_mode(competitor_mode)
     influence = _dense_influence_if_none(influence, K, N, L)
     big_m = 2 * K + 10
     z = model.addVars(N, L, vtype=GRB.BINARY, name="z_stab")
@@ -167,17 +162,6 @@ def _add_stability_cell_constraints(
     for i in range(N):
         for j in range(L):
             winner = int(clean_pred[i, j])
-            if competitor_mode == "runner_up":
-                competitor = int(runner_up[i, j])
-                lhs = int(clean_counts[i, j, competitor]) + gp.quicksum(
-                    a[k] * int(influence[k, i, j]) * int(votes[k, i, j] != competitor) for k in range(K)
-                )
-                rhs = int(clean_counts[i, j, winner]) - gp.quicksum(
-                    a[k] * int(influence[k, i, j]) * int(votes[k, i, j] == winner) for k in range(K)
-                )
-                model.addConstr(lhs >= rhs - big_m * (1 - z[i, j]), name=f"stability_cell_runner_up_{i}_{j}")
-                continue
-
             competitor_vars = []
             for competitor in range(T):
                 if competitor == winner:
@@ -335,16 +319,10 @@ def _dense_influence_if_none(influence: np.ndarray | None, K: int, N: int, L: in
     return influence
 
 
-def _validate_competitor_mode(competitor_mode: str) -> None:
-    if competitor_mode not in {"all", "runner_up"}:
-        raise ValueError("competitor_mode must be 'all' or 'runner_up'")
-
-
 def _validate_stability_shapes(
     votes: np.ndarray,
     clean_counts: np.ndarray,
     clean_pred: np.ndarray,
-    runner_up: np.ndarray,
     influence: np.ndarray | None,
 ) -> tuple[int, int, int, int]:
     if votes.ndim != 3:
@@ -360,9 +338,6 @@ def _validate_stability_shapes(
     if clean_pred.shape != (N, L):
         raise ValueError(f"clean_pred must have shape {(N, L)}, got {clean_pred.shape}")
     _validate_token_ids(clean_pred, T, "clean_pred")
-    if runner_up.shape != (N, L):
-        raise ValueError(f"runner_up must have shape {(N, L)}, got {runner_up.shape}")
-    _validate_token_ids(runner_up, T, "runner_up")
     if influence is not None and influence.shape != (K, N, L):
         raise ValueError(f"influence must have shape {(K, N, L)}, got {influence.shape}")
     return K, N, L, T

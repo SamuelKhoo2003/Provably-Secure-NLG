@@ -49,6 +49,17 @@ threads. `0` uses Gurobi automatic mode; positive integers request a fixed
 thread limit. `GUROBI_THREADS` can override the YAML value for a run. On shared
 machines, avoid blindly setting very high values.
 
+Stability is always evaluated against all competing tokens. The old
+runner-up-only diagnostic has been removed because report-facing stability is
+an untargeted any-token-change property. There is no stability competitor-mode
+config or CLI option.
+
+The report-facing comparison is:
+
+- Stability: DPA weakest-token baseline and full shared MILP stability.
+- Validity: DPA weakest harmful-token diagnostic, TPA max-token phrase
+  baseline, and full shared MILP validity.
+
 ## Run A Benchmark
 
 Run the small benchmark:

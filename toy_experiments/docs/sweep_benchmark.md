@@ -16,8 +16,10 @@ Each standard sweep changes one parameter:
 | `L` | `1, 2, 4, 6, 8` | `K=20`, `N=4`, `T=5` |
 
 All use the dense toy generator, seed `0`, `delta_stab=0.2`,
-`delta_val=0.2`, target bias `0.3`, all stability competitors, and the full
-objective family. Budget-curve generation remains enabled.
+`delta_val=0.2`, target bias `0.3`, and the full objective family. Stability is
+always evaluated against all competing tokens; the old runner-up-only
+diagnostic has been removed because report-facing stability is an untargeted
+any-token-change property. Budget-curve generation remains enabled.
 
 The separate degeneracy study evaluates the Cartesian product
 `N in {1,4}` and `L in {1,4}` at `K=20`, giving:

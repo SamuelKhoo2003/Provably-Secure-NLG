@@ -628,8 +628,8 @@ def majority_predictions(clean_counts: np.ndarray) -> np.ndarray:
 def runner_up_tokens(clean_counts: np.ndarray, clean_pred: np.ndarray) -> np.ndarray:
     """Return second-ranked tokens for DPA weakest-token baselines.
 
-    The shared MILP can check all competitors, but runner-up tokens remain useful
-    for clean winner-vs-runner-up margins and the runner-up approximation mode.
+    The shared MILP checks all competitors. Runner-up tokens remain useful for
+    the count-only clean winner-vs-runner-up DPA margin.
     """
     N, L, T = clean_counts.shape
     runner_up = np.empty((N, L), dtype=np.int64)

@@ -57,7 +57,6 @@ def visualize_instance(
     seed: int,
     influence_mode: str,
     save_dir: str,
-    stability_competitor_mode: str = "all",
 ) -> None:
     """Generate and save one instance-level visualization bundle."""
     data = generate_toy_votes(
@@ -77,7 +76,6 @@ def visualize_instance(
         target_bias=target_bias,
         seed=seed,
         influence_mode=influence_mode,
-        stability_competitor_mode=stability_competitor_mode,
     )
 
 
@@ -90,7 +88,6 @@ def benchmark_scale(
     delta_vals: Iterable[float],
     target_biases: Iterable[float],
     influence_mode: str,
-    stability_competitor_mode: str,
     seed: int,
     save_dir: str,
     make_plots: bool = False,
@@ -120,12 +117,7 @@ def benchmark_scale(
     budget_plot_num_points: int | None = None,
     gurobi_threads: int | None = None,
 ) -> list[dict[str, object]]:
-    """Generate benchmark CSV rows for the configured parameter grid.
-
-    CSV generation is intentionally separate from plotting. Stability solver
-    rows record ``stability_competitor_mode`` so exact all-competitor runs can be
-    distinguished from runner-up approximation runs.
-    """
+    """Generate benchmark CSV rows for the configured parameter grid."""
     objective_flags = _resolve_objective_flags(
         objective_family=objective_family,
         make_budget_curves=make_budget_curves,
@@ -206,7 +198,6 @@ def benchmark_scale(
                                 results = _solve_benchmark_certificates(
                                     data,
                                     T,
-                                    stability_competitor_mode=stability_competitor_mode,
                                     make_stability_objectives=objective_flags["make_stability_objectives"],
                                     make_validity_objectives=objective_flags["make_validity_objectives"],
                                     gurobi_threads=resolved_gurobi_threads,
@@ -223,7 +214,6 @@ def benchmark_scale(
                                     "target_bias": target_bias,
                                     "seed": seed,
                                     "influence_mode": influence_mode,
-                                    "stability_competitor_mode": stability_competitor_mode,
                                     "runtime_gurobi_total": f"{runtime_total:.6f}",
                                 }
                                 if generator == "validity_demo":
@@ -263,7 +253,6 @@ def benchmark_scale(
                                     delta_val=delta_val,
                                     target_bias=target_bias,
                                     influence_mode=influence_mode,
-                                    stability_competitor_mode=stability_competitor_mode,
                                 )
                                 if objective_flags["make_stability_budget_curves"] or objective_flags["make_validity_budget_curves"]:
                                     budget_curve_rows.extend(
@@ -272,7 +261,6 @@ def benchmark_scale(
                                             T=T,
                                             budgets=budgets,
                                             metadata=metadata,
-                                            stability_competitor_mode=stability_competitor_mode,
                                             make_stability_curves=objective_flags["make_stability_budget_curves"],
                                             make_validity_curves=objective_flags["make_validity_budget_curves"],
                                             gurobi_threads=resolved_gurobi_threads,
@@ -1155,18 +1143,17 @@ def save_instance_plots(
     target_bias: float,
     seed: int,
     influence_mode: str,
-    stability_competitor_mode: str = "all",
 ) -> None:
     """Write per-instance heatmaps and curves for one generated toy instance."""
     output_dir.mkdir(parents=True, exist_ok=True)
     margins = stability_margins(data.stab_counts, data.clean_pred, data.runner_up)
     target_counts = np.take_along_axis(data.val_counts, data.target[:, :, None], axis=2)[:, :, 0]
-    stability_grid = compute_structured_stability_grid(data, competitor_mode=stability_competitor_mode)
+    stability_grid = compute_structured_stability_grid(data)
     q_curve = compute_validity_q_curve(data, T)
 
     title_suffix = (
         f"K={K}, N={N}, L={L}, T={T}, delta_stab={delta_stab}, delta_val={delta_val}, "
-        f"target_bias={target_bias}, influence={influence_mode}, stability_competitor_mode={stability_competitor_mode}, seed={seed}"
+        f"target_bias={target_bias}, influence={influence_mode}, seed={seed}"
     )
     _save_heatmap_svg(data.clean_pred, output_dir / "clean_predictions.svg", "Clean predictions | " + title_suffix)
     _save_heatmap_svg(data.target, output_dir / "harmful_targets.svg", "Harmful targets | " + title_suffix)
@@ -1854,7 +1841,6 @@ def _compute_benchmark_baselines(data: ToyData, make_stability_objectives: bool,
 def _solve_benchmark_certificates(
     data: ToyData,
     T: int,
-    stability_competitor_mode: str = "all",
     make_stability_objectives: bool = True,
     make_validity_objectives: bool = True,
     gurobi_threads: int | None = None,
@@ -1870,44 +1856,36 @@ def _solve_benchmark_certificates(
                     data.stab_votes,
                     data.stab_counts,
                     data.clean_pred,
-                    data.runner_up,
                     data.influence,
                     q_rows=1,
                     r_cols=1,
-                    competitor_mode=stability_competitor_mode,
                     gurobi_threads=gurobi_threads,
                 ),
                 solve_structured_stability(
                     data.stab_votes,
                     data.stab_counts,
                     data.clean_pred,
-                    data.runner_up,
                     data.influence,
                     q_rows=1,
                     r_cols=L,
-                    competitor_mode=stability_competitor_mode,
                     gurobi_threads=gurobi_threads,
                 ),
                 solve_structured_stability(
                     data.stab_votes,
                     data.stab_counts,
                     data.clean_pred,
-                    data.runner_up,
                     data.influence,
                     q_rows=N,
                     r_cols=1,
-                    competitor_mode=stability_competitor_mode,
                     gurobi_threads=gurobi_threads,
                 ),
                 solve_structured_stability(
                     data.stab_votes,
                     data.stab_counts,
                     data.clean_pred,
-                    data.runner_up,
                     data.influence,
                     q_rows=N,
                     r_cols=L,
-                    competitor_mode=stability_competitor_mode,
                     gurobi_threads=gurobi_threads,
                 ),
             ]
@@ -2001,7 +1979,6 @@ def compute_radius_derived_budget_curve_rows(
     T: int,
     budgets: Iterable[int],
     metadata: dict[str, object],
-    stability_competitor_mode: str = "all",
     make_stability_curves: bool = True,
     make_validity_curves: bool = True,
     gurobi_threads: int | None = None,
@@ -2021,7 +1998,7 @@ def compute_radius_derived_budget_curve_rows(
                 (
                     "Shared MILP",
                     "stability_one_token_per_prompt",
-                    _shared_stability_row_radii(data, r_cols=1, competitor_mode=stability_competitor_mode, gurobi_threads=gurobi_threads),
+                    _shared_stability_row_radii(data, r_cols=1, gurobi_threads=gurobi_threads),
                 ),
                 (
                     "Shared MILP",
@@ -2029,7 +2006,6 @@ def compute_radius_derived_budget_curve_rows(
                     _shared_stability_row_radii(
                         data,
                         r_cols=data.stab_votes.shape[2],
-                        competitor_mode=stability_competitor_mode,
                         gurobi_threads=gurobi_threads,
                     ),
                 ),
@@ -2095,7 +2071,7 @@ def compute_radius_derived_budget_curve_rows(
     return rows
 
 
-def compute_structured_stability_grid(data: ToyData, competitor_mode: str = "all", gurobi_threads: int | None = None) -> np.ndarray:
+def compute_structured_stability_grid(data: ToyData, gurobi_threads: int | None = None) -> np.ndarray:
     """Compute ``B*(q,r)`` for every prompt-row/token-position stability objective."""
     N = data.stab_votes.shape[1]
     L = data.stab_votes.shape[2]
@@ -2106,11 +2082,9 @@ def compute_structured_stability_grid(data: ToyData, competitor_mode: str = "all
                 data.stab_votes,
                 data.stab_counts,
                 data.clean_pred,
-                data.runner_up,
                 data.influence,
                 q_rows=q_rows,
                 r_cols=r_cols,
-                competitor_mode=competitor_mode,
                 gurobi_threads=gurobi_threads,
             )
             grid[q_rows - 1, r_cols - 1] = -1 if result.B_star is None else result.B_star
@@ -2127,7 +2101,7 @@ def compute_validity_q_curve(data: ToyData, T: int, gurobi_threads: int | None =
     return values
 
 
-def _shared_stability_row_radii(data: ToyData, r_cols: int, competitor_mode: str = "all", gurobi_threads: int | None = None) -> np.ndarray:
+def _shared_stability_row_radii(data: ToyData, r_cols: int, gurobi_threads: int | None = None) -> np.ndarray:
     _, N, _ = data.stab_votes.shape
     radii = np.full(N, np.nan, dtype=float)
     for i in range(N):
@@ -2136,11 +2110,9 @@ def _shared_stability_row_radii(data: ToyData, r_cols: int, competitor_mode: str
             data.stab_votes[:, row_slice, :],
             data.stab_counts[row_slice, :, :],
             data.clean_pred[row_slice, :],
-            data.runner_up[row_slice, :],
             data.influence[:, row_slice, :],
             q_rows=1,
             r_cols=r_cols,
-            competitor_mode=competitor_mode,
             gurobi_threads=gurobi_threads,
         )
         if result.is_optimal and result.B_star is not None:
@@ -2178,7 +2150,6 @@ def _benchmark_metadata(
     delta_val: float,
     target_bias: float,
     influence_mode: str,
-    stability_competitor_mode: str,
 ) -> dict[str, object]:
     return {
         "seed": seed,
@@ -2190,7 +2161,6 @@ def _benchmark_metadata(
         "delta_val": delta_val,
         "target_bias": target_bias,
         "influence_mode": influence_mode,
-        "stability_competitor_mode": stability_competitor_mode,
     }
 
 
@@ -2649,6 +2619,11 @@ def _require_number_list(config: dict[str, object], path: Path, key: str, item_t
 def load_experiment_config(path: str | Path) -> dict[str, object]:
     config_path = Path(path)
     config = _read_flat_yaml_config(config_path)
+    if "stability_competitor_mode" in config:
+        raise ConfigError(
+            f"deprecated field `stability_competitor_mode` found in {config_path}. "
+            "Stability now always uses all competitors. Remove this field from the YAML."
+        )
     generator = _require_str(config, config_path, "generator", {"toy", "validity_demo"})
     benchmark_config: dict[str, object] = {
         "Ks": _require_number_list(config, config_path, "K_values", int),
@@ -2670,7 +2645,6 @@ def load_experiment_config(path: str | Path) -> dict[str, object]:
                 "delta_vals": _require_number_list(config, config_path, "delta_val_values", float),
                 "target_biases": _require_number_list(config, config_path, "target_bias_values", float),
                 "influence_mode": _require_str(config, config_path, "influence_mode", {"dense", "row-local", "column-local"}),
-                "stability_competitor_mode": _require_str(config, config_path, "stability_competitor_mode", {"all", "runner_up"}),
             }
         )
     else:
@@ -2680,7 +2654,6 @@ def load_experiment_config(path: str | Path) -> dict[str, object]:
                 "delta_vals": [0.0],
                 "target_biases": [0.0],
                 "influence_mode": _optional_str(config, config_path, "influence_mode", "validity_demo", {"validity_demo"}),
-                "stability_competitor_mode": _optional_str(config, config_path, "stability_competitor_mode", "all", {"all", "runner_up"}),
             }
         )
     for key in [
@@ -2840,7 +2813,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--delta-val", type=float, default=None)
     parser.add_argument("--target-bias", type=float, default=None)
     parser.add_argument("--influence-mode", choices=["dense", "row-local", "column-local", "validity_demo"], default="dense")
-    parser.add_argument("--stability-competitor-mode", choices=["all", "runner_up"], default="all")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--save-dir", default=None)
     parser.add_argument("--csv", default="toy_experiments/outputs/medium/results/benchmark_results.csv")
@@ -2870,7 +2842,6 @@ def main() -> None:
             seed=args.seed,
             influence_mode=args.influence_mode,
             save_dir=args.save_dir or "toy_experiments/outputs/smoke",
-            stability_competitor_mode=args.stability_competitor_mode,
         )
     elif args.command == "benchmark":
         if args.config is None:
@@ -2888,7 +2859,6 @@ def main() -> None:
             delta_vals=config["delta_vals"],
             target_biases=config["target_biases"],
             influence_mode=config["influence_mode"],
-            stability_competitor_mode=config["stability_competitor_mode"],
             seed=config["seed"],
             save_dir=config["save_dir"],
             make_plots=args.make_plots,
