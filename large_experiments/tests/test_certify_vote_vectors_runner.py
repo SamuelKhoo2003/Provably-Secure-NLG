@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
+import tempfile
 import unittest
+from collections import Counter
 from pathlib import Path
 
 import numpy as np
@@ -21,6 +24,47 @@ SPEC.loader.exec_module(runner)
 
 
 class CertificationRunnerTests(unittest.TestCase):
+    def test_loader_filters_on_shortest_non_none_prefix(self) -> None:
+        vote_vector = ["clean", "clean", "target"]
+        common = {
+            "vote_vector": vote_vector,
+            "vote_counts": dict(Counter(vote_vector)),
+            "majority": "clean",
+        }
+        filtered = {
+            **common,
+            "token_vote_matrix": [
+                [1, 2, 3, None, None],
+                [1, 2, None, None, None],
+                [1, 2, 3, 4, None],
+            ],
+        }
+        retained = {
+            **common,
+            "token_vote_matrix": [
+                [1, 2, 3, 4, None],
+                [1, 2, 3, 5, None],
+                [1, 2, 3, 6, None],
+            ],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "votes.jsonl"
+            path.write_text(
+                json.dumps(filtered) + "\n" + json.dumps(retained) + "\n"
+            )
+            rows, report = runner.load_prompt_rows(
+                path,
+                horizon=3,
+                max_prompts=None,
+                expected_num_shards=3,
+            )
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].original_row_index, 1)
+        self.assertEqual(rows[0].token_vote_matrix[0], (1, 2, 3))
+        self.assertEqual(report.filtered_short_rows, 1)
+        self.assertEqual(report.truncated_rows, 1)
+
     def test_dpa_certified_radius_uses_conservative_tie_convention(self) -> None:
         self.assertEqual(runner.dpa_certified_radius(10, 4), 2)
         self.assertEqual(runner.dpa_certified_radius(5, 5), 0)

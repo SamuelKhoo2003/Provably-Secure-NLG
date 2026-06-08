@@ -121,10 +121,29 @@ def load_prompt_rows(
                 raise ValueError(
                     f"Row {line_index}: shard token sequence lengths differ: {sorted(lengths)}"
                 )
-            sequence_length = next(iter(lengths))
-            if sequence_length < horizon:
+            non_none_prefix_lengths = [
+                next(
+                    (
+                        index
+                        for index, token in enumerate(sequence)
+                        if token is None
+                    ),
+                    len(sequence),
+                )
+                for sequence in matrix
+            ]
+            usable_sequence_length = min(non_none_prefix_lengths)
+            if usable_sequence_length < horizon:
                 filtered_short_rows += 1
                 continue
+
+            for shard_index, sequence in enumerate(matrix):
+                prefix = sequence[:horizon]
+                if any(token is None for token in prefix):
+                    raise ValueError(
+                        f"Row {line_index}, shard {shard_index}: "
+                        "None found inside retained horizon"
+                    )
 
             actual_counts = Counter(vote_vector)
             stored_counts = Counter(raw["vote_counts"])
@@ -140,7 +159,7 @@ def load_prompt_rows(
                     f"the deterministic vote_vector majority {computed_majority!r}"
                 )
 
-            if sequence_length > horizon:
+            if usable_sequence_length > horizon:
                 truncated_rows += 1
             rows.append(
                 PromptRow(
@@ -785,6 +804,8 @@ def main() -> None:
         "num_total_rows_read": load_report.total_rows,
         "num_rows_filtered_shorter_than_horizon": load_report.filtered_short_rows,
         "num_rows_truncated_to_horizon": load_report.truncated_rows,
+        "horizon_filter_basis": "shortest_non_none_prefix_across_shards",
+        "padding_policy": "no_padding_none_rows_filtered",
         "stopped_at_max_prompts": load_report.stopped_at_max_prompts,
         "budgets": budgets,
         "solver": "gurobi",
