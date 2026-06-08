@@ -23,4 +23,4 @@ external/VPA-main/**/adapters*/
 external/phd_reference
 
 #Large Scale Training Outputs
-large_experiments/outputs
+large_experiments/outputs/vote_vector_grids

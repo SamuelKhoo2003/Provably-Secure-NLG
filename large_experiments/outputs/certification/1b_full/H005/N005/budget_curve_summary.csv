@@ -1,0 +1,16 @@
+budget,method,objective_mode,num_prompts,certified_prompts,certified_fraction,horizon,num_shards,num_events,max_failed_prompts,certified_prompts_lower_bound,certified_fraction_lower_bound,solver,solver_status,objective_value,objective_bound,mip_gap,time_seconds,top_competitors,max_targets_per_prompt
+0,aggregate_tpa_mcp_validity,radius_derived,5,5,1.0,,,,,,,,,,,,,,
+0,dpa_max_target_token_validity,radius_derived,5,5,1.0,,,,,,,,,,,,,,
+0,dpa_weakest_token_stability,radius_derived,5,5,1.0,,,,,,,,,,,,,,
+0,joint_row_column_stability_milp,fixed_budget_adversarial_success,5,,,5,500,5,0,5,1.0,gurobi,OPTIMAL,-0.0,-0.0,0.0,0.03864633000193862,1,1
+0,joint_row_column_validity_milp,fixed_budget_adversarial_success,5,,,5,500,4,0,5,1.0,gurobi,OPTIMAL,-0.0,-0.0,0.0,0.002017232996877283,1,1
+1,aggregate_tpa_mcp_validity,radius_derived,5,5,1.0,,,,,,,,,,,,,,
+1,dpa_max_target_token_validity,radius_derived,5,5,1.0,,,,,,,,,,,,,,
+1,dpa_weakest_token_stability,radius_derived,5,5,1.0,,,,,,,,,,,,,,
+1,joint_row_column_stability_milp,fixed_budget_adversarial_success,5,,,5,500,5,0,5,1.0,gurobi,OPTIMAL,-0.0,-0.0,0.0,0.0018283710014657117,1,1
+1,joint_row_column_validity_milp,fixed_budget_adversarial_success,5,,,5,500,4,0,5,1.0,gurobi,OPTIMAL,-0.0,-0.0,0.0,0.0016321900002367329,1,1
+3,aggregate_tpa_mcp_validity,radius_derived,5,5,1.0,,,,,,,,,,,,,,
+3,dpa_max_target_token_validity,radius_derived,5,5,1.0,,,,,,,,,,,,,,
+3,dpa_weakest_token_stability,radius_derived,5,5,1.0,,,,,,,,,,,,,,
+3,joint_row_column_stability_milp,fixed_budget_adversarial_success,5,,,5,500,5,0,5,1.0,gurobi,OPTIMAL,-0.0,-0.0,0.0,0.0017767249992175493,1,1
+3,joint_row_column_validity_milp,fixed_budget_adversarial_success,5,,,5,500,4,0,5,1.0,gurobi,OPTIMAL,-0.0,-0.0,0.0,0.0014590520004276186,1,1
