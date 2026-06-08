@@ -65,6 +65,66 @@ The report-facing comparison is:
 - Validity: DPA weakest harmful-token diagnostic, TPA max-token phrase
   baseline, and full shared MILP validity.
 
+For standard `small.yaml`, `medium.yaml`, and `large.yaml` results,
+`comparisons.txt` also reports summative DPA validity statistics. Summative DPA
+is `independent_val_sequence_qN`: independent shard-aware token attack costs
+summed across all token positions and prompts. It is compared with
+`row_col_val_qN`, where the shared MILP can reuse poisoned shards across cells.
+
+## Coupled Synthetic Sweeps
+
+Synthetic benchmark sweeps use coupled generation by design; no YAML option is
+required. For each fixed `(delta_stab, delta_val, target_bias)` tuple, the
+benchmark generates one master instance at the maximum requested `K`, `N`, `L`,
+and `T`. Smaller points are derived from that master:
+
+- `K`: take the first `K` shards and recompute vote counts and predictions.
+- `N`: take the first `N` prompt rows.
+- `L`: take the first `L` token positions.
+- `T`: retain candidate ids below `T - 1` and merge removed candidates into
+  the last retained id, then recompute candidate-dependent arrays.
+
+This replaces the previous behavior where every Cartesian-product point called
+the random generator independently. Under that behavior, changing an array
+shape changed the RNG trajectory even with the same seed, so sweep points were
+different random worlds rather than nested comparisons.
+
+Distribution sweeps are deliberately more limited. Each distinct
+`delta_stab`, `delta_val`, and `target_bias` tuple receives its own coupled
+master. These parameters therefore still compare separately generated
+distributions; the implementation does not claim latent-random-variable
+coupling across them.
+
+Coupling improves comparability but does not make every metric monotonic:
+
+- Full-sequence validity is nondecreasing with `L` because the attack must
+  force every position in a longer exact prefix.
+- Any-token stability is nonincreasing with `L` because the attacker has more
+  positions available.
+- All-token stability is nondecreasing with `L`.
+- For `N`, attacking all prompts becomes harder or unchanged, while attacking
+  at least one prompt can become easier.
+- `K` is not generally monotonic because ensemble size and margins both change.
+- Increasing `T` adds candidate competitors, but validity also depends on the
+  target representation and candidate projection.
+- Delta and target-bias directions depend on the synthetic distribution.
+
+The validity demo generates a master at `L_master` and a sufficiently large
+`K_master`. For a derived point,
+`K_actual = max(K_requested, min_required_shards(L))`, where
+`min_required_shards = group_size + (L - 1) * (group_size - overlap)`.
+Heterogeneous useful-shard groups are restricted to the prefix available at
+each position, so slicing does not discard an intended group.
+
+New result and budget-curve CSVs include `coupled_generation`, `K_requested`,
+`K_actual`, `K_master`, `N_master`, `L_master`, and `T_master`. Plot readers
+remain compatible with historical CSVs that lack these columns.
+
+Report-facing caveat: The synthetic sweeps are generated using a coupled master
+instance, so changes in `K`, `N`, `L`, or `T` are evaluated on nested variants
+of the same underlying vote structure. This isolates each scaling parameter
+more clearly than independently regenerating each point.
+
 ## Run A Benchmark
 
 Run the small benchmark:
@@ -91,6 +151,10 @@ without running Gurobi:
 ```bash
 CONFIG=toy_experiments/configs/small.yaml DRY_RUN=1 ./toy_experiments/scripts/data.sh
 ```
+
+With `VERBOSE=1`, the dry run also prints the master dimensions and every
+derived instance. Validity-demo dry runs show `K_requested`, `K_actual`, and
+`min_required_shards`.
 
 ## Plot Results
 

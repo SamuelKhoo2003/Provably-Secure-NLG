@@ -7,6 +7,6 @@ and plots. External reference code lives under ``phd_reference/`` and is not par
 of this package API.
 """
 
-from .data import ToyData, generate_toy_votes
+from .data import ToyData, generate_toy_votes, slice_toy_data
 
-__all__ = ["ToyData", "generate_toy_votes"]
+__all__ = ["ToyData", "generate_toy_votes", "slice_toy_data"]

@@ -44,7 +44,7 @@ from .csv_io import (
     read_rows_csv as _read_rows_csv,
     write_rows_csv as _write_rows_csv,
 )
-from .data import ToyData, generate_toy_votes, generate_validity_demo_votes, stability_margins
+from .data import ToyData, generate_toy_votes, generate_validity_demo_votes, slice_toy_data, stability_margins
 from .milp import (
     CertificateResult,
     resolve_gurobi_threads,
@@ -129,6 +129,8 @@ def benchmark_scale(
     gurobi_threads: int | None = None,
 ) -> list[dict[str, object]]:
     """Generate benchmark CSV rows for the configured parameter grid."""
+    Ks, Ns, Ls, Ts = list(Ks), list(Ns), list(Ls), list(Ts)
+    delta_stabs, delta_vals, target_biases = list(delta_stabs), list(delta_vals), list(target_biases)
     objective_flags = _resolve_objective_flags(
         objective_family=objective_family,
         make_budget_curves=make_budget_curves,
@@ -152,6 +154,8 @@ def benchmark_scale(
             budget_max=budget_max,
             save_dir=save_dir,
             verbose=verbose,
+            group_size=group_size,
+            overlap=overlap,
         )
         return []
     resolved_gurobi_threads = resolve_gurobi_threads(gurobi_threads)
@@ -160,6 +164,16 @@ def benchmark_scale(
     output_dir.mkdir(parents=True, exist_ok=True)
     rows: list[dict[str, object]] = []
     budget_curve_rows: list[dict[str, object]] = []
+    K_master_requested = max(Ks)
+    N_master = max(Ns)
+    L_master = max(Ls)
+    T_master = max(Ts)
+    K_master = (
+        max(K_master_requested, _validity_demo_min_required_shards(L_master, group_size, overlap))
+        if generator == "validity_demo"
+        else K_master_requested
+    )
+    master_cache: dict[tuple[float, float, float], ToyData] = {}
 
     for K in Ks:
         for N in Ns:
@@ -168,43 +182,53 @@ def benchmark_scale(
                     for delta_stab in delta_stabs:
                         for delta_val in delta_vals:
                             for target_bias in target_biases:
+                                group_key = (delta_stab, delta_val, target_bias)
+                                master = master_cache.get(group_key)
+                                if master is None:
+                                    if generator == "validity_demo":
+                                        master = generate_validity_demo_votes(
+                                            L=L_master,
+                                            group_size=group_size,
+                                            target_gap=target_gap,
+                                            overlap=overlap,
+                                            N=N_master,
+                                            T=T_master,
+                                            seed=seed,
+                                            K=K_master,
+                                            distribution=validity_demo_distribution,
+                                            num_competitor_min=num_competitor_min,
+                                            num_competitor_max=num_competitor_max,
+                                            target_count_min=target_count_min,
+                                            target_count_max=target_count_max,
+                                            competitor_gap_min=competitor_gap_min,
+                                            competitor_gap_max=competitor_gap_max,
+                                            competitor_jitter=competitor_jitter,
+                                            row_difficulty_jitter=row_difficulty_jitter,
+                                            position_difficulty_jitter=position_difficulty_jitter,
+                                            minimum_requested_K=min(Ks),
+                                        )
+                                    elif generator == "toy":
+                                        master = generate_toy_votes(
+                                            K=K_master,
+                                            N=N_master,
+                                            L=L_master,
+                                            T=T_master,
+                                            delta_stab=delta_stab,
+                                            delta_val=delta_val,
+                                            target_bias=target_bias,
+                                            seed=seed,
+                                            influence_mode=influence_mode,
+                                        )
+                                    else:
+                                        raise ValueError(f"Unknown generator: {generator}")
+                                    master_cache[group_key] = master
+
                                 if generator == "validity_demo":
-                                    data = generate_validity_demo_votes(
-                                        L=L,
-                                        group_size=group_size,
-                                        target_gap=target_gap,
-                                        overlap=overlap,
-                                        N=N,
-                                        T=T,
-                                        seed=seed,
-                                        K=K,
-                                        distribution=validity_demo_distribution,
-                                        num_competitor_min=num_competitor_min,
-                                        num_competitor_max=num_competitor_max,
-                                        target_count_min=target_count_min,
-                                        target_count_max=target_count_max,
-                                        competitor_gap_min=competitor_gap_min,
-                                        competitor_gap_max=competitor_gap_max,
-                                        competitor_jitter=competitor_jitter,
-                                        row_difficulty_jitter=row_difficulty_jitter,
-                                        position_difficulty_jitter=position_difficulty_jitter,
-                                    )
-                                    K_actual = int(data.val_votes.shape[0])
-                                elif generator == "toy":
-                                    data = generate_toy_votes(
-                                        K=K,
-                                        N=N,
-                                        L=L,
-                                        T=T,
-                                        delta_stab=delta_stab,
-                                        delta_val=delta_val,
-                                        target_bias=target_bias,
-                                        seed=seed,
-                                        influence_mode=influence_mode,
-                                    )
-                                    K_actual = K
+                                    K_actual = max(K, _validity_demo_min_required_shards(L, group_size, overlap))
                                 else:
-                                    raise ValueError(f"Unknown generator: {generator}")
+                                    K_actual = K
+                                data = slice_toy_data(master, K=K_actual, N=N, L=L, T=T)
+                                data.metadata.update({"K_requested": K, "K_actual": K_actual})
                                 start = perf_counter()
                                 results = _solve_benchmark_certificates(
                                     data,
@@ -216,6 +240,13 @@ def benchmark_scale(
                                 runtime_total = perf_counter() - start
                                 row = {
                                     "K": K_actual,
+                                    "K_requested": K,
+                                    "K_actual": K_actual,
+                                    "K_master": K_master,
+                                    "N_master": N_master,
+                                    "L_master": L_master,
+                                    "T_master": T_master,
+                                    "coupled_generation": True,
                                     "N": N,
                                     "L": L,
                                     "T": T,
@@ -264,6 +295,17 @@ def benchmark_scale(
                                     delta_val=delta_val,
                                     target_bias=target_bias,
                                     influence_mode=influence_mode,
+                                )
+                                metadata.update(
+                                    {
+                                        "coupled_generation": True,
+                                        "K_requested": K,
+                                        "K_actual": K_actual,
+                                        "K_master": K_master,
+                                        "N_master": N_master,
+                                        "L_master": L_master,
+                                        "T_master": T_master,
+                                    }
                                 )
                                 if objective_flags["make_stability_budget_curves"] or objective_flags["make_validity_budget_curves"]:
                                     budget_curve_rows.extend(
@@ -760,7 +802,16 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
         )
 
     _write_default_plot_audit(output_dir / "audit_plot_outputs.txt", csv_path, audit)
-    _write_comparison_report(output_dir / "comparisons.txt", csv_path, audit)
+    _write_comparison_report(output_dir / "comparisons.txt", csv_path, audit, rows=rows)
+
+
+def _is_standard_size_benchmark_csv(csv_path: Path) -> bool:
+    """Limit the summative validity comparison to small/medium/large presets."""
+    return (
+        csv_path.name == "benchmark_results.csv"
+        and csv_path.parent.name == "results"
+        and csv_path.parent.parent.name in {"small", "medium", "large"}
+    )
 
 
 def _clean_default_plot_dir(output_dir: Path) -> None:
@@ -1016,7 +1067,13 @@ def _write_default_plot_audit(path: Path, csv_path: Path, audit: list[dict[str, 
     path.write_text("\n".join(lines))
 
 
-def _write_comparison_report(path: Path, csv_path: Path, audit: list[dict[str, object]]) -> None:
+def _write_comparison_report(
+    path: Path,
+    csv_path: Path,
+    audit: list[dict[str, object]],
+    *,
+    rows: list[dict[str, object]],
+) -> None:
     lines = [
         "Toy experiment strategy comparisons",
         "",
@@ -1043,6 +1100,9 @@ def _write_comparison_report(path: Path, csv_path: Path, audit: list[dict[str, o
         lines.append(f"- {item['plot']}")
         for comparison in comparisons:
             lines.append(f"  - {comparison}")
+    if _is_standard_size_benchmark_csv(csv_path):
+        lines.extend(["", "Summative validity composition:"])
+        lines.extend(f"- {line}" for line in _summative_validity_stat_lines(rows))
     lines.extend(["", "Series summary stats:"])
     for item in audit:
         series_data = item.get("series_data") or {}
@@ -1051,6 +1111,44 @@ def _write_comparison_report(path: Path, csv_path: Path, audit: list[dict[str, o
         lines.append(f"- {item['plot']}")
         lines.extend(f"  - {line}" for line in _series_summary_stat_lines(series_data))
     path.write_text("\n".join(lines))
+
+
+def _summative_validity_stat_lines(rows: list[dict[str, object]]) -> list[str]:
+    """Compare additive independent validity costs with shared-shard MILP costs."""
+    series, _skipped = _metric_series(
+        rows,
+        "K",
+        {
+            "Summative DPA validity": "independent_val_sequence_qN",
+            "Shared MILP validity": "row_col_val_qN",
+        },
+    )
+    if len(series) != 2:
+        return ["unavailable: required validity metrics are missing"]
+    dpa_xs, dpa_ys = series["Summative DPA validity"]
+    milp_xs, milp_ys = series["Shared MILP validity"]
+    dpa_by_k = dict(zip(dpa_xs, dpa_ys))
+    milp_by_k = dict(zip(milp_xs, milp_ys))
+    common_ks = sorted(set(dpa_by_k) & set(milp_by_k))
+    if not common_ks:
+        return ["unavailable: no common K values"]
+    dpa_mean = float(np.mean([dpa_by_k[K] for K in common_ks]))
+    milp_mean = float(np.mean([milp_by_k[K] for K in common_ks]))
+    overestimate = dpa_mean - milp_mean
+    ratio = dpa_mean / milp_mean if milp_mean != 0 else float("inf")
+    lines = [
+        "Definition: summative DPA is `independent_val_sequence_qN`; shared MILP is `row_col_val_qN`.",
+        f"Overall mean summative DPA budget: {dpa_mean:.6g}",
+        f"Overall mean shared MILP budget: {milp_mean:.6g}",
+        f"Mean additive overestimate: {overestimate:.6g} budget units",
+        f"Mean summative-DPA/shared-MILP ratio: {ratio:.6g}x",
+    ]
+    lines.extend(
+        f"K={K:g}: summative DPA={dpa_by_k[K]:.6g}, shared MILP={milp_by_k[K]:.6g}, "
+        f"difference={dpa_by_k[K] - milp_by_k[K]:.6g}"
+        for K in common_ks
+    )
+    return lines
 
 
 def _comparison_is_positive(
@@ -2713,14 +2811,6 @@ def load_experiment_config(path: str | Path) -> dict[str, object]:
         stride = group_size - overlap
         if stride <= 0:
             raise ConfigError(f"field `overlap` in {config_path} must be smaller than group_size")
-        max_required_k = group_size + (max(benchmark_config["lengths"]) - 1) * stride
-        min_config_k = min(benchmark_config["Ks"])
-        if min_config_k < max_required_k:
-            raise ConfigError(
-                f"validity_demo config {config_path} requires every K >= {max_required_k} "
-                f"for max L={max(benchmark_config['lengths'])}, group_size={group_size}, overlap={overlap}; "
-                f"smallest K is {min_config_k}"
-            )
         benchmark_config.update(
             {
                 "group_size": group_size,
@@ -2749,6 +2839,11 @@ def load_experiment_config(path: str | Path) -> dict[str, object]:
         if benchmark_config["budget_plot_num_points"] == 0:
             benchmark_config["budget_plot_num_points"] = None
     return benchmark_config
+
+
+def _validity_demo_min_required_shards(L: int, group_size: int, overlap: int) -> int:
+    """Return the shard prefix needed by the first ``L`` validity-demo groups."""
+    return group_size + (L - 1) * (group_size - overlap)
 
 
 def _estimate_solve_counts(
@@ -2803,6 +2898,8 @@ def _print_benchmark_dry_run(
     budget_max: int,
     save_dir: str,
     verbose: bool,
+    group_size: int,
+    overlap: int,
 ) -> None:
     Ks, Ns, Ls, Ts = list(Ks), list(Ns), list(Ls), list(Ts)
     delta_stabs, delta_vals, target_biases = list(delta_stabs), list(delta_vals), list(target_biases)
@@ -2818,6 +2915,26 @@ def _print_benchmark_dry_run(
     print(f"stability budget curves: {'enabled' if objective_flags['make_stability_budget_curves'] else 'disabled'}")
     print(f"validity budget curves: {'enabled' if objective_flags['make_validity_budget_curves'] else 'disabled'}")
     print(f"expanded benchmark instances: {counts['instances']}")
+    K_master_requested = max(Ks)
+    N_master = max(Ns)
+    L_master = max(Ls)
+    T_master = max(Ts)
+    K_master = (
+        max(K_master_requested, _validity_demo_min_required_shards(L_master, group_size, overlap))
+        if generator == "validity_demo"
+        else K_master_requested
+    )
+    print("Coupled generation enabled.")
+    print("Master dimensions for this config:")
+    print(f"  K_master = {K_master}")
+    print(f"  N_master = {N_master}")
+    print(f"  L_master = {L_master}")
+    print(f"  T_master = {T_master}")
+    print(
+        "Master random generations: "
+        f"{len(delta_stabs) * len(delta_vals) * len(target_biases)} "
+        "(one per delta_stab/delta_val/target_bias group)"
+    )
     if verbose:
         print(f"K values: {Ks}")
         print(f"N values: {Ns}")
@@ -2826,6 +2943,20 @@ def _print_benchmark_dry_run(
         print(f"delta_stab values: {delta_stabs}")
         print(f"delta_val values: {delta_vals}")
         print(f"target_bias values: {target_biases}")
+        print("Derived instances:")
+        for K in Ks:
+            for N in Ns:
+                for L in Ls:
+                    for T in Ts:
+                        if generator == "validity_demo":
+                            minimum = _validity_demo_min_required_shards(L, group_size, overlap)
+                            K_actual = max(K, minimum)
+                            print(
+                                f"  K_requested={K}, K_actual={K_actual}, N={N}, L={L}, T={T}, "
+                                f"min_required_shards={minimum}"
+                            )
+                        else:
+                            print(f"  K_requested={K}, K_actual={K}, N={N}, L={L}, T={T}")
     print("estimated Gurobi solves:")
     print(f"  estimated stability solves: {total_stability}")
     print(f"  estimated validity solves: {total_validity}")

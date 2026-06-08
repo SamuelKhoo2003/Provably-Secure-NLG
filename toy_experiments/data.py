@@ -10,7 +10,7 @@ ordering: votes have shape ``(K, N, L)`` and count tensors have shape
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -36,6 +36,7 @@ class ToyData:
     base_token: np.ndarray
     val_base: np.ndarray
     influence: np.ndarray
+    metadata: dict[str, object] = field(default_factory=dict)
 
     @property
     def votes(self) -> np.ndarray:
@@ -44,6 +45,75 @@ class ToyData:
     @property
     def clean_counts(self) -> np.ndarray:
         return self.stab_counts
+
+
+def slice_toy_data(data: ToyData, K: int, N: int, L: int, T: int) -> ToyData:
+    """Derive a nested benchmark instance from a maximum-size master.
+
+    Shards, prompts, and positions use exact prefix slices. Candidate ids below
+    ``T - 1`` are retained, while ids from removed candidates are merged into
+    candidate ``T - 1``. Counts and other derived arrays are then recomputed.
+    The returned arrays are copies and do not mutate or alias the master.
+    """
+    master_K, master_N, master_L = data.stab_votes.shape
+    master_T = data.stab_counts.shape[2]
+    requested = {"K": K, "N": N, "L": L, "T": T}
+    masters = {"K": master_K, "N": master_N, "L": master_L, "T": master_T}
+    for name, value in requested.items():
+        if value < 1 or (name == "T" and value < 2):
+            minimum = 2 if name == "T" else 1
+            raise ValueError(f"{name} must be at least {minimum}")
+        if value > masters[name]:
+            raise ValueError(f"{name}={value} exceeds master {name}={masters[name]}")
+
+    def project_votes(votes: np.ndarray) -> np.ndarray:
+        sliced = votes[:K, :N, :L].copy()
+        return np.minimum(sliced, T - 1).astype(np.int64, copy=False)
+
+    def project_tokens(tokens: np.ndarray) -> np.ndarray:
+        return np.minimum(tokens[:N, :L], T - 1).astype(np.int64, copy=True)
+
+    stab_votes = project_votes(data.stab_votes)
+    val_votes = project_votes(data.val_votes)
+    stab_counts = compute_counts(stab_votes, T)
+    val_counts = compute_counts(val_votes, T)
+    clean_pred = majority_predictions(stab_counts)
+    target = project_tokens(data.target)
+    base_token = project_tokens(data.base_token)
+    val_base = project_tokens(data.val_base)
+    if T < master_T:
+        target_conflicts = target == clean_pred
+        target[target_conflicts] = (clean_pred[target_conflicts] + 1) % T
+        val_base_conflicts = val_base == target
+        val_base[val_base_conflicts] = (target[val_base_conflicts] + 1) % T
+
+    metadata = dict(data.metadata)
+    metadata.update(
+        {
+            "K": K,
+            "N": N,
+            "L": L,
+            "T": T,
+            "K_master": master_K,
+            "N_master": master_N,
+            "L_master": master_L,
+            "T_master": master_T,
+            "coupled_generation": True,
+        }
+    )
+    return ToyData(
+        stab_votes=stab_votes,
+        val_votes=val_votes,
+        stab_counts=stab_counts,
+        val_counts=val_counts,
+        clean_pred=clean_pred,
+        runner_up=runner_up_tokens(stab_counts, clean_pred),
+        target=target,
+        base_token=base_token,
+        val_base=val_base,
+        influence=data.influence[:K, :N, :L].copy(),
+        metadata=metadata,
+    )
 
 
 def generate_toy_votes(
@@ -133,6 +203,7 @@ def generate_validity_demo_votes(
     competitor_jitter: int = 2,
     row_difficulty_jitter: bool = True,
     position_difficulty_jitter: bool = True,
+    minimum_requested_K: int | None = None,
 ) -> ToyData:
     """Generate an artificial controlled validity-only stress-test instance.
 
@@ -159,6 +230,7 @@ def generate_validity_demo_votes(
             competitor_jitter=competitor_jitter,
             row_difficulty_jitter=row_difficulty_jitter,
             position_difficulty_jitter=position_difficulty_jitter,
+            minimum_requested_K=minimum_requested_K,
         )
     if distribution != "deterministic":
         raise ValueError("validity_demo distribution must be 'deterministic' or 'heterogeneous'")
@@ -195,6 +267,7 @@ def _generate_heterogeneous_validity_demo_votes(
     competitor_jitter: int,
     row_difficulty_jitter: bool,
     position_difficulty_jitter: bool,
+    minimum_requested_K: int | None,
 ) -> ToyData:
     generator_name = "validity_demo"
     if L < 1 or N < 1:
@@ -230,6 +303,9 @@ def _generate_heterogeneous_validity_demo_votes(
         raise ValueError(f"T={T} is too small for num_competitor_min={num_competitor_min}")
 
     all_shards = np.arange(K, dtype=np.int64)
+    minimum_requested_K = K if minimum_requested_K is None else minimum_requested_K
+    if minimum_requested_K < 1 or minimum_requested_K > K:
+        raise ValueError("minimum_requested_K must be in [1, K]")
     base_groups = [np.arange(j * stride, j * stride + group_size, dtype=np.int64) for j in range(L)]
 
     base_token = np.zeros((N, L), dtype=np.int64)
@@ -255,13 +331,16 @@ def _generate_heterogeneous_validity_demo_votes(
         row_motif = row_rng.choice(all_shards, size=motif_size, replace=False) if motif_size else np.array([], dtype=np.int64)
         row_groups: list[np.ndarray] = []
         for j in range(L):
+            position_prefix = max(minimum_requested_K, group_size + j * stride)
+            position_shards = all_shards[:position_prefix]
+            position_motif = row_motif[row_motif < position_prefix]
             group_rng = _validity_demo_rng(seed, K, i, j, stream=1)
             group = _heterogeneous_validity_group(
                 base_group=base_groups[j],
                 previous_group=row_groups[-1] if row_groups else None,
-                row_motif=row_motif,
+                row_motif=position_motif,
                 group_size=group_size,
-                all_shards=all_shards,
+                all_shards=position_shards,
                 rng=group_rng,
             )
             row_groups.append(group)
