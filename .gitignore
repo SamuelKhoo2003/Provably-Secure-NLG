@@ -12,16 +12,6 @@ __pycache__/
 # Repo-local large-experiment caches.
 caches/
 
-# VPA large-experiment generated outputs. Keep directory placeholders.
-large_experiments/vpa/outputs/*
-!large_experiments/vpa/outputs/.gitkeep
-large_experiments/vpa/artifacts/*
-!large_experiments/vpa/artifacts/.gitkeep
-
-# Optional VPA-main checkout for real adapter inference. This is an external
-# dependency, not project source.
-large_experiments/vpa/external/VPA-main/
-
 # Historical Outputs
 toy_experiments/outputs/historical
 toy_experiments/outputs/historical_*
