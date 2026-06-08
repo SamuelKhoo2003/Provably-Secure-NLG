@@ -264,27 +264,21 @@ The minimum is used because the adversary succeeds if it can force any alternati
 
 A token-grid DPA target diagnostic is also computed using `target_grid.csv`.
 
-## Proposed MILP certificates
+## Fixed-budget joint MILP curves
 
-The proposed methods use the shard-aware prompt-token grid.
+The report-facing runner consumes the raw JSONL files directly. It solves the
+fixed-budget adversarial-success view of the same event constraints used by the
+toy row-column certificates:
 
-### Row-only MILP
+```text
+maximise successful prompts
+subject to one shared poisoned-shard allocation with sum(a_k) <= B
+```
 
-Certifies each prompt row across a fixed token horizon.
-
-This answers whether a shared poisoned shard set can break a generated sequence for one prompt.
-
-### Column-only MILP
-
-Certifies one token position across multiple prompts.
-
-This is useful for diagnosing shared behaviour at the same generation position across the dataset.
-
-### Joint row-column MILP
-
-Certifies a batch of prompts and token positions jointly.
-
-This is the main proposed full-grid certificate. It models how the adversary must reuse the same poisoned shards across the prompt-token grid rather than choosing a separate worst-case shard set for each token independently.
+Outputs label this objective as `fixed_budget_adversarial_success`. Row-only
+and column-only MILPs are not run by default. `--max-targets-per-prompt` limits
+only the MILP target bank; the validity baselines use every observed
+non-majority target class.
 
 ## Recommended workflow
 
@@ -335,40 +329,53 @@ for H in horizons:
 PY
 ```
 
-### 3. Export the grid
+### 3. Run a smoke certification
 
 ```bash
-python large_experiments/scripts/export_vote_vector_grid.py \
+python large_experiments/scripts/certify_vote_vectors_runner.py \
+  --input /data/mwicker/VPA/vote_vectors_1b_full_gpu0.jsonl \
+  --name 1b_full \
+  --horizon 5 \
+  --max-prompts 5 \
+  --budgets 0,1,3 \
+  --top-competitors 1 \
+  --max-targets-per-prompt 1 \
+  --milp-time-limit 120 \
+  --threads 4 \
+  --output-dir large_experiments/outputs/certification
+```
+
+### 4. Run the H=20 curve
+
+```bash
+python large_experiments/scripts/certify_vote_vectors_runner.py \
   --input /data/mwicker/VPA/vote_vectors_1b_full_gpu0.jsonl \
   --name 1b_full \
   --horizon 20 \
-  --output-dir large_experiments/outputs/vote_vector_grids \
-  --write-shard-grid
+  --budgets 0,1,3,5,7,9,25,50,100,150,200,249 \
+  --top-competitors 1 \
+  --max-targets-per-prompt 2 \
+  --milp-time-limit 600 \
+  --mip-gap 0.001 \
+  --threads 8 \
+  --quiet-gurobi \
+  --output-dir large_experiments/outputs/certification
 ```
 
-### 4. Run certification
+Repeat with `vote_vectors_1b_last3_lora_gpu1.jsonl` and a distinct `--name`.
+The configurations are independent clean ensembles; neither is interpreted as
+a poisoned version of the other.
 
-Use the exported CSV files as input to the large-scale certification runner.
-
-Expected inputs:
-
-```text
-clean_grid.csv
-target_grid.csv
-aggregate_tool_votes.csv
-shard_votes_long.csv
-summary.json
-```
-
-Expected outputs:
+Outputs are written under
+`large_experiments/outputs/certification/<name>/H020/`:
 
 ```text
-aggregate_mcp_validity.csv
-token_stability.csv
-token_validity_targets.csv
-row_milp_results.csv
-column_milp_results.csv
-joint_milp_results.csv
+dpa_weakest_token_stability.csv
+aggregate_tpa_mcp_validity.csv
+dpa_max_target_token_validity.csv
+joint_row_column_stability_milp.csv
+joint_row_column_validity_milp.csv
+budget_curve_summary.csv
 summary.json
 ```
 
