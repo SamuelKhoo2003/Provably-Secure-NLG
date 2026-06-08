@@ -780,11 +780,6 @@ def _write_sweep_audit(
     path.write_text("\n".join(lines) + "\n")
 
 
-DEFAULT_REPORT_PLOT_FILENAMES = (
-    "stability_budget_curve.pdf",
-    "validity_budget_curve.pdf",
-)
-
 RELATIVE_LIFT_PERCENT_REPORTING_THRESHOLD = 1.0
 
 def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, csv_path: Path) -> None:
@@ -1009,41 +1004,6 @@ def _budget_config_key(row: dict[str, object]) -> tuple[tuple[str, object], ...]
 
 def _is_nonincreasing(values: list[float]) -> bool:
     return all(right <= left + 1e-12 for left, right in zip(values, values[1:]))
-
-
-def _certificate_budget_curve_series(
-    rows: list[dict[str, object]],
-    selections: list[tuple[str, str]],
-    budget_rows: list[dict[str, object]],
-) -> tuple[dict[str, tuple[list[float], list[float]]], list[str]]:
-    series: dict[str, tuple[list[float], list[float]]] = {}
-    skipped: list[str] = []
-    budgets = sorted({budget for row in budget_rows if (budget := _numeric_value(row.get("budget"))) is not None})
-    if not budgets:
-        max_certificate = max(
-            (
-                value
-                for _, metric in selections
-                for row in rows
-                if (value := _numeric_value(row.get(metric))) is not None
-            ),
-            default=None,
-        )
-        if max_certificate is not None:
-            budgets = [float(budget) for budget in range(0, int(np.ceil(max_certificate)) + 1)]
-    if not budgets:
-        return series, ["no budget values available"]
-    for label, metric in selections:
-        certificates = [_numeric_value(row.get(metric)) for row in rows]
-        certificates = [value for value in certificates if value is not None]
-        if not certificates:
-            skipped.append(f"{label}: missing or empty column {metric}")
-            continue
-        ys = [100.0 * float(np.mean([budget < certificate for certificate in certificates])) for budget in budgets]
-        if not _is_nonincreasing(ys):
-            skipped.append(f"{label}: warning non-monotonic certificate-derived series")
-        series[label] = (budgets, ys)
-    return series, skipped
 
 
 def _metric_series(
@@ -1426,12 +1386,6 @@ def save_instance_plots(
     print(f"Wrote instance plots under: {output_dir}")
 
 
-CANONICAL_METHODS = (
-    "Shared MILP full matrix",
-    "DPA weakest token",
-    "TPA max-token phrase blocker",
-)
-
 CANONICAL_COLORS = {
     "Shared MILP one prompt, one token": "#1f77b4",
     "Shared MILP one prompt, full sequence": "#17becf",
@@ -1463,13 +1417,7 @@ MAIN_VALIDITY_METRICS = {
     "Plain DPA max-token phrase blocker": "plain_dpa_val_sequence_qN",
 }
 
-VALIDITY_DIAGNOSTIC_METRICS = {
-    "Shard-aware weakest-token diagnostic": "dpa_val_row_weak_qN",
-    "Shard-aware independent max-token diagnostic": "dpa_val_row_strong_qN",
-    "Independent shard-aware composition diagnostic": "independent_val_sequence_qN",
-}
-
-def save_validity_demo_plot(rows: list[dict[str, object]], output_dir: Path, csv_path: Path, generator: str) -> None:
+def save_validity_demo_plot(rows: list[dict[str, object]], output_dir: Path, generator: str) -> None:
     """Write the controlled validity demo plot when matching rows are present."""
     demo_rows = [row for row in rows if row.get("generator") == generator]
     if not demo_rows:
@@ -1508,7 +1456,7 @@ def plot_validity_demo_csv(csv_path: str, save_dir: str | None = None) -> list[d
     output_dir.mkdir(parents=True, exist_ok=True)
     rows = _read_rows_csv(path)
     _validate_validity_demo_plot_rows(rows, csv_path=path)
-    save_validity_demo_plot(rows, output_dir, csv_path=path, generator="validity_demo")
+    save_validity_demo_plot(rows, output_dir, generator="validity_demo")
     demo_rows = [row for row in rows if row.get("generator") == "validity_demo"]
     write_validity_demo_parameter_tables(output_dir, demo_rows, csv_path=path)
     curve_checks = save_validity_demo_budget_curve_plots(output_dir, source_dir=path.parent, result_rows=demo_rows)
