@@ -1,0 +1,13 @@
+{
+  "config_name": "1b_full",
+  "input_path": "/data/mwicker/VPA/vote_vectors_1b_full_gpu0.jsonl",
+  "horizon": 20,
+  "num_total_prompts": 110,
+  "num_retained_prompts": 110,
+  "num_dropped_prompts": 0,
+  "num_shards": 500,
+  "min_generation_length": 20,
+  "max_generation_length": 60,
+  "target_mode": "observed_alternative_tool_calls",
+  "note": "This export is not clean versus poisoned. It is clean shard outputs plus representative alternative tool-call targets."
+}
