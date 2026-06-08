@@ -123,7 +123,7 @@ class CoupledBenchmarkTests(unittest.TestCase):
     def test_sweep_configs_use_seed_replicates(self) -> None:
         for sweep in ["K", "N", "L", "degenerate"]:
             config = load_experiment_config(f"toy_experiments/configs/sweep_{sweep}.yaml")
-            self.assertEqual(config["seeds"], [0, 25, 50])
+            self.assertEqual(config["seeds"], [0, 10, 20, 30, 40])
 
     def test_legacy_single_seed_config_remains_supported(self) -> None:
         config = load_experiment_config("toy_experiments/configs/validity_demo.yaml")

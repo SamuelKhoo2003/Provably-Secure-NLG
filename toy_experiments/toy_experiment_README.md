@@ -100,7 +100,7 @@ small, medium, and large configs remain single-seed runs. The dedicated
 `sweep_K`, `sweep_N`, `sweep_L`, and `sweep_degenerate` configs use:
 
 ```yaml
-seed_values: [0, 25, 50]
+seed_values: [0, 10, 20, 30, 40]
 ```
 
 Each sweep seed receives its own coupled master instance. Raw seed-specific
