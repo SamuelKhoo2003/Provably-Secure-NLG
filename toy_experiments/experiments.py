@@ -65,7 +65,7 @@ def visualize_instance(
     delta_stab: float,
     delta_val: float,
     target_bias: float,
-    seed: int,
+    seed: int | Iterable[int],
     influence_mode: str,
     save_dir: str,
 ) -> None:
@@ -130,6 +130,9 @@ def benchmark_scale(
 ) -> list[dict[str, object]]:
     """Generate benchmark CSV rows for the configured parameter grid."""
     Ks, Ns, Ls, Ts = list(Ks), list(Ns), list(Ls), list(Ts)
+    seeds = [seed] if isinstance(seed, int) else list(seed)
+    if not seeds or not all(isinstance(value, int) and not isinstance(value, bool) for value in seeds):
+        raise ValueError("seed must be an integer or a non-empty iterable of integers")
     delta_stabs, delta_vals, target_biases = list(delta_stabs), list(delta_vals), list(target_biases)
     objective_flags = _resolve_objective_flags(
         objective_family=objective_family,
@@ -156,6 +159,7 @@ def benchmark_scale(
             verbose=verbose,
             group_size=group_size,
             overlap=overlap,
+            seeds=seeds,
         )
         return []
     resolved_gurobi_threads = resolve_gurobi_threads(gurobi_threads)
@@ -173,172 +177,288 @@ def benchmark_scale(
         if generator == "validity_demo"
         else K_master_requested
     )
-    master_cache: dict[tuple[float, float, float], ToyData] = {}
+    master_cache: dict[tuple[int, float, float, float], ToyData] = {}
 
-    for K in Ks:
-        for N in Ns:
-            for L in Ls:
-                for T in Ts:
-                    for delta_stab in delta_stabs:
-                        for delta_val in delta_vals:
-                            for target_bias in target_biases:
-                                group_key = (delta_stab, delta_val, target_bias)
-                                master = master_cache.get(group_key)
-                                if master is None:
+    for current_seed in seeds:
+        for K in Ks:
+            for N in Ns:
+                for L in Ls:
+                    for T in Ts:
+                        for delta_stab in delta_stabs:
+                            for delta_val in delta_vals:
+                                for target_bias in target_biases:
+                                    group_key = (current_seed, delta_stab, delta_val, target_bias)
+                                    master = master_cache.get(group_key)
+                                    if master is None:
+                                        if generator == "validity_demo":
+                                            master = generate_validity_demo_votes(
+                                                L=L_master,
+                                                group_size=group_size,
+                                                target_gap=target_gap,
+                                                overlap=overlap,
+                                                N=N_master,
+                                                T=T_master,
+                                                seed=current_seed,
+                                                K=K_master,
+                                                distribution=validity_demo_distribution,
+                                                num_competitor_min=num_competitor_min,
+                                                num_competitor_max=num_competitor_max,
+                                                target_count_min=target_count_min,
+                                                target_count_max=target_count_max,
+                                                competitor_gap_min=competitor_gap_min,
+                                                competitor_gap_max=competitor_gap_max,
+                                                competitor_jitter=competitor_jitter,
+                                                row_difficulty_jitter=row_difficulty_jitter,
+                                                position_difficulty_jitter=position_difficulty_jitter,
+                                                minimum_requested_K=min(Ks),
+                                            )
+                                        elif generator == "toy":
+                                            master = generate_toy_votes(
+                                                K=K_master,
+                                                N=N_master,
+                                                L=L_master,
+                                                T=T_master,
+                                                delta_stab=delta_stab,
+                                                delta_val=delta_val,
+                                                target_bias=target_bias,
+                                                seed=current_seed,
+                                                influence_mode=influence_mode,
+                                            )
+                                        else:
+                                            raise ValueError(f"Unknown generator: {generator}")
+                                        master_cache[group_key] = master
+
                                     if generator == "validity_demo":
-                                        master = generate_validity_demo_votes(
-                                            L=L_master,
-                                            group_size=group_size,
-                                            target_gap=target_gap,
-                                            overlap=overlap,
-                                            N=N_master,
-                                            T=T_master,
-                                            seed=seed,
-                                            K=K_master,
-                                            distribution=validity_demo_distribution,
-                                            num_competitor_min=num_competitor_min,
-                                            num_competitor_max=num_competitor_max,
-                                            target_count_min=target_count_min,
-                                            target_count_max=target_count_max,
-                                            competitor_gap_min=competitor_gap_min,
-                                            competitor_gap_max=competitor_gap_max,
-                                            competitor_jitter=competitor_jitter,
-                                            row_difficulty_jitter=row_difficulty_jitter,
-                                            position_difficulty_jitter=position_difficulty_jitter,
-                                            minimum_requested_K=min(Ks),
-                                        )
-                                    elif generator == "toy":
-                                        master = generate_toy_votes(
-                                            K=K_master,
-                                            N=N_master,
-                                            L=L_master,
-                                            T=T_master,
-                                            delta_stab=delta_stab,
-                                            delta_val=delta_val,
-                                            target_bias=target_bias,
-                                            seed=seed,
-                                            influence_mode=influence_mode,
-                                        )
+                                        K_actual = max(K, _validity_demo_min_required_shards(L, group_size, overlap))
                                     else:
-                                        raise ValueError(f"Unknown generator: {generator}")
-                                    master_cache[group_key] = master
-
-                                if generator == "validity_demo":
-                                    K_actual = max(K, _validity_demo_min_required_shards(L, group_size, overlap))
-                                else:
-                                    K_actual = K
-                                data = slice_toy_data(master, K=K_actual, N=N, L=L, T=T)
-                                data.metadata.update({"K_requested": K, "K_actual": K_actual})
-                                start = perf_counter()
-                                results = _solve_benchmark_certificates(
-                                    data,
-                                    T,
-                                    make_stability_objectives=objective_flags["make_stability_objectives"],
-                                    make_validity_objectives=objective_flags["make_validity_objectives"],
-                                    gurobi_threads=resolved_gurobi_threads,
-                                )
-                                runtime_total = perf_counter() - start
-                                row = {
-                                    "K": K_actual,
-                                    "K_requested": K,
-                                    "K_actual": K_actual,
-                                    "K_master": K_master,
-                                    "N_master": N_master,
-                                    "L_master": L_master,
-                                    "T_master": T_master,
-                                    "coupled_generation": True,
-                                    "N": N,
-                                    "L": L,
-                                    "T": T,
-                                    "generator": generator,
-                                    "delta_stab": delta_stab,
-                                    "delta_val": delta_val,
-                                    "target_bias": target_bias,
-                                    "seed": seed,
-                                    "influence_mode": influence_mode,
-                                    "runtime_gurobi_total": f"{runtime_total:.6f}",
-                                }
-                                if generator == "validity_demo":
-                                    row.update(
-                                        {
-                                            "group_size": group_size,
-                                            "overlap": overlap,
-                                            "validity_demo_distribution": validity_demo_distribution,
-                                            "budget_plot_num_points": budget_plot_num_points or "",
-                                        }
-                                    )
-                                    if validity_demo_distribution == "deterministic":
-                                        row["target_gap"] = target_gap
-                                for result in results:
-                                    metric_name = _csv_metric_name(result.name, N, L)
-                                    _add_certificate_columns(row, metric_name, result)
-                                _fill_degenerate_corner_columns(row)
-                                row.update(
-                                    _compute_benchmark_baselines(
+                                        K_actual = K
+                                    data = slice_toy_data(master, K=K_actual, N=N, L=L, T=T)
+                                    data.metadata.update({"K_requested": K, "K_actual": K_actual})
+                                    start = perf_counter()
+                                    results = _solve_benchmark_certificates(
                                         data,
+                                        T,
                                         make_stability_objectives=objective_flags["make_stability_objectives"],
                                         make_validity_objectives=objective_flags["make_validity_objectives"],
+                                        gurobi_threads=resolved_gurobi_threads,
                                     )
-                                )
-                                if generator == "validity_demo":
-                                    row.update(_validity_demo_diagnostics(data))
-                                _add_validity_demo_gap_columns(row)
-                                rows.append(row)
-                                budgets = list(range(0, min(K_actual, budget_max) + 1))
-                                metadata = _benchmark_metadata(
-                                    seed=seed,
-                                    K=K_actual,
-                                    N=N,
-                                    L=L,
-                                    T=T,
-                                    delta_stab=delta_stab,
-                                    delta_val=delta_val,
-                                    target_bias=target_bias,
-                                    influence_mode=influence_mode,
-                                )
-                                metadata.update(
-                                    {
-                                        "coupled_generation": True,
+                                    runtime_total = perf_counter() - start
+                                    row = {
+                                        "K": K_actual,
                                         "K_requested": K,
                                         "K_actual": K_actual,
                                         "K_master": K_master,
                                         "N_master": N_master,
                                         "L_master": L_master,
                                         "T_master": T_master,
+                                        "coupled_generation": True,
+                                        "N": N,
+                                        "L": L,
+                                        "T": T,
+                                        "generator": generator,
+                                        "delta_stab": delta_stab,
+                                        "delta_val": delta_val,
+                                        "target_bias": target_bias,
+                                        "seed": current_seed,
+                                        "influence_mode": influence_mode,
+                                        "runtime_gurobi_total": f"{runtime_total:.6f}",
                                     }
-                                )
-                                if objective_flags["make_stability_budget_curves"] or objective_flags["make_validity_budget_curves"]:
-                                    budget_curve_rows.extend(
-                                        compute_radius_derived_budget_curve_rows(
+                                    if generator == "validity_demo":
+                                        row.update(
+                                            {
+                                                "group_size": group_size,
+                                                "overlap": overlap,
+                                                "validity_demo_distribution": validity_demo_distribution,
+                                                "budget_plot_num_points": budget_plot_num_points or "",
+                                            }
+                                        )
+                                        if validity_demo_distribution == "deterministic":
+                                            row["target_gap"] = target_gap
+                                    for result in results:
+                                        metric_name = _csv_metric_name(result.name, N, L)
+                                        _add_certificate_columns(row, metric_name, result)
+                                    _fill_degenerate_corner_columns(row)
+                                    row.update(
+                                        _compute_benchmark_baselines(
                                             data,
-                                            T=T,
-                                            budgets=budgets,
-                                            metadata=metadata,
-                                            make_stability_curves=objective_flags["make_stability_budget_curves"],
-                                            make_validity_curves=objective_flags["make_validity_budget_curves"],
-                                            gurobi_threads=resolved_gurobi_threads,
+                                            make_stability_objectives=objective_flags["make_stability_objectives"],
+                                            make_validity_objectives=objective_flags["make_validity_objectives"],
                                         )
                                     )
-                                print(
-                                    "bench "
-                                    f"K={K_actual} N={N} L={L} T={T} delta_stab={delta_stab} delta_val={delta_val} target_bias={target_bias}: "
-                                    + ", ".join(f"{result.name}={result.B_star}" for result in results)
-                                )
+                                    if generator == "validity_demo":
+                                        row.update(_validity_demo_diagnostics(data))
+                                    _add_validity_demo_gap_columns(row)
+                                    rows.append(row)
+                                    budgets = list(range(0, min(K_actual, budget_max) + 1))
+                                    metadata = _benchmark_metadata(
+                                        seed=current_seed,
+                                        K=K_actual,
+                                        N=N,
+                                        L=L,
+                                        T=T,
+                                        delta_stab=delta_stab,
+                                        delta_val=delta_val,
+                                        target_bias=target_bias,
+                                        influence_mode=influence_mode,
+                                    )
+                                    metadata.update(
+                                        {
+                                            "coupled_generation": True,
+                                            "K_requested": K,
+                                            "K_actual": K_actual,
+                                            "K_master": K_master,
+                                            "N_master": N_master,
+                                            "L_master": L_master,
+                                            "T_master": T_master,
+                                        }
+                                    )
+                                    if objective_flags["make_stability_budget_curves"] or objective_flags["make_validity_budget_curves"]:
+                                        budget_curve_rows.extend(
+                                            compute_radius_derived_budget_curve_rows(
+                                                data,
+                                                T=T,
+                                                budgets=budgets,
+                                                metadata=metadata,
+                                                make_stability_curves=objective_flags["make_stability_budget_curves"],
+                                                make_validity_curves=objective_flags["make_validity_budget_curves"],
+                                                gurobi_threads=resolved_gurobi_threads,
+                                            )
+                                        )
+                                    print(
+                                        "bench "
+                                        f"seed={current_seed} K={K_actual} N={N} L={L} T={T} "
+                                        f"delta_stab={delta_stab} delta_val={delta_val} target_bias={target_bias}: "
+                                        + ", ".join(f"{result.name}={result.B_star}" for result in results)
+                                    )
 
     csv_path = output_dir / "benchmark_results.csv"
     _write_rows_csv(csv_path, rows)
     print()
     print(f"Wrote benchmark CSV: {csv_path}")
+    if len(seeds) > 1:
+        aggregate_path = output_dir / "benchmark_results_seed_aggregate.csv"
+        _write_rows_csv(aggregate_path, _aggregate_result_rows_across_seeds(rows))
+        print(f"Wrote seed-aggregated benchmark CSV: {aggregate_path}")
     if objective_flags["make_stability_budget_curves"] or objective_flags["make_validity_budget_curves"]:
         budget_csv_path = output_dir / "benchmark_budget_curves.csv"
         _write_rows_csv(budget_csv_path, budget_curve_rows)
         print(f"Wrote budget-curve CSV: {budget_csv_path}")
+        if len(seeds) > 1:
+            aggregate_budget_path = output_dir / "benchmark_budget_curves_seed_aggregate.csv"
+            _write_rows_csv(aggregate_budget_path, _aggregate_budget_rows_across_seeds(budget_curve_rows))
+            print(f"Wrote seed-aggregated budget-curve CSV: {aggregate_budget_path}")
     if make_plots:
         save_default_report_plots(rows, output_dir, csv_path=csv_path)
         print(f"Wrote benchmark plots under: {output_dir}")
     else:
         print("Skipped plots. Generate plots with: ./toy_experiments/scripts/plot.sh")
     return rows
+
+
+RESULT_SEED_GROUP_COLUMNS = (
+    "K",
+    "K_requested",
+    "K_actual",
+    "K_master",
+    "N_master",
+    "L_master",
+    "T_master",
+    "coupled_generation",
+    "N",
+    "L",
+    "T",
+    "generator",
+    "delta_stab",
+    "delta_val",
+    "target_bias",
+    "influence_mode",
+    "group_size",
+    "overlap",
+    "validity_demo_distribution",
+    "target_gap",
+    "budget_plot_num_points",
+)
+
+BUDGET_SEED_MEASURE_COLUMNS = (
+    "certified_fraction",
+    "attacked_fraction",
+    "mean_radius",
+    "median_radius",
+    "min_radius",
+    "max_radius",
+    "num_certified",
+    "num_known",
+    "num_unknown",
+    "num_total",
+)
+
+
+def _aggregate_result_rows_across_seeds(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Average benchmark measurements across seeds and retain observed ranges."""
+    return _aggregate_rows_across_seeds(rows, RESULT_SEED_GROUP_COLUMNS, measure_columns=None)
+
+
+def _aggregate_budget_rows_across_seeds(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Average budget-curve measurements across seeds and retain observed ranges."""
+    group_columns = tuple(
+        key
+        for key in rows[0]
+        if key not in {"seed", *BUDGET_SEED_MEASURE_COLUMNS}
+    ) if rows else ()
+    return _aggregate_rows_across_seeds(rows, group_columns, measure_columns=BUDGET_SEED_MEASURE_COLUMNS)
+
+
+def _aggregate_rows_across_seeds(
+    rows: list[dict[str, object]],
+    group_columns: Iterable[str],
+    *,
+    measure_columns: Iterable[str] | None,
+) -> list[dict[str, object]]:
+    group_columns = tuple(group_columns)
+    grouped: dict[tuple[object, ...], list[dict[str, object]]] = {}
+    for row in rows:
+        grouped.setdefault(tuple(row.get(key, "") for key in group_columns), []).append(row)
+
+    output: list[dict[str, object]] = []
+    for key, group in grouped.items():
+        aggregate = dict(zip(group_columns, key))
+        seeds = sorted(
+            {
+                int(seed)
+                for row in group
+                if (seed := _numeric_value(row.get("seed"))) is not None
+            }
+        )
+        aggregate["seed_count"] = len(seeds)
+        aggregate["seed_values"] = ",".join(str(seed) for seed in seeds)
+        candidates = tuple(measure_columns) if measure_columns is not None else tuple(
+            column
+            for column in group[0]
+            if column not in {*group_columns, "seed"} and not column.endswith(("_status", "_is_optimal"))
+        )
+        for column in candidates:
+            values = [
+                value
+                for row in group
+                if (value := _numeric_value(row.get(column))) is not None
+            ]
+            if not values:
+                continue
+            mean_value = float(np.mean(values))
+            min_value = float(np.min(values))
+            max_value = float(np.max(values))
+            aggregate[column] = mean_value
+            aggregate[f"{column}_min"] = min_value
+            aggregate[f"{column}_max"] = max_value
+            aggregate[f"{column}_minus"] = mean_value - min_value
+            aggregate[f"{column}_plus"] = max_value - mean_value
+        for column in group[0]:
+            if not column.endswith(("_status", "_is_optimal")):
+                continue
+            values = {row.get(column, "") for row in group}
+            aggregate[column] = values.pop() if len(values) == 1 else "MIXED"
+        output.append(aggregate)
+    return output
 
 
 def _csv_metric_name(result_name: str, N: int, L: int) -> str:
@@ -485,13 +605,33 @@ def plot_sweep_csv(csv_path: str, sweep: str, save_dir: str | None = None) -> li
     if sweep_key not in {"K", "N", "L", "degenerate"}:
         raise SystemExit(f"Unknown sweep {sweep!r}; expected K, N, L, or degenerate")
 
+    seed_values = sorted(
+        {
+            int(seed)
+            for row in rows
+            if (seed := _numeric_value(row.get("seed"))) is not None
+        }
+    )
+    plot_rows = rows
+    if len(seed_values) > 1:
+        aggregate_path = path.parent / "benchmark_results_seed_aggregate.csv"
+        plot_rows = _aggregate_result_rows_across_seeds(rows)
+        _write_rows_csv(aggregate_path, plot_rows)
+        budget_path = path.parent / "benchmark_budget_curves.csv"
+        if budget_path.exists():
+            aggregate_budget_path = path.parent / "benchmark_budget_curves_seed_aggregate.csv"
+            _write_rows_csv(
+                aggregate_budget_path,
+                _aggregate_budget_rows_across_seeds(_read_rows_csv(budget_path)),
+            )
+
     generated: list[str] = []
     skipped: list[str] = []
     if sweep_key == "degenerate":
         compact_csv_path = output_dir / "degenerate_study.csv"
         table_path = output_dir / "degenerate_study_table.tex"
-        _write_degenerate_sweep_csv(compact_csv_path, rows)
-        _write_degenerate_sweep_table(table_path, rows)
+        _write_degenerate_sweep_csv(compact_csv_path, plot_rows)
+        _write_degenerate_sweep_table(table_path, plot_rows)
         generated.extend([compact_csv_path.name, table_path.name])
     else:
         metric_groups = [
@@ -505,7 +645,7 @@ def plot_sweep_csv(csv_path: str, sweep: str, save_dir: str | None = None) -> li
             if plot_kind == "runtime":
                 filename = f"sweep_{sweep_key}_runtime_vs_{sweep_key}.pdf"
                 y_label = "Mean Gurobi runtime (seconds)"
-            series, metric_skips = _metric_series(rows, sweep_key, metrics)
+            series, ranges, metric_skips = _metric_series_with_ranges(plot_rows, sweep_key, metrics)
             skipped.extend(f"{filename}: {message}" for message in metric_skips)
             if not series:
                 skipped.append(f"{filename}: no numeric series available")
@@ -516,6 +656,7 @@ def plot_sweep_csv(csv_path: str, sweep: str, save_dir: str | None = None) -> li
                 _axis_label(sweep_key),
                 y_label,
                 series,
+                ranges=ranges,
             )
             generated.append(filename)
 
@@ -584,10 +725,11 @@ def _write_sweep_audit(
     skipped: list[str],
 ) -> None:
     expected_varied = {"degenerate": {"N", "L"}}.get(sweep, {sweep})
+    allowed_varied = expected_varied | {"seed"}
     parameter_keys = ["K", "N", "L", "T", "delta_stab", "delta_val", "target_bias", "seed"]
     unique_values = {key: _sorted_unique_values(rows, key) for key in parameter_keys}
     unexpectedly_varied = [
-        key for key, values in unique_values.items() if len(values) > 1 and key not in expected_varied
+        key for key, values in unique_values.items() if len(values) > 1 and key not in allowed_varied
     ]
     expected_but_fixed = [key for key in expected_varied if len(unique_values.get(key, [])) < 2]
     status_columns = sorted({key for row in rows for key in row if key.endswith("_status")})
@@ -948,6 +1090,28 @@ def _metric_series(
             continue
         series[label] = metric_series
     return series, skipped
+
+
+def _metric_series_with_ranges(
+    rows: list[dict[str, object]],
+    axis_name: str,
+    metrics: dict[str, str],
+) -> tuple[
+    dict[str, tuple[list[float], list[float]]],
+    dict[str, tuple[list[float], list[float], list[float]]],
+    list[str],
+]:
+    series, skipped = _metric_series(rows, axis_name, metrics)
+    ranges: dict[str, tuple[list[float], list[float], list[float]]] = {}
+    for label, metric in metrics.items():
+        if label not in series:
+            continue
+        lower = _mean_series_by_axis(rows, axis_name, f"{metric}_min")
+        upper = _mean_series_by_axis(rows, axis_name, f"{metric}_max")
+        if lower is None or upper is None or lower[0] != upper[0]:
+            continue
+        ranges[label] = (lower[0], lower[1], upper[1])
+    return series, ranges, skipped
 
 
 SENTINEL_VALIDITY_METRICS = {
@@ -2493,6 +2657,7 @@ def _save_line_plot(
     series: dict[str, tuple[list[float], list[float]]],
     *,
     stagger_coincident_markers: bool = True,
+    ranges: dict[str, tuple[list[float], list[float], list[float]]] | None = None,
 ) -> None:
     """Save a report-facing line plot as PDF."""
     _save_line_plot_pdf(
@@ -2502,6 +2667,7 @@ def _save_line_plot(
         y_label,
         series,
         stagger_coincident_markers=stagger_coincident_markers,
+        ranges=ranges,
     )
 
 
@@ -2513,6 +2679,7 @@ def _save_line_plot_pdf(
     series: dict[str, tuple[list[float], list[float]]],
     *,
     stagger_coincident_markers: bool = True,
+    ranges: dict[str, tuple[list[float], list[float], list[float]]] | None = None,
 ) -> None:
     """Save a multi-series PDF line plot with visible coincident series."""
     _prepare_pdf_path(path)
@@ -2532,6 +2699,9 @@ def _save_line_plot_pdf(
     for idx, (name, (xs, ys)) in enumerate(series.items()):
         color = CANONICAL_COLORS.get(name, colors[idx % len(colors)])
         line_style = _line_style_for_index(name, idx)
+        if ranges and name in ranges:
+            range_xs, lower, upper = ranges[name]
+            ax.fill_between(range_xs, lower, upper, color=color, alpha=0.14, linewidth=0)
         ax.plot(xs, ys, color=color, linestyle=line_style, linewidth=2.2, label=name)
         x_span = xmax - xmin if xmax != xmin else 1.0
         for x, y in zip(xs, ys):
@@ -2763,13 +2933,20 @@ def load_experiment_config(path: str | Path) -> dict[str, object]:
             "Stability now always uses all competitors. Remove this field from the YAML."
         )
     generator = _require_str(config, config_path, "generator", {"toy", "validity_demo"})
+    if "seed_values" in config and "seed" in config:
+        raise ConfigError(f"{config_path} must define either `seed_values` or `seed`, not both")
+    seeds = (
+        _require_number_list(config, config_path, "seed_values", int)
+        if "seed_values" in config
+        else [_require_int(config, config_path, "seed")]
+    )
     benchmark_config: dict[str, object] = {
         "Ks": _require_number_list(config, config_path, "K_values", int),
         "Ns": _require_number_list(config, config_path, "N_values", int),
         "lengths": _require_number_list(config, config_path, "L_values", int),
         "Ts": _require_number_list(config, config_path, "T_values", int),
         "generator": generator,
-        "seed": _require_int(config, config_path, "seed"),
+        "seeds": seeds,
         "budget_max": _require_int(config, config_path, "budget_max"),
         "save_dir": _require_str(config, config_path, "output_dir"),
         "objective_family": _require_str(config, config_path, "objective_family", {"full", "validity_only"}),
@@ -2854,6 +3031,7 @@ def _estimate_solve_counts(
     delta_stabs: Iterable[float],
     delta_vals: Iterable[float],
     target_biases: Iterable[float],
+    seeds: Iterable[int],
     _budget_max: int,
     objective_flags: dict[str, bool],
 ) -> dict[str, int]:
@@ -2864,22 +3042,23 @@ def _estimate_solve_counts(
         "per_row_stability_solves": 0,
         "per_row_validity_solves": 0,
     }
-    for _K in Ks:
-        for N in Ns:
-            for _L in Ls:
-                for _T in Ts:
-                    for _delta_stab in delta_stabs:
-                        for _delta_val in delta_vals:
-                            for _target_bias in target_biases:
-                                counts["instances"] += 1
-                                if objective_flags["make_stability_objectives"]:
-                                    counts["stability_objective_solves"] += 4
-                                if objective_flags["make_validity_objectives"]:
-                                    counts["validity_objective_solves"] += 2
-                                if objective_flags["make_stability_budget_curves"]:
-                                    counts["per_row_stability_solves"] += 2 * int(N)
-                                if objective_flags["make_validity_budget_curves"]:
-                                    counts["per_row_validity_solves"] += int(N)
+    for _seed in seeds:
+        for _K in Ks:
+            for N in Ns:
+                for _L in Ls:
+                    for _T in Ts:
+                        for _delta_stab in delta_stabs:
+                            for _delta_val in delta_vals:
+                                for _target_bias in target_biases:
+                                    counts["instances"] += 1
+                                    if objective_flags["make_stability_objectives"]:
+                                        counts["stability_objective_solves"] += 4
+                                    if objective_flags["make_validity_objectives"]:
+                                        counts["validity_objective_solves"] += 2
+                                    if objective_flags["make_stability_budget_curves"]:
+                                        counts["per_row_stability_solves"] += 2 * int(N)
+                                    if objective_flags["make_validity_budget_curves"]:
+                                        counts["per_row_validity_solves"] += int(N)
     return counts
 
 
@@ -2900,10 +3079,12 @@ def _print_benchmark_dry_run(
     verbose: bool,
     group_size: int,
     overlap: int,
+    seeds: Iterable[int],
 ) -> None:
     Ks, Ns, Ls, Ts = list(Ks), list(Ns), list(Ls), list(Ts)
+    seeds = list(seeds)
     delta_stabs, delta_vals, target_biases = list(delta_stabs), list(delta_vals), list(target_biases)
-    counts = _estimate_solve_counts(Ks, Ns, Ls, Ts, delta_stabs, delta_vals, target_biases, budget_max, objective_flags)
+    counts = _estimate_solve_counts(Ks, Ns, Ls, Ts, delta_stabs, delta_vals, target_biases, seeds, budget_max, objective_flags)
     total_stability = counts["stability_objective_solves"] + counts["per_row_stability_solves"]
     total_validity = counts["validity_objective_solves"] + counts["per_row_validity_solves"]
     print("Benchmark dry run")
@@ -2915,6 +3096,7 @@ def _print_benchmark_dry_run(
     print(f"stability budget curves: {'enabled' if objective_flags['make_stability_budget_curves'] else 'disabled'}")
     print(f"validity budget curves: {'enabled' if objective_flags['make_validity_budget_curves'] else 'disabled'}")
     print(f"expanded benchmark instances: {counts['instances']}")
+    print(f"seed values: {seeds}")
     K_master_requested = max(Ks)
     N_master = max(Ns)
     L_master = max(Ls)
@@ -2932,8 +3114,8 @@ def _print_benchmark_dry_run(
     print(f"  T_master = {T_master}")
     print(
         "Master random generations: "
-        f"{len(delta_stabs) * len(delta_vals) * len(target_biases)} "
-        "(one per delta_stab/delta_val/target_bias group)"
+        f"{len(seeds) * len(delta_stabs) * len(delta_vals) * len(target_biases)} "
+        "(one per seed/delta_stab/delta_val/target_bias group)"
     )
     if verbose:
         print(f"K values: {Ks}")
@@ -3030,7 +3212,7 @@ def main() -> None:
             delta_vals=config["delta_vals"],
             target_biases=config["target_biases"],
             influence_mode=config["influence_mode"],
-            seed=config["seed"],
+            seed=config["seeds"],
             save_dir=config["save_dir"],
             make_plots=args.make_plots,
             budget_max=config["budget_max"],

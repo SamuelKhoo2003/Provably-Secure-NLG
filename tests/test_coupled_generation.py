@@ -12,6 +12,9 @@ from toy_experiments.data import compute_counts, generate_toy_votes, generate_va
 from toy_experiments.experiments import (
     _is_standard_size_benchmark_csv,
     _metric_series,
+    _fixed_denominator_budget_series,
+    _aggregate_budget_rows_across_seeds,
+    _aggregate_result_rows_across_seeds,
     _summative_validity_stat_lines,
     benchmark_scale,
     load_experiment_config,
@@ -115,6 +118,82 @@ class CoupledBenchmarkTests(unittest.TestCase):
         config = load_experiment_config("toy_experiments/configs/small.yaml")
         self.assertNotIn("coupled_generation", config)
         self.assertNotIn("prefix_coupled_lengths", config)
+        self.assertEqual(config["seeds"], [0])
+
+    def test_sweep_configs_use_seed_replicates(self) -> None:
+        for sweep in ["K", "N", "L", "degenerate"]:
+            config = load_experiment_config(f"toy_experiments/configs/sweep_{sweep}.yaml")
+            self.assertEqual(config["seeds"], [0, 25, 50])
+
+    def test_legacy_single_seed_config_remains_supported(self) -> None:
+        config = load_experiment_config("toy_experiments/configs/validity_demo.yaml")
+        self.assertEqual(config["seeds"], [0])
+
+    def test_master_generator_called_once_per_seed_and_distribution_group(self) -> None:
+        real_generator = generate_toy_votes
+        with tempfile.TemporaryDirectory() as output_dir:
+            with mock.patch(
+                "toy_experiments.experiments.generate_toy_votes",
+                side_effect=real_generator,
+            ) as generator:
+                rows = benchmark_scale(
+                    Ks=[8, 16],
+                    Ns=[2],
+                    Ls=[3],
+                    Ts=[5],
+                    delta_stabs=[0.2],
+                    delta_vals=[0.2],
+                    target_biases=[0.3],
+                    influence_mode="dense",
+                    seed=[0, 25, 50],
+                    save_dir=output_dir,
+                    make_budget_curves=False,
+                    make_stability_objectives=False,
+                    make_validity_objectives=False,
+                    make_stability_budget_curves=False,
+                    make_validity_budget_curves=False,
+                )
+        self.assertEqual(generator.call_count, 3)
+        self.assertEqual(len(rows), 6)
+        self.assertEqual({row["seed"] for row in rows}, {0, 25, 50})
+
+    def test_budget_curve_aggregation_averages_seed_groups(self) -> None:
+        rows = [
+            {"seed": 0, "K": 8, "budget": 0, "certified_fraction": 1.0},
+            {"seed": 0, "K": 8, "budget": 1, "certified_fraction": 0.5},
+            {"seed": 25, "K": 8, "budget": 0, "certified_fraction": 0.5},
+            {"seed": 25, "K": 8, "budget": 1, "certified_fraction": 0.0},
+        ]
+        series, diagnostic = _fixed_denominator_budget_series(rows)
+        self.assertIsNone(diagnostic)
+        self.assertEqual(series, ([0.0, 1.0], [0.75, 0.25]))
+
+    def test_seed_aggregate_csv_rows_include_mean_and_range(self) -> None:
+        result_rows = [
+            {"K": 8, "N": 2, "L": 3, "T": 5, "seed": 0, "row_col_val_qN": 4},
+            {"K": 8, "N": 2, "L": 3, "T": 5, "seed": 25, "row_col_val_qN": 8},
+            {"K": 8, "N": 2, "L": 3, "T": 5, "seed": 50, "row_col_val_qN": 6},
+        ]
+        aggregate = _aggregate_result_rows_across_seeds(result_rows)
+        self.assertEqual(len(aggregate), 1)
+        self.assertEqual(aggregate[0]["seed_count"], 3)
+        self.assertEqual(aggregate[0]["seed_values"], "0,25,50")
+        self.assertEqual(aggregate[0]["row_col_val_qN"], 6.0)
+        self.assertEqual(aggregate[0]["row_col_val_qN_min"], 4.0)
+        self.assertEqual(aggregate[0]["row_col_val_qN_max"], 8.0)
+        self.assertEqual(aggregate[0]["row_col_val_qN_minus"], 2.0)
+        self.assertEqual(aggregate[0]["row_col_val_qN_plus"], 2.0)
+
+        budget_rows = [
+            {"K": 8, "seed": 0, "budget": 1, "method": "M", "objective": "O", "certified_fraction": 0.2},
+            {"K": 8, "seed": 25, "budget": 1, "method": "M", "objective": "O", "certified_fraction": 0.8},
+        ]
+        budget_aggregate = _aggregate_budget_rows_across_seeds(budget_rows)
+        self.assertEqual(budget_aggregate[0]["certified_fraction"], 0.5)
+        self.assertEqual(budget_aggregate[0]["certified_fraction_min"], 0.2)
+        self.assertEqual(budget_aggregate[0]["certified_fraction_max"], 0.8)
+        self.assertAlmostEqual(budget_aggregate[0]["certified_fraction_minus"], 0.3)
+        self.assertAlmostEqual(budget_aggregate[0]["certified_fraction_plus"], 0.3)
 
     def test_validity_demo_k_expansion_is_reported_by_dry_run(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

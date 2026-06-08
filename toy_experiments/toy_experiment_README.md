@@ -95,6 +95,29 @@ master. These parameters therefore still compare separately generated
 distributions; the implementation does not claim latent-random-variable
 coupling across them.
 
+Configs may use either a scalar `seed` or a `seed_values` list. The standard
+small, medium, and large configs remain single-seed runs. The dedicated
+`sweep_K`, `sweep_N`, `sweep_L`, and `sweep_degenerate` configs use:
+
+```yaml
+seed_values: [0, 25, 50]
+```
+
+Each sweep seed receives its own coupled master instance. Raw seed-specific
+rows are written together to `benchmark_results.csv` and
+`benchmark_budget_curves.csv`, with `seed` identifying the replicate. Two
+additional files provide plotting summaries:
+
+- `benchmark_results_seed_aggregate.csv`
+- `benchmark_budget_curves_seed_aggregate.csv`
+
+In these summaries, each numeric measurement column contains the mean across
+seeds and has matching `_min`, `_max`, `_minus`, and `_plus` columns.
+`_minus = mean - min` and `_plus = max - mean`, making asymmetric error bars
+directly available. Sweep plots use the mean line and shade the min-to-max
+range. Budget curves preserve each seed/configuration as a separate group
+before aggregation.
+
 Coupling improves comparability but does not make every metric monotonic:
 
 - Full-sequence validity is nondecreasing with `L` because the attack must

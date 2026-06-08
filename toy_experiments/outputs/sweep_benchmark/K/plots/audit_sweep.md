@@ -2,7 +2,7 @@
 
 - Source CSV: `toy_experiments/outputs/sweep_benchmark/K/results/benchmark_results.csv`
 - Sweep: `K`
-- Rows: 7
+- Rows: 21
 - Expected varied parameter(s): K
 - Fixed vocabulary size `T`: yes
 
@@ -15,7 +15,7 @@
 - `delta_stab`: [0.2]
 - `delta_val`: [0.2]
 - `target_bias`: [0.3]
-- `seed`: [0]
+- `seed`: [0, 25, 50]
 
 ## Generated artifacts
 
