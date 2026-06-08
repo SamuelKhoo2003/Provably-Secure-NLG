@@ -2,11 +2,6 @@
 __pycache__/
 *.py[cod]
 .DS_Store
-
-# Repository-level generated outputs are not committed.
-/outputs/
-
-# Large binary/array vote artifacts should stay out of Git.
 *.npz
 
 # Repo-local large-experiment caches.
@@ -26,3 +21,6 @@ external/VPA-main/**/adapters*/
 
 #PHD Reference
 external/phd_reference
+
+#Large Scale Training Outputs
+large_experiments/outputs
