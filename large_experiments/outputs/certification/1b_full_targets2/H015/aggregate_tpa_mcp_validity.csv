@@ -1,0 +1,13 @@
+budget,method,num_prompts,certified_prompts,certified_fraction
+0,aggregate_tpa_mcp_validity,104,104,1.0
+1,aggregate_tpa_mcp_validity,104,104,1.0
+3,aggregate_tpa_mcp_validity,104,104,1.0
+5,aggregate_tpa_mcp_validity,104,104,1.0
+7,aggregate_tpa_mcp_validity,104,103,0.9903846153846154
+9,aggregate_tpa_mcp_validity,104,103,0.9903846153846154
+25,aggregate_tpa_mcp_validity,104,101,0.9711538461538461
+50,aggregate_tpa_mcp_validity,104,99,0.9519230769230769
+100,aggregate_tpa_mcp_validity,104,91,0.875
+150,aggregate_tpa_mcp_validity,104,88,0.8461538461538461
+200,aggregate_tpa_mcp_validity,104,82,0.7884615384615384
+249,aggregate_tpa_mcp_validity,104,66,0.6346153846153846

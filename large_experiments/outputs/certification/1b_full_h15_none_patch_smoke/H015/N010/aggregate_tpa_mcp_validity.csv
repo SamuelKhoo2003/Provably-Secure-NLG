@@ -2,6 +2,3 @@ budget,method,num_prompts,certified_prompts,certified_fraction
 0,aggregate_tpa_mcp_validity,10,10,1.0
 1,aggregate_tpa_mcp_validity,10,10,1.0
 3,aggregate_tpa_mcp_validity,10,10,1.0
-5,aggregate_tpa_mcp_validity,10,10,1.0
-7,aggregate_tpa_mcp_validity,10,10,1.0
-9,aggregate_tpa_mcp_validity,10,10,1.0

@@ -2,6 +2,3 @@ budget,method,num_prompts,certified_prompts,certified_fraction
 0,dpa_weakest_token_stability,10,10,1.0
 1,dpa_weakest_token_stability,10,10,1.0
 3,dpa_weakest_token_stability,10,10,1.0
-5,dpa_weakest_token_stability,10,10,1.0
-7,dpa_weakest_token_stability,10,10,1.0
-9,dpa_weakest_token_stability,10,10,1.0
