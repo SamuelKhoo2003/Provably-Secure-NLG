@@ -1274,6 +1274,7 @@ def plot_validity_demo_csv(csv_path: str, save_dir: str | None = None) -> list[d
     _validate_validity_demo_plot_rows(rows, csv_path=path)
     save_validity_demo_plot(rows, output_dir, csv_path=path, generator="validity_demo")
     demo_rows = [row for row in rows if row.get("generator") == "validity_demo"]
+    write_validity_demo_parameter_tables(output_dir, demo_rows, csv_path=path)
     curve_checks = save_validity_demo_budget_curve_plots(output_dir, source_dir=path.parent, result_rows=demo_rows)
     write_validity_demo_audit(
         output_dir / "audit_validity_demo.md",
@@ -1285,6 +1286,67 @@ def plot_validity_demo_csv(csv_path: str, save_dir: str | None = None) -> list[d
     )
     print(f"Wrote validity_demo plots under: {output_dir}")
     return rows
+
+
+def write_validity_demo_parameter_tables(
+    output_dir: Path,
+    rows: list[dict[str, object]],
+    *,
+    csv_path: Path,
+) -> None:
+    """Record the exact K/N/L/T combinations observed in validity-demo results."""
+    grouped: dict[tuple[int, int, int, int], list[dict[str, object]]] = {}
+    for row in rows:
+        values = [_numeric_value(row.get(key)) for key in ["K", "N", "L", "T"]]
+        if any(value is None for value in values):
+            continue
+        key = tuple(int(value) for value in values)
+        grouped.setdefault(key, []).append(row)
+
+    table_rows: list[dict[str, object]] = []
+    for (K, N, L, T), matching in sorted(grouped.items()):
+        q1_statuses = sorted(
+            {str(row["row_col_val_q1_status"]) for row in matching if row.get("row_col_val_q1_status") not in {None, ""}}
+        )
+        qn_statuses = sorted(
+            {str(row["row_col_val_qN_status"]) for row in matching if row.get("row_col_val_qN_status") not in {None, ""}}
+        )
+        table_rows.append(
+            {
+                "K": K,
+                "N": N,
+                "L": L,
+                "T": T,
+                "result_rows": len(matching),
+                "q1_status": ",".join(q1_statuses),
+                "qN_status": ",".join(qn_statuses),
+            }
+        )
+
+    csv_output = output_dir / "validity_demo_parameters.csv"
+    _write_rows_csv(csv_output, table_rows)
+    markdown_lines = [
+        "# Validity demo parameters used",
+        "",
+        f"Source results: `{csv_path}`",
+        "",
+        f"Observed result rows: {len(rows)}",
+        f"Observed unique `(K, N, L, T)` combinations: {len(table_rows)}",
+        "",
+        f"- `K`: {_sorted_unique_values(rows, 'K')}",
+        f"- `N`: {_sorted_unique_values(rows, 'N')}",
+        f"- `L`: {_sorted_unique_values(rows, 'L')}",
+        f"- `T`: {_sorted_unique_values(rows, 'T')}",
+        "",
+        "| K | N | L | T | Result rows | q1 status | qN status |",
+        "|---:|---:|---:|---:|---:|:---|:---|",
+    ]
+    markdown_lines.extend(
+        f"| {row['K']} | {row['N']} | {row['L']} | {row['T']} | {row['result_rows']} | "
+        f"{row['q1_status'] or '-'} | {row['qN_status'] or '-'} |"
+        for row in table_rows
+    )
+    (output_dir / "validity_demo_parameters.md").write_text("\n".join(markdown_lines) + "\n")
 
 
 def _validate_validity_demo_plot_rows(rows: list[dict[str, object]], csv_path: Path) -> None:

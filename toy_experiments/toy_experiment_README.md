@@ -165,6 +165,17 @@ toy_experiments/outputs/validity_demo/results/
 toy_experiments/outputs/validity_demo/plots/
 ```
 
+Each run prints the active config path and its `K`, `N`, `L`, and `T` values.
+Plotting also writes tables derived from the actual result CSV:
+
+```text
+toy_experiments/outputs/validity_demo/plots/validity_demo_parameters.md
+toy_experiments/outputs/validity_demo/plots/validity_demo_parameters.csv
+```
+
+These tables list every observed `(K, N, L, T)` combination and its MILP
+statuses, which makes stale results or an overridden `CONFIG` visible.
+
 ## Python CLI
 
 The direct Python entry point is:

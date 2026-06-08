@@ -229,10 +229,8 @@ def _generate_heterogeneous_validity_demo_votes(
     if T - 1 < num_competitor_min:
         raise ValueError(f"T={T} is too small for num_competitor_min={num_competitor_min}")
 
-    rng = np.random.default_rng(seed)
     all_shards = np.arange(K, dtype=np.int64)
     base_groups = [np.arange(j * stride, j * stride + group_size, dtype=np.int64) for j in range(L)]
-    spare_shards = np.arange(min_required_shards, K, dtype=np.int64)
 
     base_token = np.zeros((N, L), dtype=np.int64)
     for j in range(L):
@@ -246,25 +244,25 @@ def _generate_heterogeneous_validity_demo_votes(
     influence = np.zeros((K, N, L), dtype=np.int64)
     groups_by_cell: list[list[np.ndarray]] = []
 
-    row_offsets = (
-        rng.choice(np.array([0, 1, 2, 3], dtype=np.int64), size=N, p=[0.25, 0.35, 0.25, 0.15])
-        if row_difficulty_jitter
-        else np.zeros(N, dtype=np.int64)
-    )
-    position_offsets = rng.integers(-1, 2, size=(N, L)) if position_difficulty_jitter else np.zeros((N, L), dtype=np.int64)
-
     for i in range(N):
-        motif_size = int(min(len(spare_shards), max(0, group_size // 2)))
-        row_motif = rng.choice(spare_shards, size=motif_size, replace=False) if motif_size else np.array([], dtype=np.int64)
+        row_rng = _validity_demo_rng(seed, K, i, stream=0)
+        row_offset = (
+            int(row_rng.choice(np.array([0, 1, 2, 3], dtype=np.int64), p=[0.25, 0.35, 0.25, 0.15]))
+            if row_difficulty_jitter
+            else 0
+        )
+        motif_size = int(min(K, max(0, group_size // 2)))
+        row_motif = row_rng.choice(all_shards, size=motif_size, replace=False) if motif_size else np.array([], dtype=np.int64)
         row_groups: list[np.ndarray] = []
         for j in range(L):
+            group_rng = _validity_demo_rng(seed, K, i, j, stream=1)
             group = _heterogeneous_validity_group(
                 base_group=base_groups[j],
                 previous_group=row_groups[-1] if row_groups else None,
                 row_motif=row_motif,
                 group_size=group_size,
                 all_shards=all_shards,
-                rng=rng,
+                rng=group_rng,
             )
             row_groups.append(group)
             influence[group, i, j] = 1
@@ -275,6 +273,8 @@ def _generate_heterogeneous_validity_demo_votes(
             stab_votes[non_group[:runner_count], i, j] = runner
 
             h = int(target[i, j])
+            position_rng = _validity_demo_rng(seed, K, i, j, stream=2)
+            position_offset = int(position_rng.integers(-1, 2)) if position_difficulty_jitter else 0
             counts = _sample_heterogeneous_validity_counts(
                 K=K,
                 T=T,
@@ -286,11 +286,12 @@ def _generate_heterogeneous_validity_demo_votes(
                 competitor_gap_min=competitor_gap_min,
                 competitor_gap_max=competitor_gap_max,
                 competitor_jitter=competitor_jitter,
-                difficulty_offset=int(row_offsets[i] + position_offsets[i, j]),
+                difficulty_offset=row_offset + position_offset,
                 group_size=group_size,
-                rng=rng,
+                rng=position_rng,
             )
-            val_votes[:, i, j] = _votes_from_counts_with_group_priority(counts, target=h, group=group, rng=rng)
+            vote_rng = _validity_demo_rng(seed, K, i, j, stream=3)
+            val_votes[:, i, j] = _votes_from_counts_with_group_priority(counts, target=h, group=group, rng=vote_rng)
         groups_by_cell.append(row_groups)
 
     stab_counts = compute_counts(stab_votes, T)
@@ -319,6 +320,12 @@ def _generate_heterogeneous_validity_demo_votes(
         val_base=val_base,
         influence=influence,
     )
+
+
+def _validity_demo_rng(seed: int, K: int, row: int, position: int = 0, *, stream: int) -> np.random.Generator:
+    """Return an L-independent random stream for one heterogeneous demo cell."""
+    sequence = np.random.SeedSequence([seed, K, row, position, stream])
+    return np.random.default_rng(sequence)
 
 
 def _heterogeneous_validity_group(

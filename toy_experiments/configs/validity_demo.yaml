@@ -5,11 +5,20 @@ generator: validity_demo
 K_values: [20, 24]
 N_values: [1, 2]
 L_values: [2, 3, 4, 5]
-T_values: [4, 5]
-validity_demo_distribution: deterministic
+T_values: [8]
+validity_demo_distribution: heterogeneous
 group_size: 8
 target_gap: 8
 overlap: 5
+num_competitor_min: 2
+num_competitor_max: 4
+target_count_min: 0
+target_count_max: 2
+competitor_gap_min: 2
+competitor_gap_max: 4
+competitor_jitter: 1
+row_difficulty_jitter: true
+position_difficulty_jitter: true
 seed: 0
 budget_max: 24
 budget_plot_num_points: 25

@@ -23,6 +23,10 @@ echo "Python:      $PYTHON_BIN"
 echo "Config:      $CONFIG"
 echo "Results dir: $RESULTS_DIR"
 echo "Plots dir:   $PLOTS_DIR"
+echo "K values:    $(config_value K_values)"
+echo "N values:    $(config_value N_values)"
+echo "L values:    $(config_value L_values)"
+echo "T values:    $(config_value T_values)"
 echo
 
 CONFIG="$CONFIG" ./toy_experiments/scripts/data.sh
@@ -41,3 +45,5 @@ echo
 echo "CSV:   $RESULTS_DIR/benchmark_results.csv"
 echo "Plots: $PLOTS_DIR/validity_demo_*.pdf"
 echo "Audit: $PLOTS_DIR/audit_validity_demo.md"
+echo "Parameters: $PLOTS_DIR/validity_demo_parameters.md"
+echo "Parameter CSV: $PLOTS_DIR/validity_demo_parameters.csv"
