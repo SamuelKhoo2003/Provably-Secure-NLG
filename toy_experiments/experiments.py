@@ -1261,6 +1261,7 @@ def save_validity_demo_plot(rows: list[dict[str, object]], output_dir: Path, csv
         "sequence length L",
         "Mean certified budget B*",
         series,
+        stagger_coincident_markers=False,
     )
 
 
@@ -1351,6 +1352,7 @@ def save_validity_demo_budget_curve_plots(
             ("Plain DPA max-token phrase blocker", "Plain DPA max-token phrase blocker", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
         ],
         max_points=budget_plot_num_points,
+        stagger_coincident_markers=False,
     )
 
 
@@ -2181,6 +2183,7 @@ def _save_required_certified_fraction_budget_plot(
     title: str,
     selections: list[tuple[str, str, str, str]],
     max_points: int | None = None,
+    stagger_coincident_markers: bool = True,
 ) -> dict[str, bool]:
     if not rows:
         raise SystemExit(f"{path.name} requires benchmark_budget_curves.csv rows, but none were available.")
@@ -2195,7 +2198,14 @@ def _save_required_certified_fraction_budget_plot(
     if max_points is not None:
         series = _sample_budget_plot_series(series, max_points=max_points)
         _assert_same_x_values(series, path.name)
-    _save_line_plot(path, title, "Poisoned shard budget B", "Certified fraction (%)", series)
+    _save_line_plot(
+        path,
+        title,
+        "Poisoned shard budget B",
+        "Certified fraction (%)",
+        series,
+        stagger_coincident_markers=stagger_coincident_markers,
+    )
     point_counts = {len(xs) for xs, _ys in series.values()}
     plotted_points = point_counts.pop() if len(point_counts) == 1 else None
     return {"monotone_nonincreasing": monotone, "missing_required_series": False, "plotted_budget_points": plotted_points}
@@ -2315,12 +2325,35 @@ def _save_heatmap_pdf(
     plt.close(fig)
 
 
-def _save_line_plot(path: Path, title: str, x_label: str, y_label: str, series: dict[str, tuple[list[float], list[float]]]) -> None:
+def _save_line_plot(
+    path: Path,
+    title: str,
+    x_label: str,
+    y_label: str,
+    series: dict[str, tuple[list[float], list[float]]],
+    *,
+    stagger_coincident_markers: bool = True,
+) -> None:
     """Save a report-facing line plot as PDF."""
-    _save_line_plot_pdf(path, title, x_label, y_label, series)
+    _save_line_plot_pdf(
+        path,
+        title,
+        x_label,
+        y_label,
+        series,
+        stagger_coincident_markers=stagger_coincident_markers,
+    )
 
 
-def _save_line_plot_pdf(path: Path, title: str, x_label: str, y_label: str, series: dict[str, tuple[list[float], list[float]]]) -> None:
+def _save_line_plot_pdf(
+    path: Path,
+    title: str,
+    x_label: str,
+    y_label: str,
+    series: dict[str, tuple[list[float], list[float]]],
+    *,
+    stagger_coincident_markers: bool = True,
+) -> None:
     """Save a multi-series PDF line plot with visible coincident series."""
     _prepare_pdf_path(path)
     all_x = [x for xs, _ in series.values() for x in xs]
@@ -2345,9 +2378,15 @@ def _save_line_plot_pdf(path: Path, title: str, x_label: str, y_label: str, seri
             point_key = (float(x), float(y))
             overlapping_indices = point_groups[point_key]
             overlap_position = overlapping_indices.index(idx)
-            marker_offset = (overlap_position - (len(overlapping_indices) - 1) / 2) * 0.012 * x_span
+            marker_x = _coincident_marker_x(
+                x,
+                overlap_position=overlap_position,
+                overlap_count=len(overlapping_indices),
+                x_span=x_span,
+                stagger=stagger_coincident_markers,
+            )
             ax.scatter(
-                [x + marker_offset],
+                [marker_x],
                 [y],
                 marker=markers[idx % len(markers)],
                 s=48,
@@ -2363,7 +2402,7 @@ def _save_line_plot_pdf(path: Path, title: str, x_label: str, y_label: str, seri
     ax.set_ylim(bottom=min(0.0, min(all_y)))
     ax.grid(axis="y", color="#e5e7eb")
     ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5), frameon=False)
-    if any(len(indices) > 1 for indices in point_groups.values()):
+    if stagger_coincident_markers and any(len(indices) > 1 for indices in point_groups.values()):
         fig.text(
             0.99,
             0.02,
@@ -2374,6 +2413,19 @@ def _save_line_plot_pdf(path: Path, title: str, x_label: str, y_label: str, seri
         )
     fig.savefig(path, format="pdf", dpi=200, bbox_inches="tight", facecolor="white")
     plt.close(fig)
+
+
+def _coincident_marker_x(
+    x: float,
+    *,
+    overlap_position: int,
+    overlap_count: int,
+    x_span: float,
+    stagger: bool,
+) -> float:
+    if not stagger:
+        return x
+    return x + (overlap_position - (overlap_count - 1) / 2) * 0.012 * x_span
 
 
 def _prepare_pdf_path(path: Path) -> None:

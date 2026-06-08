@@ -2,25 +2,17 @@ name: validity_demo
 generator: validity_demo
 # Artificial controlled validity-only stress test, not a natural language benchmark.
 # Expected hierarchy: Plain DPA max-token phrase < TPA max-token phrase < shared shard-aware MILP.
-K_values: [96]
-N_values: [32]
-L_values: [3,9,27]
-T_values: [50]
-validity_demo_distribution: heterogeneous
-num_competitor_min: 3
-num_competitor_max: 10
-target_count_min: 0
-target_count_max: 4
-competitor_gap_min: 4
-competitor_gap_max: 10
-competitor_jitter: 3
-row_difficulty_jitter: true
-position_difficulty_jitter: true
-group_size: 10
-overlap: 7
+K_values: [20, 24]
+N_values: [1, 2]
+L_values: [2, 3, 4, 5]
+T_values: [4, 5]
+validity_demo_distribution: deterministic
+group_size: 8
+target_gap: 8
+overlap: 5
 seed: 0
-budget_max: 80
-budget_plot_num_points: 30
+budget_max: 24
+budget_plot_num_points: 25
 objective_family: validity_only
 make_budget_curves: true
 make_stability_objectives: false
