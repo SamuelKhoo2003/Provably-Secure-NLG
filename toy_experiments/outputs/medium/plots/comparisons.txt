@@ -10,49 +10,36 @@ relative lift = 100 * absolute_lift / abs(mean(strategy B))
 relative lifts below 1% are reported as 0%
 
 Expected ordering checks:
-- Stability MILP > DPA observed in mean-budget plots: True
-- Validity MILP > TPA observed in mean-budget plots: True
-- Validity TPA > DPA observed in mean-budget plots: False
+- Stability full-sequence MILP > DPA observed in budget curves: True
+- Stability one-token MILP > DPA observed in budget curves: False
+- Validity MILP > TPA observed in budget curves: False
+- Validity TPA > DPA observed in budget curves: False
 
 Comparison summary:
-- stability_one_token_per_row_budget_curve.pdf
-  - Shared MILP all prompts, one token each vs DPA weakest token: average certified-fraction lift 0 percentage points; relative lift 0%
-- stability_one_prompt_budget_curve.pdf
-  - Shared MILP one prompt, full sequence vs DPA weakest token: average certified-fraction lift 25.1 percentage points; relative lift 69.6%
+- stability_budget_curve.pdf
+  - Shared MILP full sequence vs DPA weakest token: average certified-fraction lift 24.6 percentage points; relative lift 53.8%
+  - Shared MILP one token per row vs DPA weakest token: average certified-fraction lift 0 percentage points; relative lift 0%
 - main_validity_budget_curve.pdf
-  - Shared shard-aware MILP full sequence vs TPA max-token phrase blocker: average certified-fraction lift 0.234 percentage points; relative lift 0%
+  - Shared shard-aware MILP full sequence vs TPA max-token phrase blocker: average certified-fraction lift 0 percentage points; relative lift 0%
   - TPA max-token phrase blocker vs Plain DPA max-token phrase blocker: average certified-fraction lift 0 percentage points; relative lift 0%
-  - Shared shard-aware MILP full sequence vs Plain DPA max-token phrase blocker: average certified-fraction lift 0.234 percentage points; relative lift 0%
-- stability_certificate_vs_K.pdf
-  - Shared MILP full matrix vs DPA weakest token: mean certified-budget lift 3.62 budget units; relative lift 50%
-- validity_certificate_vs_K.pdf
-  - Shared shard-aware MILP full sequence vs TPA max-token phrase blocker: mean certified-budget lift 0.375 budget units; relative lift 4.69%
-  - TPA max-token phrase blocker vs Plain DPA max-token phrase blocker: mean certified-budget lift 0 budget units; relative lift 0%
-  - Shared shard-aware MILP full sequence vs Plain DPA max-token phrase blocker: mean certified-budget lift 0.375 budget units; relative lift 4.69%
+  - Shared shard-aware MILP full sequence vs Plain DPA max-token phrase blocker: average certified-fraction lift 0 percentage points; relative lift 0%
 
-Series summary stats:
-- stability_one_token_per_row_budget_curve.pdf
-  - Shared MILP all prompts, one token each: n=31, x=0..30, mean=23.3871, min=0, max=100
-  - DPA weakest token: n=31, x=0..30, mean=23.3871, min=0, max=100
-- stability_one_prompt_budget_curve.pdf
-  - Shared MILP one prompt, full sequence: n=16, x=0..15, mean=61.0938, min=0, max=100
-  - DPA weakest token: n=16, x=0..15, mean=36.0156, min=0, max=100
-- main_validity_budget_curve.pdf
-  - Shared shard-aware MILP full sequence: n=16, x=0..15, mean=36.9531, min=0, max=100
-  - TPA max-token phrase blocker: n=16, x=0..15, mean=36.7188, min=0, max=100
-  - Plain DPA max-token phrase blocker: n=16, x=0..15, mean=36.7188, min=0, max=100
-- stability_certificate_vs_K.pdf
-  - Shared MILP full matrix: n=2, x=15..30, mean=10.875, min=7.75, max=14
-  - DPA weakest token: n=2, x=15..30, mean=7.25, min=4.75, max=9.75
-- validity_certificate_vs_K.pdf
-  - Shared shard-aware MILP full sequence: n=2, x=15..30, mean=8.375, min=5.75, max=11
-  - TPA max-token phrase blocker: n=2, x=15..30, mean=8, min=5, max=11
-  - Plain DPA max-token phrase blocker: n=2, x=15..30, mean=8, min=5, max=11
 Summative validity composition:
 - Definition: summative DPA is `independent_val_sequence_qN`; shared MILP is `row_col_val_qN`.
-- Overall mean summative DPA budget: 158.75
-- Overall mean shared MILP budget: 8.375
-- Mean additive overestimate: 150.375 budget units
-- Mean summative-DPA/shared-MILP ratio: 18.9552x
-- K=15: summative DPA=107.75, shared MILP=5.75, difference=102
-- K=30: summative DPA=209.75, shared MILP=11, difference=198.75
+- Overall mean summative DPA budget: 129.593
+- Overall mean shared MILP budget: 7.11111
+- Mean additive overestimate: 122.481 budget units
+- Mean summative-DPA/shared-MILP ratio: 18.224x
+- K=10: summative DPA=82.4444, shared MILP=4.33333, difference=78.1111
+- K=15: summative DPA=112.111, shared MILP=7, difference=105.111
+- K=30: summative DPA=194.222, shared MILP=10, difference=184.222
+
+Series summary stats:
+- stability_budget_curve.pdf
+  - DPA weakest token: n=11, x=0..10, mean=45.7672, min=3.28042, max=100
+  - Shared MILP full sequence: n=11, x=0..10, mean=70.4089, min=33.3333, max=100
+  - Shared MILP one token per row: n=11, x=0..10, mean=45.7672, min=3.28042, max=100
+- main_validity_budget_curve.pdf
+  - Shared shard-aware MILP full sequence: n=11, x=0..10, mean=46.6859, min=0, max=100
+  - TPA max-token phrase blocker: n=11, x=0..10, mean=46.6859, min=0, max=100
+  - Plain DPA max-token phrase blocker: n=11, x=0..10, mean=46.6859, min=0, max=100

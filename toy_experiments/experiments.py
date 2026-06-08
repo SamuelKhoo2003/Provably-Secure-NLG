@@ -781,11 +781,8 @@ def _write_sweep_audit(
 
 
 DEFAULT_REPORT_PLOT_FILENAMES = (
-    "stability_one_token_per_row_budget_curve.pdf",
-    "stability_one_prompt_budget_curve.pdf",
-    "main_validity_budget_curve.pdf",
-    "stability_certificate_vs_K.pdf",
-    "validity_certificate_vs_K.pdf",
+    "stability_budget_curve.pdf",
+    "validity_budget_curve.pdf",
 )
 
 RELATIVE_LIFT_PERCENT_REPORTING_THRESHOLD = 1.0
@@ -796,78 +793,47 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
     budget_rows = _read_optional_csv(csv_path.parent / "benchmark_budget_curves.csv")
     audit: list[dict[str, object]] = []
 
-    stability_all_prompts_series, stability_all_prompts_skipped = _certificate_budget_curve_series(
-        rows,
-        [
-            ("Shared MILP all prompts, one token each", "row_col_stab_qN_r1"),
-            ("DPA weakest token", "dpa_stab_row_radius_qN"),
-        ],
-        budget_rows=budget_rows,
-    )
-    if stability_all_prompts_series:
-        _save_line_plot(
-            output_dir / "stability_one_token_per_row_budget_curve.pdf",
-            "Stability one token per row budget curve",
-            "Poisoned shard budget B",
-            "Certified fraction (%)",
-            stability_all_prompts_series,
-        )
-    else:
-        print("Warning: skipped stability_one_token_per_row_budget_curve.pdf; no requested benchmark-result series were available.")
-    audit.append(
-        {
-            "plot": "stability_one_token_per_row_budget_curve.pdf",
-            "series": list(stability_all_prompts_series),
-            "series_data": stability_all_prompts_series,
-            "comparisons": _performance_comparison_lines(
-                stability_all_prompts_series,
-                [
-                    (
-                        "Shared MILP all prompts, one token each",
-                        "DPA weakest token",
-                        "average certified-fraction lift",
-                        "percentage points",
-                    )
-                ],
-            ),
-            "skipped": stability_all_prompts_skipped,
-        }
-    )
-
-    stability_one_prompt_series, stability_one_prompt_skipped = _budget_curve_series(
+    stability_series, stability_skipped = _budget_curve_series(
         budget_rows,
         [
-            ("Shared MILP one prompt, full sequence", "Shared MILP", "stability_full_sequence_per_prompt", "radius_derived"),
             ("DPA weakest token", "DPA token margin", "full_response_stable_against_any_token_change", "radius_derived"),
+            ("Shared MILP full sequence", "Shared MILP", "stability_full_sequence_per_prompt", "radius_derived"),
+            ("Shared MILP one token per row", "Shared MILP", "stability_one_token_per_prompt", "radius_derived"),
         ],
     )
-    if stability_one_prompt_series:
+    if stability_series:
         _save_line_plot(
-            output_dir / "stability_one_prompt_budget_curve.pdf",
-            "Stability one prompt budget curve",
+            output_dir / "stability_budget_curve.pdf",
+            "Stability budget curve",
             "Poisoned shard budget B",
             "Certified fraction (%)",
-            stability_one_prompt_series,
+            stability_series,
         )
     else:
-        print("Warning: skipped stability_one_prompt_budget_curve.pdf; no requested budget-curve series were available.")
+        print("Warning: skipped stability_budget_curve.pdf; no requested budget-curve series were available.")
     audit.append(
         {
-            "plot": "stability_one_prompt_budget_curve.pdf",
-            "series": list(stability_one_prompt_series),
-            "series_data": stability_one_prompt_series,
+            "plot": "stability_budget_curve.pdf",
+            "series": list(stability_series),
+            "series_data": stability_series,
             "comparisons": _performance_comparison_lines(
-                stability_one_prompt_series,
+                stability_series,
                 [
                     (
-                        "Shared MILP one prompt, full sequence",
+                        "Shared MILP full sequence",
+                        "DPA weakest token",
+                        "average certified-fraction lift",
+                        "percentage points",
+                    ),
+                    (
+                        "Shared MILP one token per row",
                         "DPA weakest token",
                         "average certified-fraction lift",
                         "percentage points",
                     )
                 ],
             ),
-            "skipped": stability_one_prompt_skipped,
+            "skipped": stability_skipped,
         }
     )
 
@@ -880,12 +846,12 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
         ],
     )
     if validity_series:
-        _save_line_plot(output_dir / "main_validity_budget_curve.pdf", "Main validity budget curve", "Poisoned shard budget B", "Certified fraction (%)", validity_series)
+        _save_line_plot(output_dir / "validity_budget_curve.pdf", "Validity budget curve", "Poisoned shard budget B", "Certified fraction (%)", validity_series)
     else:
-        print("Warning: skipped main_validity_budget_curve.pdf; no requested budget-curve series were available.")
+        print("Warning: skipped validity_budget_curve.pdf; no requested budget-curve series were available.")
     audit.append(
         {
-            "plot": "main_validity_budget_curve.pdf",
+            "plot": "validity_budget_curve.pdf",
             "series": list(validity_series),
             "series_data": validity_series,
             "comparisons": _performance_comparison_lines(
@@ -915,18 +881,7 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
         }
     )
 
-    metric_specs = [
-        (
-            "stability_certificate_vs_K.pdf",
-            "Stability certificate vs K",
-            MAIN_STABILITY_METRICS,
-        ),
-        (
-            "validity_certificate_vs_K.pdf",
-            "Validity certificate vs K",
-            MAIN_VALIDITY_METRICS,
-        ),
-    ]
+    metric_specs = _default_report_metric_specs(csv_path)
     for filename, title, metrics in metric_specs:
         series, skipped = _metric_series(rows, "K", metrics)
         if series:
@@ -945,6 +900,24 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
 
     _write_default_plot_audit(output_dir / "audit_plot_outputs.txt", csv_path, audit)
     _write_comparison_report(output_dir / "comparisons.txt", csv_path, audit, rows=rows)
+
+
+def _default_report_metric_specs(csv_path: Path) -> list[tuple[str, str, dict[str, str]]]:
+    """Keep the standard size reports focused on budget curves."""
+    if _is_standard_size_benchmark_csv(csv_path):
+        return []
+    return [
+        (
+            "stability_certificate_vs_K.pdf",
+            "Stability certificate vs K",
+            MAIN_STABILITY_METRICS,
+        ),
+        (
+            "validity_certificate_vs_K.pdf",
+            "Validity certificate vs K",
+            MAIN_VALIDITY_METRICS,
+        ),
+    ]
 
 
 def _is_standard_size_benchmark_csv(csv_path: Path) -> bool:
@@ -1251,9 +1224,10 @@ def _write_comparison_report(
         f"relative lifts below {RELATIVE_LIFT_PERCENT_REPORTING_THRESHOLD:g}% are reported as 0%",
         "",
         "Expected ordering checks:",
-        f"- Stability MILP > DPA observed in mean-budget plots: {_comparison_is_positive(audit, 'stability_certificate_vs_K.pdf', 'Shared MILP full matrix', 'DPA weakest token')}",
-        f"- Validity MILP > TPA observed in mean-budget plots: {_comparison_is_positive(audit, 'validity_certificate_vs_K.pdf', 'Shared shard-aware MILP full sequence', 'TPA max-token phrase blocker')}",
-        f"- Validity TPA > DPA observed in mean-budget plots: {_comparison_is_positive(audit, 'validity_certificate_vs_K.pdf', 'TPA max-token phrase blocker', 'Plain DPA max-token phrase blocker')}",
+        f"- Stability full-sequence MILP > DPA observed in budget curves: {_comparison_is_positive(audit, 'stability_budget_curve.pdf', 'Shared MILP full sequence', 'DPA weakest token')}",
+        f"- Stability one-token MILP > DPA observed in budget curves: {_comparison_is_positive(audit, 'stability_budget_curve.pdf', 'Shared MILP one token per row', 'DPA weakest token')}",
+        f"- Validity MILP > TPA observed in budget curves: {_comparison_is_positive(audit, 'validity_budget_curve.pdf', 'Shared shard-aware MILP full sequence', 'TPA max-token phrase blocker')}",
+        f"- Validity TPA > DPA observed in budget curves: {_comparison_is_positive(audit, 'validity_budget_curve.pdf', 'TPA max-token phrase blocker', 'Plain DPA max-token phrase blocker')}",
         "",
         "Comparison summary:",
     ]

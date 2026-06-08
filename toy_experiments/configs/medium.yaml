@@ -1,16 +1,16 @@
 name: medium
 generator: toy
 
-K_values: [15, 30]
-N_values: [5, 10]
-L_values: [5, 10]
-T_values: [7]
+K_values: [10, 15, 30]
+N_values: [5 ,7, 10]
+L_values: [5, 7, 10]
+T_values: [6]
 
 delta_stab_values: [0.2]
 delta_val_values: [0.2]
 target_bias_values: [0.3]
 
-seed: 0
+seed: 15
 budget_max: 30
 
 influence_mode: dense
