@@ -1,0 +1,13 @@
+budget,method,num_prompts,certified_prompts,certified_fraction
+0,dpa_max_target_token_validity,23,23,1.0
+1,dpa_max_target_token_validity,23,23,1.0
+3,dpa_max_target_token_validity,23,23,1.0
+5,dpa_max_target_token_validity,23,23,1.0
+7,dpa_max_target_token_validity,23,23,1.0
+9,dpa_max_target_token_validity,23,23,1.0
+25,dpa_max_target_token_validity,23,23,1.0
+50,dpa_max_target_token_validity,23,23,1.0
+100,dpa_max_target_token_validity,23,23,1.0
+150,dpa_max_target_token_validity,23,23,1.0
+200,dpa_max_target_token_validity,23,23,1.0
+249,dpa_max_target_token_validity,23,19,0.8260869565217391
