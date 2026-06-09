@@ -1,4 +1,0 @@
-budget,method,num_prompts,certified_prompts,certified_fraction
-0,dpa_max_target_token_validity,10,10,1.0
-1,dpa_max_target_token_validity,10,10,1.0
-3,dpa_max_target_token_validity,10,10,1.0

@@ -1,4 +1,0 @@
-budget,method,objective_mode,num_prompts,horizon,num_shards,num_events,max_failed_prompts,certified_prompts_lower_bound,certified_fraction_lower_bound,solver,solver_status,objective_value,objective_bound,mip_gap,time_seconds,top_competitors,max_targets_per_prompt
-0,joint_row_column_stability_milp,fixed_budget_adversarial_success,10,15,500,50,0,10,1.0,gurobi,OPTIMAL,-0.0,-0.0,0.0,0.0038950300004216842,1,1
-1,joint_row_column_stability_milp,fixed_budget_adversarial_success,10,15,500,50,0,10,1.0,gurobi,OPTIMAL,-0.0,-0.0,0.0,0.0051137650007149205,1,1
-3,joint_row_column_stability_milp,fixed_budget_adversarial_success,10,15,500,50,0,10,1.0,gurobi,OPTIMAL,-0.0,-0.0,0.0,0.0054018330010876525,1,1

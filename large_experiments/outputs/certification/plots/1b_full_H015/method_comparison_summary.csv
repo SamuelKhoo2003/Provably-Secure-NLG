@@ -1,6 +1,0 @@
-run_label,method,method_label,num_prompts,min_certified_fraction,mean_certified_fraction,final_budget,final_certified_fraction
-1B full H=15 targets=2,aggregate_tpa_mcp_validity,Aggregate TPA MCP validity,104,0.6346153846153846,0.920673076923077,249,0.6346153846153846
-1B full H=15 targets=2,dpa_max_target_token_validity,DPA max-target-token validity,104,0.6346153846153846,0.9270833333333335,249,0.6346153846153846
-1B full H=15 targets=2,dpa_weakest_token_stability,DPA weakest-token stability,104,0.3365384615384615,0.8581730769230771,249,0.3365384615384615
-1B full H=15 targets=2,joint_row_column_stability_milp,Joint row-column stability MILP,104,0.3365384615384615,0.8581730769230771,249,0.3365384615384615
-1B full H=15 targets=2,joint_row_column_validity_milp,Joint row-column validity MILP,104,0.6346153846153846,0.9270833333333335,249,0.6346153846153846
