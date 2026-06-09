@@ -35,40 +35,59 @@ import pandas as pd
 
 
 METHOD_LABELS = {
-    "dpa_weakest_token_stability": "DPA weakest-token stability",
+    "dpa_final_tool_stability": "DPA final-tool stability",
     "joint_row_column_stability_milp": "Joint row-column stability MILP",
-    "standalone_tpa_phrase_baseline": "Standalone TPA phrase baseline",
-    "dpa_max_target_token_validity": "DPA max-target-token validity",
+    "aggregate_tpa_final_tool_validity": "Aggregate TPA final-tool validity",
+    "dpa_token_grid_weakest_token_stability_diagnostic": (
+        "DPA token-grid weakest-token stability diagnostic"
+    ),
+    "dpa_max_target_token_validity_diagnostic": (
+        "DPA max-target-token validity diagnostic"
+    ),
     "joint_row_column_validity_milp": "Joint row-column validity MILP",
 }
 
 METHOD_ALIASES = {
-    "aggregate_tpa_mcp_validity": "standalone_tpa_phrase_baseline",
-    "tpa_multi_sample_validity": "standalone_tpa_phrase_baseline",
+    "dpa_weakest_token_stability": (
+        "dpa_token_grid_weakest_token_stability_diagnostic"
+    ),
+    "aggregate_tpa_mcp_validity": "aggregate_tpa_final_tool_validity",
+    "standalone_tpa_phrase_baseline": "aggregate_tpa_final_tool_validity",
+    "tpa_multi_sample_validity": "aggregate_tpa_final_tool_validity",
+    "dpa_max_target_token_validity": (
+        "dpa_max_target_token_validity_diagnostic"
+    ),
 }
 
 METHOD_ORDER = [
-    "dpa_weakest_token_stability",
+    "dpa_final_tool_stability",
     "joint_row_column_stability_milp",
-    "standalone_tpa_phrase_baseline",
-    "dpa_max_target_token_validity",
+    "aggregate_tpa_final_tool_validity",
     "joint_row_column_validity_milp",
+    "dpa_token_grid_weakest_token_stability_diagnostic",
+    "dpa_max_target_token_validity_diagnostic",
 ]
 
 METHOD_STYLES = {
-    "dpa_weakest_token_stability": {
+    "dpa_final_tool_stability": {
         "linestyle": ":",
         "marker": "o",
         "markerfacecolor": "white",
         "zorder": 4,
     },
-    "standalone_tpa_phrase_baseline": {
+    "aggregate_tpa_final_tool_validity": {
         "linestyle": "--",
         "marker": "^",
         "markerfacecolor": "white",
         "zorder": 3,
     },
-    "dpa_max_target_token_validity": {
+    "dpa_token_grid_weakest_token_stability_diagnostic": {
+        "linestyle": "-.",
+        "marker": "v",
+        "markerfacecolor": "white",
+        "zorder": 3,
+    },
+    "dpa_max_target_token_validity_diagnostic": {
         "linestyle": ":",
         "marker": "s",
         "markerfacecolor": "white",

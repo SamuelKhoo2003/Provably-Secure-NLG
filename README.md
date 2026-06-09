@@ -15,7 +15,12 @@ objective or parameter; see
 [`toy_experiments/toy_experiment_README.md`](toy_experiments/toy_experiment_README.md#coupled-synthetic-sweeps).
 
 TPA terminology in this repository is deliberately narrow. The toy baseline is
-the count-based **TPA max-token phrase baseline**, and the large baseline is the
-count-based **standalone TPA phrase baseline** over whole tool-call labels.
+the count-based **TPA max-token phrase baseline**, and the large baseline is
+**aggregate TPA final-tool validity** over whole tool-call labels.
 Neither uses an MILP, shard identities, or a shared poisoned-shard allocation.
 Collective TPA+MSC is not implemented.
+
+The main large-experiment external baselines use final tool-call vote vectors:
+**DPA final-tool stability** and **aggregate TPA final-tool validity**. The
+proposed joint MILPs use the shard-aware prompt-token grid. Token-grid DPA
+curves are optional diagnostics rather than main full-scale baselines.

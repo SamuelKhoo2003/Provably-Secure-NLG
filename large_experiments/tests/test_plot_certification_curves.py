@@ -35,10 +35,16 @@ class PlotCertificationCurvesTests(unittest.TestCase):
         except ModuleNotFoundError as exc:
             raise unittest.SkipTest(f"plot dependencies unavailable: {exc}") from exc
 
-    def test_legacy_aggregate_tpa_name_maps_to_standalone_phrase(self) -> None:
+    def test_legacy_aggregate_tpa_name_maps_to_final_tool_validity(self) -> None:
         self.assertEqual(
             self.plotter.canonical_method_name("aggregate_tpa_mcp_validity"),
-            "standalone_tpa_phrase_baseline",
+            "aggregate_tpa_final_tool_validity",
+        )
+        self.assertEqual(
+            self.plotter.canonical_method_name(
+                "dpa_weakest_token_stability"
+            ),
+            "dpa_token_grid_weakest_token_stability_diagnostic",
         )
 
     def test_old_csv_method_is_canonicalized_when_loaded(self) -> None:
@@ -55,11 +61,11 @@ class PlotCertificationCurvesTests(unittest.TestCase):
 
         self.assertEqual(
             frame.loc[0, "method"],
-            "standalone_tpa_phrase_baseline",
+            "aggregate_tpa_final_tool_validity",
         )
         self.assertEqual(
             frame.loc[0, "method_label"],
-            "Standalone TPA phrase baseline",
+            "Aggregate TPA final-tool validity",
         )
 
 

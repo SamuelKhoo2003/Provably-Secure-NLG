@@ -156,7 +156,8 @@ Important columns:
 | `runner_up_votes`      | Number of shards voting for the strongest competitor |
 | `dpa_stability_radius` | Token-level DPA stability radius                     |
 
-This file is used for the DPA weakest-token stability baseline.
+This file can be used for the optional token-grid weakest-token DPA stability
+diagnostic. It is not the main full-scale stability baseline.
 
 ### `target_grid.csv`
 
@@ -189,8 +190,8 @@ This file contains the class-level vote counts used for professor-style MCP vali
 
 It is derived from `vote_vector`, not from `token_vote_matrix`.
 
-This file is used to compute the standalone TPA phrase baseline over
-alternative tool-call classes.
+This file is used to compute aggregate TPA final-tool validity over alternative
+tool-call classes.
 
 ### `shard_votes_long.csv`
 
@@ -218,31 +219,29 @@ For `N = 110`, `H = 20`, and `K = 500`, this file contains:
 
 ## Baselines
 
-The large-scale experiment compares the row-column MILPs against external baselines.
+The large-scale experiment compares inherited final-tool vote-vector baselines
+against proposed shard-aware prompt-token-grid MILPs.
 
 ### Stability baselines
 
-Stability asks whether the clean generated token sequence remains unchanged under poisoning.
+The main inherited stability baseline operates on the final tool-call labels in
+`vote_vector`.
 
 The main stability baseline is:
 
 ```text
-DPA weakest-token stability
+DPA final-tool stability
 ```
 
-For each prompt-token cell, compute:
+For each prompt, count final tool-call votes and compute:
 
 ```text
 radius = floor((winner_votes - runner_up_votes - 1) / 2)
 ```
 
-The prompt-level horizon certificate is the weakest token over the horizon:
-
-```text
-prompt_radius = min over token positions
-```
-
 Negative radii are clamped to zero.
+
+Token-grid weakest-token DPA remains available only as an optional diagnostic.
 
 ### Validity baselines
 
@@ -251,7 +250,7 @@ Validity asks whether an adversary can force an alternative valid MCP or tool-ca
 The professor-style full-scale validity baseline is:
 
 ```text
-Standalone TPA phrase baseline
+Aggregate TPA final-tool validity
 ```
 
 For each prompt:
@@ -263,14 +262,15 @@ For each prompt:
 
 The minimum is used because the adversary succeeds if it can force any alternative target class.
 
-This is targeted partition aggregation over whole MCP/tool-call label counts
-from `vote_vector`. It is standalone and count-based: it does not solve an
+This is targeted partition aggregation over final MCP/tool-call label counts
+from `vote_vector`. It is aggregate and count-based: it does not solve an
 MILP, use shard identities, or enforce one shared poisoned-shard allocation.
 The collective TPA+MSC multi-sample MILP is not implemented here. The
 row-column validity MILP is a separate proposed method and must not be labeled
 TPA+MSC.
 
-A token-grid DPA target diagnostic is also computed using `target_grid.csv`.
+A token-grid DPA target diagnostic is available with
+`--include-token-grid-dpa-validity-diagnostic`.
 
 ## Fixed-budget joint MILP curves
 
@@ -287,6 +287,19 @@ Outputs label this objective as `fixed_budget_adversarial_success`. Row-only
 and column-only MILPs are not run by default. `--max-targets-per-prompt` limits
 only the MILP target bank; the validity baselines use every observed
 non-majority target class.
+
+The default `budget_curve_summary.csv` contains only:
+
+```text
+dpa_final_tool_stability
+aggregate_tpa_final_tool_validity
+joint_row_column_stability_milp
+joint_row_column_validity_milp
+```
+
+Use `--include-token-grid-dpa-stability-diagnostic` or
+`--include-token-grid-dpa-validity-diagnostic` to add the corresponding
+token-grid DPA diagnostic to the summary.
 
 ## Recommended workflow
 
@@ -378,13 +391,19 @@ Outputs are written under
 `large_experiments/outputs/certification/<name>/H020/`:
 
 ```text
-dpa_weakest_token_stability.csv
-standalone_tpa_phrase_baseline.csv
-dpa_max_target_token_validity.csv
+dpa_final_tool_stability.csv
+aggregate_tpa_final_tool_validity.csv
 joint_row_column_stability_milp.csv
 joint_row_column_validity_milp.csv
 budget_curve_summary.csv
 summary.json
+```
+
+Optional diagnostic files are:
+
+```text
+dpa_token_grid_weakest_token_stability_diagnostic.csv
+dpa_max_target_token_validity_diagnostic.csv
 ```
 
 ## Ada setup

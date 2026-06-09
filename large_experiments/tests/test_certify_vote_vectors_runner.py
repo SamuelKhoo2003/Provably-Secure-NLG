@@ -69,7 +69,19 @@ class CertificationRunnerTests(unittest.TestCase):
         self.assertEqual(runner.dpa_certified_radius(10, 4), 2)
         self.assertEqual(runner.dpa_certified_radius(5, 5), 0)
 
-    def test_standalone_tpa_phrase_reuses_targeted_partition(self) -> None:
+    def test_dpa_final_tool_stability_uses_vote_vector_counts(self) -> None:
+        row = runner.PromptRow(
+            original_row_index=0,
+            majority_class="clean",
+            vote_vector=("clean",) * 6 + ("target",) * 2 + ("other",) * 2,
+            token_vote_matrix=tuple((0,) for _ in range(10)),
+        )
+        self.assertEqual(
+            runner.compute_dpa_final_tool_stability_radii([row]),
+            [1.0],
+        )
+
+    def test_aggregate_tpa_final_tool_uses_vote_vector_counts(self) -> None:
         row = runner.PromptRow(
             original_row_index=0,
             majority_class="clean",
@@ -78,15 +90,80 @@ class CertificationRunnerTests(unittest.TestCase):
         )
         # Two changed votes can make target tie clean, so only budget 1 is safe.
         self.assertEqual(
-            runner.compute_standalone_tpa_phrase_radii([row]),
+            runner.compute_aggregate_tpa_final_tool_validity_radii([row]),
             [1.0],
         )
         curve = runner.baseline_curve_rows(
-            "standalone_tpa_phrase_baseline",
+            "aggregate_tpa_final_tool_validity",
             [1.0],
             [0],
         )
-        self.assertEqual(curve[0]["method"], "standalone_tpa_phrase_baseline")
+        self.assertEqual(
+            curve[0]["method"],
+            "aggregate_tpa_final_tool_validity",
+        )
+
+    def test_default_summary_excludes_token_grid_dpa_diagnostics(self) -> None:
+        dpa = runner.baseline_curve_rows(
+            "dpa_final_tool_stability",
+            [1.0],
+            [0],
+        )
+        tpa = runner.baseline_curve_rows(
+            "aggregate_tpa_final_tool_validity",
+            [1.0],
+            [0],
+        )
+        groups = runner.select_summary_baseline_groups(
+            dpa,
+            tpa,
+            [{"method": "dpa_token_grid_weakest_token_stability_diagnostic"}],
+            [{"method": "dpa_max_target_token_validity_diagnostic"}],
+            include_token_grid_dpa_stability_diagnostic=False,
+            include_token_grid_dpa_validity_diagnostic=False,
+        )
+        self.assertEqual(
+            [group[0]["method"] for group in groups],
+            [
+                "dpa_final_tool_stability",
+                "aggregate_tpa_final_tool_validity",
+            ],
+        )
+        summary = runner.summary_curve_rows(
+            groups,
+            [
+                [{"budget": 0, "method": "joint_row_column_stability_milp"}],
+                [{"budget": 0, "method": "joint_row_column_validity_milp"}],
+            ],
+        )
+        self.assertEqual(
+            {row["method"] for row in summary},
+            {
+                "dpa_final_tool_stability",
+                "aggregate_tpa_final_tool_validity",
+                "joint_row_column_stability_milp",
+                "joint_row_column_validity_milp",
+            },
+        )
+
+    def test_diagnostic_flags_include_token_grid_dpa_methods(self) -> None:
+        groups = runner.select_summary_baseline_groups(
+            [{"method": "dpa_final_tool_stability"}],
+            [{"method": "aggregate_tpa_final_tool_validity"}],
+            [{"method": "dpa_token_grid_weakest_token_stability_diagnostic"}],
+            [{"method": "dpa_max_target_token_validity_diagnostic"}],
+            include_token_grid_dpa_stability_diagnostic=True,
+            include_token_grid_dpa_validity_diagnostic=True,
+        )
+        self.assertEqual(
+            [group[0]["method"] for group in groups],
+            [
+                "dpa_final_tool_stability",
+                "aggregate_tpa_final_tool_validity",
+                "dpa_token_grid_weakest_token_stability_diagnostic",
+                "dpa_max_target_token_validity_diagnostic",
+            ],
+        )
 
     def test_validity_targets_drop_shared_prefix_positions(self) -> None:
         row = runner.PromptRow(

@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Fixed-budget certification curves for VPA vote-vector JSONL outputs."""
+"""Fixed-budget certification curves for VPA vote-vector JSONL outputs.
+
+Inherited DPA/TPA baselines use final tool-call vote counts. The proposed joint
+MILPs use the shard-aware prompt-token grid. Token-grid DPA curves are optional
+diagnostics rather than main full-scale baselines.
+"""
 
 from __future__ import annotations
 
@@ -262,7 +267,21 @@ def build_validity_targets(
     return targets
 
 
-def compute_dpa_stability_radii(grid: np.ndarray) -> list[int]:
+def compute_dpa_final_tool_stability_radii(
+    rows: list[PromptRow],
+) -> list[float]:
+    """Compute DPA stability from final tool-call vote counts only."""
+    radii = []
+    for row in rows:
+        ranked = sorted_counter_items(Counter(row.vote_vector))
+        winner_votes = ranked[0][1]
+        runner_up_votes = ranked[1][1] if len(ranked) > 1 else 0
+        radii.append(float(dpa_certified_radius(winner_votes, runner_up_votes)))
+    return radii
+
+
+def compute_dpa_token_grid_stability_radii(grid: np.ndarray) -> list[int]:
+    """Compute the optional weakest-token DPA diagnostic on the token grid."""
     radii = []
     for prompt in grid:
         token_radii = []
@@ -275,12 +294,14 @@ def compute_dpa_stability_radii(grid: np.ndarray) -> list[int]:
     return radii
 
 
-def compute_standalone_tpa_phrase_radii(rows: list[PromptRow]) -> list[float]:
-    """Compute count-based TPA over whole observed MCP/tool-call labels.
+def compute_aggregate_tpa_final_tool_validity_radii(
+    rows: list[PromptRow],
+) -> list[float]:
+    """Compute aggregate TPA validity from final tool-call vote counts only.
 
-    This standalone baseline applies targeted partition aggregation to the
-    aggregate ``vote_vector`` counts. It does not use shard identities, an
-    MILP, or a shared poisoned-shard allocation.
+    This inherited baseline applies targeted partition aggregation to
+    ``vote_vector`` counts. It does not use the token grid, shard identities,
+    an MILP, or a shared poisoned-shard allocation.
     """
     radii: list[float] = []
     for row in rows:
@@ -704,6 +725,27 @@ def summary_curve_rows(
     return sorted(rows, key=lambda row: (int(row["budget"]), str(row["method"])))
 
 
+def select_summary_baseline_groups(
+    dpa_final_tool_stability: list[dict[str, Any]],
+    aggregate_tpa_final_tool_validity: list[dict[str, Any]],
+    dpa_token_grid_stability_diagnostic: list[dict[str, Any]],
+    dpa_token_grid_validity_diagnostic: list[dict[str, Any]],
+    *,
+    include_token_grid_dpa_stability_diagnostic: bool,
+    include_token_grid_dpa_validity_diagnostic: bool,
+) -> list[list[dict[str, Any]]]:
+    """Select main final-tool baselines plus explicitly requested diagnostics."""
+    groups = [
+        dpa_final_tool_stability,
+        aggregate_tpa_final_tool_validity,
+    ]
+    if include_token_grid_dpa_stability_diagnostic:
+        groups.append(dpa_token_grid_stability_diagnostic)
+    if include_token_grid_dpa_validity_diagnostic:
+        groups.append(dpa_token_grid_validity_diagnostic)
+    return groups
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -725,6 +767,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mip-gap", type=float)
     parser.add_argument("--threads", type=int, default=0)
     parser.add_argument("--quiet-gurobi", action="store_true")
+    parser.add_argument(
+        "--include-token-grid-dpa-stability-diagnostic",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--include-token-grid-dpa-validity-diagnostic",
+        action="store_true",
+    )
     parser.add_argument("--skip-stability-milp", action="store_true")
     parser.add_argument("--skip-validity-milp", action="store_true")
     args = parser.parse_args()
@@ -742,7 +792,6 @@ def main() -> None:
         args.input, args.horizon, args.max_prompts
     )
     grid = build_grid(rows, args.horizon)
-    baseline_targets = build_validity_targets(rows, grid, None)
     targets = build_validity_targets(rows, grid, args.max_targets_per_prompt)
     stability_events = build_stability_events(grid, args.top_competitors)
     validity_events = build_validity_events(grid, targets)
@@ -752,27 +801,51 @@ def main() -> None:
         out_dir = out_dir / f"N{args.max_prompts:03d}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    dpa_stability = baseline_curve_rows(
-        "dpa_weakest_token_stability",
-        compute_dpa_stability_radii(grid),
+    dpa_final_tool_stability = baseline_curve_rows(
+        "dpa_final_tool_stability",
+        compute_dpa_final_tool_stability_radii(rows),
         budgets,
     )
-    standalone_tpa_phrase = baseline_curve_rows(
-        "standalone_tpa_phrase_baseline",
-        compute_standalone_tpa_phrase_radii(rows),
+    aggregate_tpa_final_tool_validity = baseline_curve_rows(
+        "aggregate_tpa_final_tool_validity",
+        compute_aggregate_tpa_final_tool_validity_radii(rows),
         budgets,
     )
-    dpa_target = baseline_curve_rows(
-        "dpa_max_target_token_validity",
-        compute_dpa_target_radii(rows, grid, baseline_targets),
-        budgets,
-    )
-    write_rows(out_dir / "dpa_weakest_token_stability.csv", dpa_stability)
+    dpa_token_grid_stability_diagnostic: list[dict[str, Any]] = []
+    if args.include_token_grid_dpa_stability_diagnostic:
+        dpa_token_grid_stability_diagnostic = baseline_curve_rows(
+            "dpa_token_grid_weakest_token_stability_diagnostic",
+            compute_dpa_token_grid_stability_radii(grid),
+            budgets,
+        )
+    dpa_token_grid_validity_diagnostic: list[dict[str, Any]] = []
+    num_baseline_validity_targets = 0
+    if args.include_token_grid_dpa_validity_diagnostic:
+        baseline_targets = build_validity_targets(rows, grid, None)
+        num_baseline_validity_targets = len(baseline_targets)
+        dpa_token_grid_validity_diagnostic = baseline_curve_rows(
+            "dpa_max_target_token_validity_diagnostic",
+            compute_dpa_target_radii(rows, grid, baseline_targets),
+            budgets,
+        )
     write_rows(
-        out_dir / "standalone_tpa_phrase_baseline.csv",
-        standalone_tpa_phrase,
+        out_dir / "dpa_final_tool_stability.csv",
+        dpa_final_tool_stability,
     )
-    write_rows(out_dir / "dpa_max_target_token_validity.csv", dpa_target)
+    write_rows(
+        out_dir / "aggregate_tpa_final_tool_validity.csv",
+        aggregate_tpa_final_tool_validity,
+    )
+    if args.include_token_grid_dpa_stability_diagnostic:
+        write_rows(
+            out_dir / "dpa_token_grid_weakest_token_stability_diagnostic.csv",
+            dpa_token_grid_stability_diagnostic,
+        )
+    if args.include_token_grid_dpa_validity_diagnostic:
+        write_rows(
+            out_dir / "dpa_max_target_token_validity_diagnostic.csv",
+            dpa_token_grid_validity_diagnostic,
+        )
 
     stability_rows: list[dict[str, Any]] = []
     validity_rows: list[dict[str, Any]] = []
@@ -798,8 +871,20 @@ def main() -> None:
                 validity_rows,
             )
 
+    baseline_groups = select_summary_baseline_groups(
+        dpa_final_tool_stability,
+        aggregate_tpa_final_tool_validity,
+        dpa_token_grid_stability_diagnostic,
+        dpa_token_grid_validity_diagnostic,
+        include_token_grid_dpa_stability_diagnostic=(
+            args.include_token_grid_dpa_stability_diagnostic
+        ),
+        include_token_grid_dpa_validity_diagnostic=(
+            args.include_token_grid_dpa_validity_diagnostic
+        ),
+    )
     combined = summary_curve_rows(
-        [dpa_stability, standalone_tpa_phrase, dpa_target],
+        baseline_groups,
         [stability_rows, validity_rows],
     )
     write_rows(out_dir / "budget_curve_summary.csv", combined)
@@ -824,10 +909,20 @@ def main() -> None:
         "top_competitors": args.top_competitors,
         "max_targets_per_prompt": args.max_targets_per_prompt,
         "num_stability_events": len(stability_events),
-        "num_baseline_validity_targets": len(baseline_targets),
+        "num_baseline_validity_targets": num_baseline_validity_targets,
         "num_validity_targets": len(targets),
         "num_validity_events": len(validity_events),
-        "tpa_baseline": "standalone_tpa_phrase_baseline",
+        "full_scale_baseline_interface": "final_tool_vote_vector",
+        "proposed_method_interface": "shard_aware_prompt_token_grid",
+        "main_stability_baseline": "dpa_final_tool_stability",
+        "main_validity_baseline": "aggregate_tpa_final_tool_validity",
+        "token_grid_dpa_stability_diagnostic_included": (
+            args.include_token_grid_dpa_stability_diagnostic
+        ),
+        "token_grid_dpa_validity_diagnostic_included": (
+            args.include_token_grid_dpa_validity_diagnostic
+        ),
+        "tpa_baseline": "aggregate_tpa_final_tool_validity",
         "tpa_baseline_uses_milp": False,
         "tpa_baseline_uses_shard_identities": False,
         "tpa_baseline_uses_shared_poisoning_allocation": False,
