@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -206,6 +207,18 @@ def method_plot_style(method: str) -> dict[str, Any]:
     }
 
 
+def dynamic_certified_fraction_ylim(values_percent: pd.Series) -> tuple[float, float]:
+    finite_values = [
+        float(value)
+        for value in values_percent
+        if pd.notna(value) and math.isfinite(float(value))
+    ]
+    if not finite_values:
+        return 0, 100
+    ymin = 5 * math.floor(min(finite_values) / 5)
+    return max(0, ymin), 100
+
+
 def save_pdf(fig: plt.Figure, output_dir: Path, filename: str) -> None:
     path = output_dir / filename
     fig.savefig(path, format="pdf", bbox_inches="tight")
@@ -248,7 +261,7 @@ def plot_family(
 
     ax.set_xlabel("Poisoned shard budget B")
     ax.set_ylabel("Certified fraction (%)")
-    ax.set_ylim(-2, 102)
+    ax.set_ylim(*dynamic_certified_fraction_ylim(subset["certified_percent"]))
     ax.grid(True, alpha=0.3)
     ax.set_title(f"{title_prefix} {family} budget curve")
     ax.legend(loc="best", fontsize=8)
@@ -284,7 +297,7 @@ def plot_all_methods(
 
     ax.set_xlabel("Poisoned shard budget B")
     ax.set_ylabel("Certified fraction (%)")
-    ax.set_ylim(-2, 102)
+    ax.set_ylim(*dynamic_certified_fraction_ylim(subset["certified_percent"]))
     ax.grid(True, alpha=0.3)
     ax.set_title(f"{title_prefix} all methods")
     ax.legend(loc="best", fontsize=7)
