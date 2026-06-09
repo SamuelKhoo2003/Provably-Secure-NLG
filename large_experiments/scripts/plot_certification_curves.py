@@ -1,0 +1,355 @@
+#!/usr/bin/env python3
+"""Plot full-scale certification budget curves.
+
+The script consumes one or more result directories produced by
+large_experiments/scripts/certify_vote_vectors_runner.py.
+
+Each result directory should contain:
+- budget_curve_summary.csv
+- summary.json
+
+Plots are written as publication-ready PDF files.
+
+Example:
+python large_experiments/scripts/plot_certification_curves.py \
+  --inputs large_experiments/outputs/certification/1b_full_targets2/H015 \
+           large_experiments/outputs/certification/1b_full_targets2/H020 \
+  --labels "1B full H=15" "1B full H=20" \
+  --output-dir large_experiments/outputs/certification/plots
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+from typing import Any
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+
+METHOD_LABELS = {
+    "dpa_weakest_token_stability": "DPA weakest-token stability",
+    "joint_row_column_stability_milp": "Joint row-column stability MILP",
+    "aggregate_tpa_mcp_validity": "Aggregate TPA MCP validity",
+    "dpa_max_target_token_validity": "DPA max-target-token validity",
+    "joint_row_column_validity_milp": "Joint row-column validity MILP",
+}
+
+METHOD_ORDER = [
+    "dpa_weakest_token_stability",
+    "joint_row_column_stability_milp",
+    "aggregate_tpa_mcp_validity",
+    "dpa_max_target_token_validity",
+    "joint_row_column_validity_milp",
+]
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Plot certification budget curves from budget_curve_summary.csv files."
+    )
+    parser.add_argument(
+        "--inputs",
+        nargs="+",
+        required=True,
+        type=Path,
+        help="One or more result directories containing budget_curve_summary.csv.",
+    )
+    parser.add_argument(
+        "--labels",
+        nargs="*",
+        default=None,
+        help="Optional display labels, one per input directory.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        required=True,
+        type=Path,
+        help="Directory to write PDF plots and merged CSV.",
+    )
+    parser.add_argument(
+        "--title-prefix",
+        default="Full-scale certification",
+        help="Prefix used in plot titles.",
+    )
+    parser.add_argument(
+        "--show",
+        action="store_true",
+        help="Open interactive windows after saving plots.",
+    )
+    args = parser.parse_args()
+
+    if args.labels is not None and len(args.labels) not in (0, len(args.inputs)):
+        parser.error("--labels must be omitted or have exactly one label per --inputs entry")
+
+    return args
+
+
+def load_summary(path: Path) -> dict[str, Any]:
+    summary_path = path / "summary.json"
+    if not summary_path.exists():
+        return {}
+    with summary_path.open() as handle:
+        return json.load(handle)
+
+
+def default_label(path: Path, summary: dict[str, Any]) -> str:
+    name = summary.get("name", path.parent.name)
+    horizon = summary.get("horizon")
+    prompts = summary.get("num_prompts")
+    if horizon is not None and prompts is not None:
+        return f"{name} H={horizon} N={prompts}"
+    if horizon is not None:
+        return f"{name} H={horizon}"
+    return str(path)
+
+
+def load_run(path: Path, label: str | None) -> pd.DataFrame:
+    csv_path = path / "budget_curve_summary.csv"
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Missing {csv_path}")
+
+    summary = load_summary(path)
+    run_label = label or default_label(path, summary)
+
+    df = pd.read_csv(csv_path)
+    required = {"budget", "method", "objective_mode", "num_prompts"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"{csv_path} is missing columns: {sorted(missing)}")
+
+    if "certified_fraction" not in df.columns:
+        df["certified_fraction"] = pd.NA
+    if "certified_fraction_lower_bound" not in df.columns:
+        df["certified_fraction_lower_bound"] = pd.NA
+
+    df["plot_fraction"] = df["certified_fraction"]
+    is_milp = df["objective_mode"].eq("fixed_budget_adversarial_success")
+    df.loc[is_milp, "plot_fraction"] = df.loc[is_milp, "certified_fraction_lower_bound"]
+
+    df["plot_fraction"] = pd.to_numeric(df["plot_fraction"], errors="coerce")
+    df["certified_percent"] = 100.0 * df["plot_fraction"]
+
+    df["run_label"] = run_label
+    df["run_name"] = summary.get("name", path.parent.name)
+    df["horizon"] = summary.get("horizon", pd.NA)
+    df["num_retained_prompts"] = summary.get("num_prompts", pd.NA)
+    df["num_total_rows_read"] = summary.get("num_total_rows_read", pd.NA)
+    df["num_rows_filtered_shorter_than_horizon"] = summary.get(
+        "num_rows_filtered_shorter_than_horizon", pd.NA
+    )
+    df["padding_policy"] = summary.get("padding_policy", "")
+    df["horizon_filter_basis"] = summary.get("horizon_filter_basis", "")
+
+    def family(method: str) -> str:
+        if "stability" in method:
+            return "stability"
+        if "validity" in method:
+            return "validity"
+        return "other"
+
+    df["family"] = df["method"].map(family)
+    df["method_label"] = df["method"].map(lambda m: METHOD_LABELS.get(m, m))
+
+    return df
+
+
+def method_sort_key(method: str) -> tuple[int, str]:
+    if method in METHOD_ORDER:
+        return (METHOD_ORDER.index(method), method)
+    return (len(METHOD_ORDER), method)
+
+
+def save_pdf(fig: plt.Figure, output_dir: Path, filename: str) -> None:
+    path = output_dir / filename
+    fig.savefig(path, format="pdf", bbox_inches="tight")
+    print(f"Wrote {path}")
+
+
+def plot_family(
+    df: pd.DataFrame,
+    family: str,
+    output_dir: Path,
+    title_prefix: str,
+) -> None:
+    subset = df[df["family"].eq(family)].copy()
+    subset = subset.dropna(subset=["certified_percent"])
+    if subset.empty:
+        print(f"No rows for {family}, skipping")
+        return
+
+    fig, ax = plt.subplots(figsize=(8.5, 5.0))
+
+    methods = sorted(subset["method"].unique(), key=method_sort_key)
+    run_labels = list(dict.fromkeys(subset["run_label"].tolist()))
+
+    for run_label in run_labels:
+        run_df = subset[subset["run_label"].eq(run_label)]
+        for method in methods:
+            mdf = run_df[run_df["method"].eq(method)].sort_values("budget")
+            if mdf.empty:
+                continue
+            if len(run_labels) == 1:
+                label = METHOD_LABELS.get(method, method)
+            else:
+                label = f"{run_label} · {METHOD_LABELS.get(method, method)}"
+            ax.plot(
+                mdf["budget"],
+                mdf["certified_percent"],
+                marker="o",
+                linewidth=1.8,
+                markersize=4,
+                label=label,
+            )
+
+    ax.set_xlabel("Poisoned shard budget B")
+    ax.set_ylabel("Certified fraction (%)")
+    ax.set_ylim(-2, 102)
+    ax.grid(True, alpha=0.3)
+    ax.set_title(f"{title_prefix} {family} budget curve")
+    ax.legend(loc="best", fontsize=8)
+    fig.tight_layout()
+
+    save_pdf(fig, output_dir, f"{family}_budget_curve.pdf")
+    plt.close(fig)
+
+
+def plot_all_methods(
+    df: pd.DataFrame,
+    output_dir: Path,
+    title_prefix: str,
+) -> None:
+    subset = df.dropna(subset=["certified_percent"]).copy()
+    if subset.empty:
+        print("No plot-ready rows, skipping combined plot")
+        return
+
+    fig, ax = plt.subplots(figsize=(9.5, 5.6))
+
+    for (run_label, method), group in subset.groupby(["run_label", "method"], sort=False):
+        group = group.sort_values("budget")
+        label = METHOD_LABELS.get(method, method)
+        if subset["run_label"].nunique() > 1:
+            label = f"{run_label} · {label}"
+        ax.plot(
+            group["budget"],
+            group["certified_percent"],
+            marker="o",
+            linewidth=1.6,
+            markersize=4,
+            label=label,
+        )
+
+    ax.set_xlabel("Poisoned shard budget B")
+    ax.set_ylabel("Certified fraction (%)")
+    ax.set_ylim(-2, 102)
+    ax.grid(True, alpha=0.3)
+    ax.set_title(f"{title_prefix} all methods")
+    ax.legend(loc="best", fontsize=7)
+    fig.tight_layout()
+
+    save_pdf(fig, output_dir, "all_methods_budget_curve.pdf")
+    plt.close(fig)
+
+
+def plot_runtime(
+    df: pd.DataFrame,
+    output_dir: Path,
+    title_prefix: str,
+) -> None:
+    subset = df.dropna(subset=["time_seconds"]).copy()
+    subset = subset[subset["objective_mode"].eq("fixed_budget_adversarial_success")]
+    if subset.empty:
+        print("No MILP runtime rows, skipping runtime plot")
+        return
+
+    fig, ax = plt.subplots(figsize=(8.5, 5.0))
+
+    for (run_label, method), group in subset.groupby(["run_label", "method"], sort=False):
+        group = group.sort_values("budget")
+        label = METHOD_LABELS.get(method, method)
+        if subset["run_label"].nunique() > 1:
+            label = f"{run_label} · {label}"
+        ax.plot(
+            group["budget"],
+            group["time_seconds"],
+            marker="o",
+            linewidth=1.8,
+            markersize=4,
+            label=label,
+        )
+
+    ax.set_xlabel("Poisoned shard budget B")
+    ax.set_ylabel("Solve time (seconds)")
+    ax.grid(True, alpha=0.3)
+    ax.set_title(f"{title_prefix} MILP solve time")
+    ax.legend(loc="best", fontsize=8)
+    fig.tight_layout()
+
+    save_pdf(fig, output_dir, "milp_runtime_by_budget.pdf")
+    plt.close(fig)
+
+
+def write_report(df: pd.DataFrame, output_dir: Path) -> None:
+    rows = []
+    for (run_label, method), group in df.dropna(subset=["plot_fraction"]).groupby(["run_label", "method"]):
+        group = group.sort_values("budget")
+        rows.append(
+            {
+                "run_label": run_label,
+                "method": method,
+                "method_label": METHOD_LABELS.get(method, method),
+                "num_prompts": int(group["num_prompts"].dropna().iloc[0]) if group["num_prompts"].notna().any() else "",
+                "min_certified_fraction": group["plot_fraction"].min(),
+                "mean_certified_fraction": group["plot_fraction"].mean(),
+                "final_budget": int(group["budget"].max()),
+                "final_certified_fraction": group.loc[group["budget"].idxmax(), "plot_fraction"],
+            }
+        )
+    report = pd.DataFrame(rows)
+    path = output_dir / "method_comparison_summary.csv"
+    report.to_csv(path, index=False)
+    print(f"Wrote {path}")
+
+
+def warn_solver_statuses(df: pd.DataFrame) -> None:
+    if "solver_status" not in df.columns:
+        return
+    status_df = df[df["objective_mode"].eq("fixed_budget_adversarial_success")].copy()
+    if status_df.empty:
+        return
+    bad = status_df[status_df["solver_status"].notna() & ~status_df["solver_status"].eq("OPTIMAL")]
+    if bad.empty:
+        return
+    print("Warning: some MILP rows are not OPTIMAL")
+    print(bad[["run_label", "budget", "method", "solver_status", "mip_gap"]].to_string(index=False))
+
+
+def main() -> None:
+    args = parse_args()
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+
+    labels = args.labels if args.labels else [None] * len(args.inputs)
+    frames = [load_run(path, label) for path, label in zip(args.inputs, labels)]
+    df = pd.concat(frames, ignore_index=True)
+
+    merged_path = args.output_dir / "plot_ready_budget_curves.csv"
+    df.to_csv(merged_path, index=False)
+    print(f"Wrote {merged_path}")
+
+    warn_solver_statuses(df)
+    write_report(df, args.output_dir)
+
+    plot_family(df, "stability", args.output_dir, args.title_prefix)
+    plot_family(df, "validity", args.output_dir, args.title_prefix)
+    plot_all_methods(df, args.output_dir, args.title_prefix)
+    plot_runtime(df, args.output_dir, args.title_prefix)
+
+    if args.show:
+        plt.show()
+
+
+if __name__ == "__main__":
+    main()
