@@ -98,6 +98,8 @@ MILP_METHODS = {
     "joint_row_column_validity_milp",
 }
 
+LEGEND_FONT_SIZE = 12
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -321,7 +323,7 @@ def plot_family(
     ax.set_ylim(*dynamic_certified_fraction_ylim(subset["certified_percent"]))
     ax.grid(True, alpha=0.3)
     ax.set_title(f"{title_prefix} {family} budget curve")
-    ax.legend(loc="best", fontsize=8)
+    ax.legend(loc="best", fontsize=LEGEND_FONT_SIZE)
     fig.tight_layout()
 
     save_pdf(
@@ -363,7 +365,7 @@ def plot_all_methods(
     ax.set_ylim(*dynamic_certified_fraction_ylim(subset["certified_percent"]))
     ax.grid(True, alpha=0.3)
     ax.set_title(f"{title_prefix} all methods")
-    ax.legend(loc="best", fontsize=7)
+    ax.legend(loc="best", fontsize=LEGEND_FONT_SIZE)
     fig.tight_layout()
 
     save_pdf(
