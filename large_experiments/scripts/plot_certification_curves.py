@@ -128,6 +128,11 @@ def parse_args() -> argparse.Namespace:
         help="Prefix used in plot titles.",
     )
     parser.add_argument(
+        "--filename-prefix",
+        default="",
+        help="Optional prefix added to every generated PDF and CSV filename.",
+    )
+    parser.add_argument(
         "--show",
         action="store_true",
         help="Open interactive windows after saving plots.",
@@ -141,6 +146,8 @@ def parse_args() -> argparse.Namespace:
 
     if args.labels is not None and len(args.labels) not in (0, len(args.inputs)):
         parser.error("--labels must be omitted or have exactly one label per --inputs entry")
+    if "/" in args.filename_prefix or "\\" in args.filename_prefix:
+        parser.error("--filename-prefix must not contain path separators")
 
     return args
 
@@ -258,8 +265,18 @@ def dynamic_certified_fraction_ylim(values_percent: pd.Series) -> tuple[float, f
     return max(0, ymin), 105
 
 
-def save_pdf(fig: plt.Figure, output_dir: Path, filename: str) -> None:
-    path = output_dir / filename
+def prefixed_filename(filename: str, prefix: str) -> str:
+    normalized = prefix.strip().rstrip("_-")
+    return f"{normalized}_{filename}" if normalized else filename
+
+
+def save_pdf(
+    fig: plt.Figure,
+    output_dir: Path,
+    filename: str,
+    filename_prefix: str,
+) -> None:
+    path = output_dir / prefixed_filename(filename, filename_prefix)
     fig.savefig(path, format="pdf", bbox_inches="tight")
     print(f"Wrote {path}")
 
@@ -269,6 +286,7 @@ def plot_family(
     family: str,
     output_dir: Path,
     title_prefix: str,
+    filename_prefix: str,
 ) -> None:
     subset = df[df["family"].eq(family)].copy()
     subset = subset.dropna(subset=["certified_percent"])
@@ -306,7 +324,12 @@ def plot_family(
     ax.legend(loc="best", fontsize=8)
     fig.tight_layout()
 
-    save_pdf(fig, output_dir, f"{family}_budget_curve.pdf")
+    save_pdf(
+        fig,
+        output_dir,
+        f"{family}_budget_curve.pdf",
+        filename_prefix,
+    )
     plt.close(fig)
 
 
@@ -314,6 +337,7 @@ def plot_all_methods(
     df: pd.DataFrame,
     output_dir: Path,
     title_prefix: str,
+    filename_prefix: str,
 ) -> None:
     subset = df.dropna(subset=["certified_percent"]).copy()
     if subset.empty:
@@ -342,11 +366,20 @@ def plot_all_methods(
     ax.legend(loc="best", fontsize=7)
     fig.tight_layout()
 
-    save_pdf(fig, output_dir, "all_methods_budget_curve.pdf")
+    save_pdf(
+        fig,
+        output_dir,
+        "all_methods_budget_curve.pdf",
+        filename_prefix,
+    )
     plt.close(fig)
 
 
-def write_report(df: pd.DataFrame, output_dir: Path) -> None:
+def write_report(
+    df: pd.DataFrame,
+    output_dir: Path,
+    filename_prefix: str,
+) -> None:
     rows = []
     for (run_label, method), group in df.dropna(subset=["plot_fraction"]).groupby(["run_label", "method"]):
         group = group.sort_values("budget")
@@ -363,7 +396,10 @@ def write_report(df: pd.DataFrame, output_dir: Path) -> None:
             }
         )
     report = pd.DataFrame(rows)
-    path = output_dir / "method_comparison_summary.csv"
+    path = output_dir / prefixed_filename(
+        "method_comparison_summary.csv",
+        filename_prefix,
+    )
     report.to_csv(path, index=False)
     print(f"Wrote {path}")
 
@@ -391,16 +427,36 @@ def main() -> None:
     if args.milp_only:
         df = df[df["method"].isin(MILP_METHODS)].copy()
 
-    merged_path = args.output_dir / "plot_ready_budget_curves.csv"
+    merged_path = args.output_dir / prefixed_filename(
+        "plot_ready_budget_curves.csv",
+        args.filename_prefix,
+    )
     df.to_csv(merged_path, index=False)
     print(f"Wrote {merged_path}")
 
     warn_solver_statuses(df)
-    write_report(df, args.output_dir)
+    write_report(df, args.output_dir, args.filename_prefix)
 
-    plot_family(df, "stability", args.output_dir, args.title_prefix)
-    plot_family(df, "validity", args.output_dir, args.title_prefix)
-    plot_all_methods(df, args.output_dir, args.title_prefix)
+    plot_family(
+        df,
+        "stability",
+        args.output_dir,
+        args.title_prefix,
+        args.filename_prefix,
+    )
+    plot_family(
+        df,
+        "validity",
+        args.output_dir,
+        args.title_prefix,
+        args.filename_prefix,
+    )
+    plot_all_methods(
+        df,
+        args.output_dir,
+        args.title_prefix,
+        args.filename_prefix,
+    )
 
     if args.show:
         plt.show()

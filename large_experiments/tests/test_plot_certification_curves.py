@@ -56,6 +56,29 @@ class PlotCertificationCurvesTests(unittest.TestCase):
             "Aggregate TPA final-tool validity",
         )
 
+    def test_filename_prefix_is_applied_consistently(self) -> None:
+        self.assertEqual(
+            self.plotter.prefixed_filename(
+                "stability_budget_curve.pdf",
+                "1b_full_H020",
+            ),
+            "1b_full_H020_stability_budget_curve.pdf",
+        )
+        self.assertEqual(
+            self.plotter.prefixed_filename(
+                "plot_ready_budget_curves.csv",
+                "  1b_full_H020_ ",
+            ),
+            "1b_full_H020_plot_ready_budget_curves.csv",
+        )
+        self.assertEqual(
+            self.plotter.prefixed_filename(
+                "validity_budget_curve.pdf",
+                "",
+            ),
+            "validity_budget_curve.pdf",
+        )
+
     def test_legacy_method_name_fails_fast(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             run_dir = Path(directory)
