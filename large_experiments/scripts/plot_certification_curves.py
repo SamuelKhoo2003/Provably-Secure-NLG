@@ -214,9 +214,9 @@ def dynamic_certified_fraction_ylim(values_percent: pd.Series) -> tuple[float, f
         if pd.notna(value) and math.isfinite(float(value))
     ]
     if not finite_values:
-        return 0, 100
+        return 0, 105
     ymin = 5 * math.floor(min(finite_values) / 5)
-    return max(0, ymin), 100
+    return max(0, ymin), 105
 
 
 def save_pdf(fig: plt.Figure, output_dir: Path, filename: str) -> None:
