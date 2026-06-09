@@ -21,8 +21,3 @@ budget,method,num_prompts,certified_prompts,certified_fraction
 200,aggregate_tpa_final_tool_validity,104,82,0.7884615384615384
 225,aggregate_tpa_final_tool_validity,104,80,0.7692307692307693
 249,aggregate_tpa_final_tool_validity,104,66,0.6346153846153846
-300,aggregate_tpa_final_tool_validity,104,66,0.6346153846153846
-350,aggregate_tpa_final_tool_validity,104,66,0.6346153846153846
-400,aggregate_tpa_final_tool_validity,104,66,0.6346153846153846
-450,aggregate_tpa_final_tool_validity,104,66,0.6346153846153846
-500,aggregate_tpa_final_tool_validity,104,66,0.6346153846153846

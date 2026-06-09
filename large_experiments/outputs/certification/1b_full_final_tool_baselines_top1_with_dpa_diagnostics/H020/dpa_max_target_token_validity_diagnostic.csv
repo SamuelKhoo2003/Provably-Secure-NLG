@@ -21,8 +21,3 @@ budget,method,num_prompts,certified_prompts,certified_fraction
 200,dpa_max_target_token_validity_diagnostic,77,65,0.8441558441558441
 225,dpa_max_target_token_validity_diagnostic,77,62,0.8051948051948052
 249,dpa_max_target_token_validity_diagnostic,77,54,0.7012987012987013
-300,dpa_max_target_token_validity_diagnostic,77,54,0.7012987012987013
-350,dpa_max_target_token_validity_diagnostic,77,54,0.7012987012987013
-400,dpa_max_target_token_validity_diagnostic,77,54,0.7012987012987013
-450,dpa_max_target_token_validity_diagnostic,77,54,0.7012987012987013
-500,dpa_max_target_token_validity_diagnostic,77,54,0.7012987012987013

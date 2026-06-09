@@ -21,8 +21,3 @@ budget,method,num_prompts,certified_prompts,certified_fraction
 200,dpa_final_tool_stability,23,22,0.9565217391304348
 225,dpa_final_tool_stability,23,22,0.9565217391304348
 249,dpa_final_tool_stability,23,19,0.8260869565217391
-300,dpa_final_tool_stability,23,0,0.0
-350,dpa_final_tool_stability,23,0,0.0
-400,dpa_final_tool_stability,23,0,0.0
-450,dpa_final_tool_stability,23,0,0.0
-500,dpa_final_tool_stability,23,0,0.0
