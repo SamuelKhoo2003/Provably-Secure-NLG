@@ -1,0 +1,13 @@
+budget,method,num_prompts,certified_prompts,certified_fraction
+0,dpa_weakest_token_stability,4,4,1.0
+1,dpa_weakest_token_stability,4,4,1.0
+3,dpa_weakest_token_stability,4,4,1.0
+5,dpa_weakest_token_stability,4,4,1.0
+7,dpa_weakest_token_stability,4,4,1.0
+9,dpa_weakest_token_stability,4,4,1.0
+25,dpa_weakest_token_stability,4,4,1.0
+50,dpa_weakest_token_stability,4,4,1.0
+100,dpa_weakest_token_stability,4,4,1.0
+150,dpa_weakest_token_stability,4,3,0.75
+200,dpa_weakest_token_stability,4,2,0.5
+249,dpa_weakest_token_stability,4,0,0.0
