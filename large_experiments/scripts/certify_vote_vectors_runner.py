@@ -275,7 +275,13 @@ def compute_dpa_stability_radii(grid: np.ndarray) -> list[int]:
     return radii
 
 
-def compute_aggregate_tpa_radii(rows: list[PromptRow]) -> list[float]:
+def compute_standalone_tpa_phrase_radii(rows: list[PromptRow]) -> list[float]:
+    """Compute count-based TPA over whole observed MCP/tool-call labels.
+
+    This standalone baseline applies targeted partition aggregation to the
+    aggregate ``vote_vector`` counts. It does not use shard identities, an
+    MILP, or a shared poisoned-shard allocation.
+    """
     radii: list[float] = []
     for row in rows:
         counts = Counter(row.vote_vector)
@@ -751,9 +757,9 @@ def main() -> None:
         compute_dpa_stability_radii(grid),
         budgets,
     )
-    aggregate_tpa = baseline_curve_rows(
-        "aggregate_tpa_mcp_validity",
-        compute_aggregate_tpa_radii(rows),
+    standalone_tpa_phrase = baseline_curve_rows(
+        "standalone_tpa_phrase_baseline",
+        compute_standalone_tpa_phrase_radii(rows),
         budgets,
     )
     dpa_target = baseline_curve_rows(
@@ -762,7 +768,10 @@ def main() -> None:
         budgets,
     )
     write_rows(out_dir / "dpa_weakest_token_stability.csv", dpa_stability)
-    write_rows(out_dir / "aggregate_tpa_mcp_validity.csv", aggregate_tpa)
+    write_rows(
+        out_dir / "standalone_tpa_phrase_baseline.csv",
+        standalone_tpa_phrase,
+    )
     write_rows(out_dir / "dpa_max_target_token_validity.csv", dpa_target)
 
     stability_rows: list[dict[str, Any]] = []
@@ -790,7 +799,7 @@ def main() -> None:
             )
 
     combined = summary_curve_rows(
-        [dpa_stability, aggregate_tpa, dpa_target],
+        [dpa_stability, standalone_tpa_phrase, dpa_target],
         [stability_rows, validity_rows],
     )
     write_rows(out_dir / "budget_curve_summary.csv", combined)
@@ -818,6 +827,10 @@ def main() -> None:
         "num_baseline_validity_targets": len(baseline_targets),
         "num_validity_targets": len(targets),
         "num_validity_events": len(validity_events),
+        "tpa_baseline": "standalone_tpa_phrase_baseline",
+        "tpa_baseline_uses_milp": False,
+        "tpa_baseline_uses_shard_identities": False,
+        "tpa_baseline_uses_shared_poisoning_allocation": False,
         "tie_convention": "adversarial_target_or_competitor_wins_ties",
         "validity_constraint": (
             "target_ties_or_beats_every_observed_non_target_token"

@@ -1,8 +1,15 @@
 # Toy Experiments
 
 `toy_experiments/` contains the synthetic certificate benchmarks used to study
-the DPA, TPA, and shared MILP strategies on controlled vote grids. It is separate
-from the large VPA adapter workflow under `large_experiments/`.
+the DPA, standalone count-based TPA, and shared MILP strategies on controlled
+vote grids. It is separate from the large VPA adapter workflow under
+`large_experiments/`.
+
+The TPA baseline applies targeted partition aggregation independently at each
+target token and takes the maximum token radius across a target phrase. It is
+reported as the **TPA max-token phrase baseline**. It does not solve an MILP,
+use shard identities, or share one poisoned-shard allocation across prompts or
+positions. Collective TPA+MSC is not implemented in this repository.
 
 Use this package when you want to generate toy vote data, run certificate
 benchmarks, plot existing CSV outputs, or run the controlled validity demo.
@@ -113,7 +120,7 @@ comparisons.txt
 `validity_budget_curve.pdf` plots:
 
 - Shared shard-aware MILP full sequence
-- TPA max-token phrase blocker
+- TPA max-token phrase baseline
 - Plain DPA max-token phrase blocker
 
 `comparisons.txt` is generated from existing CSVs only. Plotting does not rerun

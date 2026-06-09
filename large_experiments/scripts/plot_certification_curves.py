@@ -37,15 +37,20 @@ import pandas as pd
 METHOD_LABELS = {
     "dpa_weakest_token_stability": "DPA weakest-token stability",
     "joint_row_column_stability_milp": "Joint row-column stability MILP",
-    "aggregate_tpa_mcp_validity": "Aggregate TPA MCP validity",
+    "standalone_tpa_phrase_baseline": "Standalone TPA phrase baseline",
     "dpa_max_target_token_validity": "DPA max-target-token validity",
     "joint_row_column_validity_milp": "Joint row-column validity MILP",
+}
+
+METHOD_ALIASES = {
+    "aggregate_tpa_mcp_validity": "standalone_tpa_phrase_baseline",
+    "tpa_multi_sample_validity": "standalone_tpa_phrase_baseline",
 }
 
 METHOD_ORDER = [
     "dpa_weakest_token_stability",
     "joint_row_column_stability_milp",
-    "aggregate_tpa_mcp_validity",
+    "standalone_tpa_phrase_baseline",
     "dpa_max_target_token_validity",
     "joint_row_column_validity_milp",
 ]
@@ -57,7 +62,7 @@ METHOD_STYLES = {
         "markerfacecolor": "white",
         "zorder": 4,
     },
-    "aggregate_tpa_mcp_validity": {
+    "standalone_tpa_phrase_baseline": {
         "linestyle": "--",
         "marker": "^",
         "markerfacecolor": "white",
@@ -142,6 +147,10 @@ def default_label(path: Path, summary: dict[str, Any]) -> str:
     return str(path)
 
 
+def canonical_method_name(method: str) -> str:
+    return METHOD_ALIASES.get(method, method)
+
+
 def load_run(path: Path, label: str | None) -> pd.DataFrame:
     csv_path = path / "budget_curve_summary.csv"
     if not csv_path.exists():
@@ -155,17 +164,26 @@ def load_run(path: Path, label: str | None) -> pd.DataFrame:
     missing = required - set(df.columns)
     if missing:
         raise ValueError(f"{csv_path} is missing columns: {sorted(missing)}")
+    df["method"] = df["method"].astype(str).map(canonical_method_name)
 
     if "certified_fraction" not in df.columns:
         df["certified_fraction"] = pd.NA
     if "certified_fraction_lower_bound" not in df.columns:
         df["certified_fraction_lower_bound"] = pd.NA
 
-    df["plot_fraction"] = df["certified_fraction"]
+    certified_fraction = pd.to_numeric(
+        df["certified_fraction"],
+        errors="coerce",
+    )
+    certified_fraction_lower_bound = pd.to_numeric(
+        df["certified_fraction_lower_bound"],
+        errors="coerce",
+    )
     is_milp = df["objective_mode"].eq("fixed_budget_adversarial_success")
-    df.loc[is_milp, "plot_fraction"] = df.loc[is_milp, "certified_fraction_lower_bound"]
-
-    df["plot_fraction"] = pd.to_numeric(df["plot_fraction"], errors="coerce")
+    df["plot_fraction"] = certified_fraction.where(
+        ~is_milp,
+        certified_fraction_lower_bound,
+    )
     df["certified_percent"] = 100.0 * df["plot_fraction"]
 
     df["run_label"] = run_label

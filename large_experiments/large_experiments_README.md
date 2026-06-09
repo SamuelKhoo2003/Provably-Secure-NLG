@@ -2,7 +2,7 @@
 
 This folder contains the full-scale experiment pipeline for applying the certification framework to vote-vector outputs produced by the VPA tool-calling experiments.
 
-The large-scale setting uses ensembles of shard-specific language-model adapters. Each shard model generates a tool-call prediction for each prompt. The resulting vote-vector files are then processed offline to compute stability and validity certificates, including DPA and TPA baselines and the row-column MILP certificates developed in this project.
+The large-scale setting uses ensembles of shard-specific language-model adapters. Each shard model generates a tool-call prediction for each prompt. The resulting vote-vector files are then processed offline to compute stability and validity certificates, including DPA and standalone count-based TPA baselines and the row-column MILP certificates developed in this project.
 
 ## Purpose
 
@@ -189,7 +189,8 @@ This file contains the class-level vote counts used for professor-style MCP vali
 
 It is derived from `vote_vector`, not from `token_vote_matrix`.
 
-This file is used to compute aggregate TPA validity over alternative tool-call classes.
+This file is used to compute the standalone TPA phrase baseline over
+alternative tool-call classes.
 
 ### `shard_votes_long.csv`
 
@@ -250,7 +251,7 @@ Validity asks whether an adversary can force an alternative valid MCP or tool-ca
 The professor-style full-scale validity baseline is:
 
 ```text
-Aggregate TPA MCP validity
+Standalone TPA phrase baseline
 ```
 
 For each prompt:
@@ -261,6 +262,13 @@ For each prompt:
 4. Take the minimum over target classes.
 
 The minimum is used because the adversary succeeds if it can force any alternative target class.
+
+This is targeted partition aggregation over whole MCP/tool-call label counts
+from `vote_vector`. It is standalone and count-based: it does not solve an
+MILP, use shard identities, or enforce one shared poisoned-shard allocation.
+The collective TPA+MSC multi-sample MILP is not implemented here. The
+row-column validity MILP is a separate proposed method and must not be labeled
+TPA+MSC.
 
 A token-grid DPA target diagnostic is also computed using `target_grid.csv`.
 
@@ -371,7 +379,7 @@ Outputs are written under
 
 ```text
 dpa_weakest_token_stability.csv
-aggregate_tpa_mcp_validity.csv
+standalone_tpa_phrase_baseline.csv
 dpa_max_target_token_validity.csv
 joint_row_column_stability_milp.csv
 joint_row_column_validity_milp.csv

@@ -40,8 +40,8 @@ from .baselines import (
     targeted_validity_token_budgets as _targeted_validity_token_budgets,
 )
 from .csv_io import (
-    read_optional_csv as _read_optional_csv,
-    read_rows_csv as _read_rows_csv,
+    read_optional_csv as _read_optional_csv_raw,
+    read_rows_csv as _read_rows_csv_raw,
     write_rows_csv as _write_rows_csv,
 )
 from .data import ToyData, generate_toy_votes, generate_validity_demo_votes, slice_toy_data, stability_margins
@@ -55,6 +55,34 @@ from .milp import (
 
 class ConfigError(ValueError):
     """Raised when a benchmark YAML config is missing or malformed."""
+
+
+TOY_METHOD_ALIASES = {
+    "TPA max-token phrase blocker": "TPA max-token phrase baseline",
+    "TPA multi-sample validity": "TPA max-token phrase baseline",
+}
+
+
+def _canonicalize_tpa_method_rows(
+    rows: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    """Normalize legacy count-based TPA labels when reading old CSVs."""
+    normalized = []
+    for row in rows:
+        canonical = dict(row)
+        method = canonical.get("method")
+        if isinstance(method, str):
+            canonical["method"] = TOY_METHOD_ALIASES.get(method, method)
+        normalized.append(canonical)
+    return normalized
+
+
+def _read_rows_csv(path: Path) -> list[dict[str, object]]:
+    return _canonicalize_tpa_method_rows(_read_rows_csv_raw(path))
+
+
+def _read_optional_csv(path: Path) -> list[dict[str, object]]:
+    return _canonicalize_tpa_method_rows(_read_optional_csv_raw(path))
 
 
 def visualize_instance(
@@ -587,7 +615,7 @@ SWEEP_STABILITY_METRICS = {
 
 SWEEP_VALIDITY_METRICS = {
     "Plain DPA validity": "plain_dpa_val_sequence_qN",
-    "TPA multi-sample validity": "tpa_val_sequence_qN",
+    "TPA max-token phrase baseline": "tpa_val_sequence_qN",
     "Shared MILP validity": "row_col_val_qN",
 }
 
@@ -703,7 +731,7 @@ def _degenerate_sweep_metrics() -> list[tuple[str, str]]:
         ("Shared stability, r=1", "row_col_stab_qN_r1"),
         ("Shared stability, r=L", "row_col_stab_qN_rL"),
         ("Plain DPA validity", "plain_dpa_val_sequence_qN"),
-        ("TPA validity", "tpa_val_sequence_qN"),
+        ("TPA max-token phrase baseline", "tpa_val_sequence_qN"),
         ("Shared validity", "row_col_val_qN"),
     ]
 
@@ -836,7 +864,7 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
         budget_rows,
         [
             ("Shared shard-aware MILP full sequence", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-            ("TPA max-token phrase blocker", "TPA max-token phrase blocker", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("TPA max-token phrase baseline", "TPA max-token phrase baseline", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
             ("Plain DPA max-token phrase blocker", "Plain DPA max-token phrase blocker", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
         ],
     )
@@ -854,12 +882,12 @@ def save_default_report_plots(rows: list[dict[str, object]], output_dir: Path, c
                 [
                     (
                         "Shared shard-aware MILP full sequence",
-                        "TPA max-token phrase blocker",
+                        "TPA max-token phrase baseline",
                         "average certified-fraction lift",
                         "percentage points",
                     ),
                     (
-                        "TPA max-token phrase blocker",
+                        "TPA max-token phrase baseline",
                         "Plain DPA max-token phrase blocker",
                         "average certified-fraction lift",
                         "percentage points",
@@ -1075,12 +1103,12 @@ def _metric_plot_comparison_lines(filename: str, series: dict[str, tuple[list[fl
             [
                 (
                     "Shared shard-aware MILP full sequence",
-                    "TPA max-token phrase blocker",
+                    "TPA max-token phrase baseline",
                     "mean certified-budget lift",
                     "budget units",
                 ),
                 (
-                    "TPA max-token phrase blocker",
+                    "TPA max-token phrase baseline",
                     "Plain DPA max-token phrase blocker",
                     "mean certified-budget lift",
                     "budget units",
@@ -1186,8 +1214,8 @@ def _write_comparison_report(
         "Expected ordering checks:",
         f"- Stability full-sequence MILP > DPA observed in budget curves: {_comparison_is_positive(audit, 'stability_budget_curve.pdf', 'Shared MILP full sequence', 'DPA weakest token')}",
         f"- Stability one-token MILP > DPA observed in budget curves: {_comparison_is_positive(audit, 'stability_budget_curve.pdf', 'Shared MILP one token per row', 'DPA weakest token')}",
-        f"- Validity MILP > TPA observed in budget curves: {_comparison_is_positive(audit, 'validity_budget_curve.pdf', 'Shared shard-aware MILP full sequence', 'TPA max-token phrase blocker')}",
-        f"- Validity TPA > DPA observed in budget curves: {_comparison_is_positive(audit, 'validity_budget_curve.pdf', 'TPA max-token phrase blocker', 'Plain DPA max-token phrase blocker')}",
+        f"- Validity MILP > TPA observed in budget curves: {_comparison_is_positive(audit, 'validity_budget_curve.pdf', 'Shared shard-aware MILP full sequence', 'TPA max-token phrase baseline')}",
+        f"- Validity TPA > DPA observed in budget curves: {_comparison_is_positive(audit, 'validity_budget_curve.pdf', 'TPA max-token phrase baseline', 'Plain DPA max-token phrase blocker')}",
         "",
         "Comparison summary:",
     ]
@@ -1400,7 +1428,7 @@ CANONICAL_COLORS = {
     "DPA weakest harmful token": "#8c564b",
     "DPA most difficult harmful token": "#e377c2",
     "TPA max-token sequence": "#2ca02c",
-    "TPA max-token phrase blocker": "#2ca02c",
+    "TPA max-token phrase baseline": "#2ca02c",
     "Shard-aware weakest-token diagnostic": "#8c564b",
     "Shard-aware independent max-token diagnostic": "#e377c2",
     "Independent shard-aware composition diagnostic": "#7f7f7f",
@@ -1413,7 +1441,7 @@ MAIN_STABILITY_METRICS = {
 
 MAIN_VALIDITY_METRICS = {
     "Shared shard-aware MILP full sequence": "row_col_val_qN",
-    "TPA max-token phrase blocker": "tpa_val_sequence_qN",
+    "TPA max-token phrase baseline": "tpa_val_sequence_qN",
     "Plain DPA max-token phrase blocker": "plain_dpa_val_sequence_qN",
 }
 
@@ -1424,7 +1452,7 @@ def save_validity_demo_plot(rows: list[dict[str, object]], output_dir: Path, gen
         return
     series_specs = [
         ("Shared shard-aware MILP full sequence", "row_col_val_q1"),
-        ("TPA max-token phrase blocker", "tpa_val_sequence_q1"),
+        ("TPA max-token phrase baseline", "tpa_val_sequence_q1"),
         ("Plain DPA max-token phrase blocker", "plain_dpa_val_sequence_q1"),
     ]
     series: dict[str, tuple[list[float], list[float]]] = {}
@@ -1544,7 +1572,7 @@ def _validate_validity_demo_plot_rows(rows: list[dict[str, object]], csv_path: P
     missing_methods: list[str] = []
     required_metrics = {
         "Plain DPA max-token phrase blocker": "plain_dpa_val_sequence_q1",
-        "TPA max-token phrase blocker": "tpa_val_sequence_q1",
+        "TPA max-token phrase baseline": "tpa_val_sequence_q1",
         "Shared shard-aware MILP full sequence": "row_col_val_q1",
     }
     for L in l_values:
@@ -1594,7 +1622,7 @@ def save_validity_demo_budget_curve_plots(
         "validity_demo certified fraction by budget",
         [
             ("Shared shard-aware MILP full sequence", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-            ("TPA max-token phrase blocker", "TPA max-token phrase blocker", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            ("TPA max-token phrase baseline", "TPA max-token phrase baseline", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
             ("Plain DPA max-token phrase blocker", "Plain DPA max-token phrase blocker", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
         ],
         max_points=budget_plot_num_points,
@@ -1647,7 +1675,7 @@ def write_validity_demo_audit(
         "Plain DPA max-token phrase blocker by L:",
         *_format_mean_series(rows, "plain_dpa_val_sequence_q1"),
         "",
-        "TPA max-token phrase blocker values by L:",
+        "TPA max-token phrase baseline values by L:",
         *_format_mean_series(rows, "tpa_val_sequence_q1"),
         "",
         "Shared shard-aware MILP full sequence values by L:",
@@ -1704,13 +1732,13 @@ def write_validity_demo_audit(
         *_format_relative_lift_by_axis(rows, "row_col_val_q1", "tpa_val_sequence_q1"),
         "",
         "Shared MILP mean-radius minus TPA mean-radius by L:",
-        *_format_budget_mean_gap_by_l(budget_rows or [], "Shared MILP", "TPA max-token phrase blocker", "validity_full_harmful_sequence_per_prompt"),
+        *_format_budget_mean_gap_by_l(budget_rows or [], "Shared MILP", "TPA max-token phrase baseline", "validity_full_harmful_sequence_per_prompt"),
         "",
         "Shared MILP mean-radius relative lift over TPA by L:",
         *_format_budget_mean_relative_lift_by_l(
             budget_rows or [],
             "Shared MILP",
-            "TPA max-token phrase blocker",
+            "TPA max-token phrase baseline",
             "validity_full_harmful_sequence_per_prompt",
         ),
         "",
@@ -1724,7 +1752,7 @@ def write_validity_demo_audit(
         f"Budget curves monotone non-increasing: {curve_checks.get('monotone_nonincreasing', False)}",
         f"No MILP values silently dropped: {no_milp_drops}",
         f"Shared MILP q1 status OPTIMAL for every plotted L: {_all_status_optimal(rows, 'row_col_val_q1_status')}",
-        f"Expected Plain DPA max-token phrase blocker < TPA max-token phrase blocker < Shared shard-aware MILP ordering observed: {ordering_observed}",
+        f"Expected Plain DPA max-token phrase blocker < TPA max-token phrase baseline < Shared shard-aware MILP ordering observed: {ordering_observed}",
         f"Expected gap observed: {gap_observed}",
         f"Gap grows with L: {gap_grows}",
         "",
@@ -1831,7 +1859,7 @@ def _write_validity_demo_comparison_report(path: Path, rows: list[dict[str, obje
         *_format_budget_mean_relative_lift_by_l(
             budget_rows,
             "Shared MILP",
-            "TPA max-token phrase blocker",
+            "TPA max-token phrase baseline",
             "validity_full_harmful_sequence_per_prompt",
         ),
         "",
@@ -2294,7 +2322,7 @@ def compute_radius_derived_budget_curve_rows(
                     _row_nanmax_all_known(validity_cell_budgets),
                 ),
                 (
-                    "TPA max-token phrase blocker",
+                    "TPA max-token phrase baseline",
                     "validity_full_harmful_sequence_per_prompt",
                     targeted_validity_cell_budgets.max(axis=1),
                 ),

@@ -1,0 +1,67 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+
+RUNNER_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "scripts"
+    / "plot_certification_curves.py"
+)
+
+
+def load_plot_module():
+    spec = importlib.util.spec_from_file_location(
+        "plot_certification_curves",
+        RUNNER_PATH,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+class PlotCertificationCurvesTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        try:
+            cls.plotter = load_plot_module()
+        except ModuleNotFoundError as exc:
+            raise unittest.SkipTest(f"plot dependencies unavailable: {exc}") from exc
+
+    def test_legacy_aggregate_tpa_name_maps_to_standalone_phrase(self) -> None:
+        self.assertEqual(
+            self.plotter.canonical_method_name("aggregate_tpa_mcp_validity"),
+            "standalone_tpa_phrase_baseline",
+        )
+
+    def test_old_csv_method_is_canonicalized_when_loaded(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory)
+            (run_dir / "summary.json").write_text(
+                json.dumps({"name": "legacy", "horizon": 20, "num_prompts": 1})
+            )
+            (run_dir / "budget_curve_summary.csv").write_text(
+                "budget,method,objective_mode,num_prompts,certified_fraction\n"
+                "0,aggregate_tpa_mcp_validity,radius_derived,1,1.0\n"
+            )
+            frame = self.plotter.load_run(run_dir, None)
+
+        self.assertEqual(
+            frame.loc[0, "method"],
+            "standalone_tpa_phrase_baseline",
+        )
+        self.assertEqual(
+            frame.loc[0, "method_label"],
+            "Standalone TPA phrase baseline",
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

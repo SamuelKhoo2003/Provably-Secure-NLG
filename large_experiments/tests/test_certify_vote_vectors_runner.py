@@ -69,7 +69,7 @@ class CertificationRunnerTests(unittest.TestCase):
         self.assertEqual(runner.dpa_certified_radius(10, 4), 2)
         self.assertEqual(runner.dpa_certified_radius(5, 5), 0)
 
-    def test_aggregate_tpa_reuses_toy_targeted_partition(self) -> None:
+    def test_standalone_tpa_phrase_reuses_targeted_partition(self) -> None:
         row = runner.PromptRow(
             original_row_index=0,
             majority_class="clean",
@@ -77,7 +77,16 @@ class CertificationRunnerTests(unittest.TestCase):
             token_vote_matrix=tuple((0,) for _ in range(10)),
         )
         # Two changed votes can make target tie clean, so only budget 1 is safe.
-        self.assertEqual(runner.compute_aggregate_tpa_radii([row]), [1.0])
+        self.assertEqual(
+            runner.compute_standalone_tpa_phrase_radii([row]),
+            [1.0],
+        )
+        curve = runner.baseline_curve_rows(
+            "standalone_tpa_phrase_baseline",
+            [1.0],
+            [0],
+        )
+        self.assertEqual(curve[0]["method"], "standalone_tpa_phrase_baseline")
 
     def test_validity_targets_drop_shared_prefix_positions(self) -> None:
         row = runner.PromptRow(

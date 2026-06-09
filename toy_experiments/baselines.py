@@ -102,7 +102,11 @@ def cell_validity_budgets(data: ToyData) -> np.ndarray:
 
 
 def targeted_partition_radius(counts: np.ndarray, target: int, *, tie_wins: bool = True) -> int:
-    """Return the TPA-style targeted token validity radius for one count vector."""
+    """Return standalone count-based TPA for one targeted token.
+
+    This implementation has no MILP, shard identities, or shared poisoning
+    allocation across cells or prompts.
+    """
     counts = np.asarray(counts, dtype=np.int64)
     if counts.ndim != 1:
         raise ValueError("counts must be a one-dimensional token count vector")
@@ -174,7 +178,7 @@ def aggregate_plain_dpa_sequence_baselines(token_radii: np.ndarray) -> dict[str,
 
 
 def aggregate_tpa_sequence_baselines(token_radii: np.ndarray) -> dict[str, int | float]:
-    """Aggregate token-level targeted radii into sequence-level TPA baselines."""
+    """Take the max token radius for each standalone TPA phrase baseline."""
     token_radii = np.asarray(token_radii, dtype=np.int64)
     if token_radii.ndim != 2:
         raise ValueError("token_radii must have shape (N, L)")
@@ -189,7 +193,7 @@ def aggregate_tpa_sequence_baselines(token_radii: np.ndarray) -> dict[str, int |
 
 
 def targeted_validity_token_budgets(data: ToyData) -> np.ndarray:
-    """Compute per-cell TPA-style targeted harmful-token validity radii."""
+    """Compute standalone count-based TPA radii independently at each cell."""
     N, L, _ = data.val_counts.shape
     budgets = np.zeros((N, L), dtype=np.int64)
     for i in range(N):
