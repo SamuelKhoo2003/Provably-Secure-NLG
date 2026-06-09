@@ -1,0 +1,5 @@
+run_label,method,method_label,num_prompts,min_certified_fraction,mean_certified_fraction,final_budget,final_certified_fraction
+1B full H=20 top1,aggregate_tpa_final_tool_validity,Aggregate TPA final-tool validity,77,0.7012987012987013,0.9368358913813459,249,0.7012987012987013
+1B full H=20 top1,dpa_final_tool_stability,DPA final-tool stability,77,0.7012987012987013,0.9368358913813459,249,0.7012987012987013
+1B full H=20 top1,joint_row_column_stability_milp,Joint row-column stability MILP,77,0.1428571428571428,0.7939787485242031,249,0.1428571428571428
+1B full H=20 top1,joint_row_column_validity_milp,Joint row-column validity MILP,77,0.7012987012987013,0.9445100354191261,249,0.7012987012987013

@@ -1,0 +1,7 @@
+run_label,method,method_label,num_prompts,min_certified_fraction,mean_certified_fraction,final_budget,final_certified_fraction
+1B full H=15,joint_row_column_stability_milp,Joint row-column stability MILP,104,0.3365384615384615,0.861451048951049,249,0.3365384615384615
+1B full H=15,joint_row_column_validity_milp,Joint row-column validity MILP,104,0.6346153846153846,0.930506993006993,249,0.6346153846153846
+1B full H=20,joint_row_column_stability_milp,Joint row-column stability MILP,77,0.1428571428571428,0.7939787485242031,249,0.1428571428571428
+1B full H=20,joint_row_column_validity_milp,Joint row-column validity MILP,77,0.7012987012987013,0.9445100354191261,249,0.7012987012987013
+1B full H=30,joint_row_column_stability_milp,Joint row-column stability MILP,23,0.0869565217391304,0.7687747035573121,249,0.0869565217391304
+1B full H=30,joint_row_column_validity_milp,Joint row-column validity MILP,23,0.8260869565217391,0.9901185770750988,249,0.8260869565217391

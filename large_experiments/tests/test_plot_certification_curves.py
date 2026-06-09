@@ -35,27 +35,15 @@ class PlotCertificationCurvesTests(unittest.TestCase):
         except ModuleNotFoundError as exc:
             raise unittest.SkipTest(f"plot dependencies unavailable: {exc}") from exc
 
-    def test_legacy_aggregate_tpa_name_maps_to_final_tool_validity(self) -> None:
-        self.assertEqual(
-            self.plotter.canonical_method_name("aggregate_tpa_mcp_validity"),
-            "aggregate_tpa_final_tool_validity",
-        )
-        self.assertEqual(
-            self.plotter.canonical_method_name(
-                "dpa_weakest_token_stability"
-            ),
-            "dpa_token_grid_weakest_token_stability_diagnostic",
-        )
-
-    def test_old_csv_method_is_canonicalized_when_loaded(self) -> None:
+    def test_current_method_is_loaded_without_remapping(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             run_dir = Path(directory)
             (run_dir / "summary.json").write_text(
-                json.dumps({"name": "legacy", "horizon": 20, "num_prompts": 1})
+                json.dumps({"name": "current", "horizon": 20, "num_prompts": 1})
             )
             (run_dir / "budget_curve_summary.csv").write_text(
                 "budget,method,objective_mode,num_prompts,certified_fraction\n"
-                "0,aggregate_tpa_mcp_validity,radius_derived,1,1.0\n"
+                "0,aggregate_tpa_final_tool_validity,radius_derived,1,1.0\n"
             )
             frame = self.plotter.load_run(run_dir, None)
 
@@ -67,6 +55,22 @@ class PlotCertificationCurvesTests(unittest.TestCase):
             frame.loc[0, "method_label"],
             "Aggregate TPA final-tool validity",
         )
+
+    def test_legacy_method_name_fails_fast(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory)
+            (run_dir / "budget_curve_summary.csv").write_text(
+                "budget,method,objective_mode,num_prompts,certified_fraction\n"
+                "0,aggregate_tpa_mcp_validity,radius_derived,1,1.0\n"
+            )
+            with self.assertRaisesRegex(
+                ValueError,
+                (
+                    "unknown method names.*aggregate_tpa_mcp_validity.*"
+                    "Regenerate this run"
+                ),
+            ):
+                self.plotter.load_run(run_dir, None)
 
 
 if __name__ == "__main__":

@@ -47,18 +47,6 @@ METHOD_LABELS = {
     "joint_row_column_validity_milp": "Joint row-column validity MILP",
 }
 
-METHOD_ALIASES = {
-    "dpa_weakest_token_stability": (
-        "dpa_token_grid_weakest_token_stability_diagnostic"
-    ),
-    "aggregate_tpa_mcp_validity": "aggregate_tpa_final_tool_validity",
-    "standalone_tpa_phrase_baseline": "aggregate_tpa_final_tool_validity",
-    "tpa_multi_sample_validity": "aggregate_tpa_final_tool_validity",
-    "dpa_max_target_token_validity": (
-        "dpa_max_target_token_validity_diagnostic"
-    ),
-}
-
 METHOD_ORDER = [
     "dpa_final_tool_stability",
     "joint_row_column_stability_milp",
@@ -105,6 +93,11 @@ METHOD_STYLES = {
     },
 }
 
+MILP_METHODS = {
+    "joint_row_column_stability_milp",
+    "joint_row_column_validity_milp",
+}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -139,6 +132,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Open interactive windows after saving plots.",
     )
+    parser.add_argument(
+        "--milp-only",
+        action="store_true",
+        help="Plot only the joint row-column stability and validity MILPs.",
+    )
     args = parser.parse_args()
 
     if args.labels is not None and len(args.labels) not in (0, len(args.inputs)):
@@ -166,10 +164,6 @@ def default_label(path: Path, summary: dict[str, Any]) -> str:
     return str(path)
 
 
-def canonical_method_name(method: str) -> str:
-    return METHOD_ALIASES.get(method, method)
-
-
 def load_run(path: Path, label: str | None) -> pd.DataFrame:
     csv_path = path / "budget_curve_summary.csv"
     if not csv_path.exists():
@@ -183,7 +177,15 @@ def load_run(path: Path, label: str | None) -> pd.DataFrame:
     missing = required - set(df.columns)
     if missing:
         raise ValueError(f"{csv_path} is missing columns: {sorted(missing)}")
-    df["method"] = df["method"].astype(str).map(canonical_method_name)
+    df["method"] = df["method"].astype(str)
+    unknown_methods = sorted(set(df["method"]) - set(METHOD_LABELS))
+    if unknown_methods:
+        raise ValueError(
+            f"{csv_path} contains unknown method names: {unknown_methods}. "
+            "Regenerate this run with the current "
+            "certify_vote_vectors_runner.py, or add the method explicitly "
+            "to METHOD_LABELS if it is intentional."
+        )
 
     if "certified_fraction" not in df.columns:
         df["certified_fraction"] = pd.NA
@@ -344,42 +346,6 @@ def plot_all_methods(
     plt.close(fig)
 
 
-def plot_runtime(
-    df: pd.DataFrame,
-    output_dir: Path,
-    title_prefix: str,
-) -> None:
-    subset = df.dropna(subset=["time_seconds"]).copy()
-    subset = subset[subset["objective_mode"].eq("fixed_budget_adversarial_success")]
-    if subset.empty:
-        print("No MILP runtime rows, skipping runtime plot")
-        return
-
-    fig, ax = plt.subplots(figsize=(8.5, 5.0))
-
-    for (run_label, method), group in subset.groupby(["run_label", "method"], sort=False):
-        group = group.sort_values("budget")
-        label = METHOD_LABELS.get(method, method)
-        if subset["run_label"].nunique() > 1:
-            label = f"{run_label} · {label}"
-        ax.plot(
-            group["budget"],
-            group["time_seconds"],
-            label=label,
-            **method_plot_style(method),
-        )
-
-    ax.set_xlabel("Poisoned shard budget B")
-    ax.set_ylabel("Solve time (seconds)")
-    ax.grid(True, alpha=0.3)
-    ax.set_title(f"{title_prefix} MILP solve time")
-    ax.legend(loc="best", fontsize=8)
-    fig.tight_layout()
-
-    save_pdf(fig, output_dir, "milp_runtime_by_budget.pdf")
-    plt.close(fig)
-
-
 def write_report(df: pd.DataFrame, output_dir: Path) -> None:
     rows = []
     for (run_label, method), group in df.dropna(subset=["plot_fraction"]).groupby(["run_label", "method"]):
@@ -422,6 +388,8 @@ def main() -> None:
     labels = args.labels if args.labels else [None] * len(args.inputs)
     frames = [load_run(path, label) for path, label in zip(args.inputs, labels)]
     df = pd.concat(frames, ignore_index=True)
+    if args.milp_only:
+        df = df[df["method"].isin(MILP_METHODS)].copy()
 
     merged_path = args.output_dir / "plot_ready_budget_curves.csv"
     df.to_csv(merged_path, index=False)
@@ -433,7 +401,6 @@ def main() -> None:
     plot_family(df, "stability", args.output_dir, args.title_prefix)
     plot_family(df, "validity", args.output_dir, args.title_prefix)
     plot_all_methods(df, args.output_dir, args.title_prefix)
-    plot_runtime(df, args.output_dir, args.title_prefix)
 
     if args.show:
         plt.show()
