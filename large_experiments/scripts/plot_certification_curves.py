@@ -25,6 +25,10 @@ import json
 from pathlib import Path
 from typing import Any
 
+import matplotlib
+
+matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -44,6 +48,37 @@ METHOD_ORDER = [
     "dpa_max_target_token_validity",
     "joint_row_column_validity_milp",
 ]
+
+METHOD_STYLES = {
+    "dpa_weakest_token_stability": {
+        "linestyle": ":",
+        "marker": "o",
+        "markerfacecolor": "white",
+        "zorder": 4,
+    },
+    "aggregate_tpa_mcp_validity": {
+        "linestyle": "--",
+        "marker": "^",
+        "markerfacecolor": "white",
+        "zorder": 3,
+    },
+    "dpa_max_target_token_validity": {
+        "linestyle": ":",
+        "marker": "s",
+        "markerfacecolor": "white",
+        "zorder": 4,
+    },
+    "joint_row_column_stability_milp": {
+        "linestyle": "-",
+        "marker": "D",
+        "zorder": 2,
+    },
+    "joint_row_column_validity_milp": {
+        "linestyle": "-",
+        "marker": "P",
+        "zorder": 2,
+    },
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -162,6 +197,15 @@ def method_sort_key(method: str) -> tuple[int, str]:
     return (len(METHOD_ORDER), method)
 
 
+def method_plot_style(method: str) -> dict[str, Any]:
+    return {
+        "linewidth": 1.9,
+        "markersize": 5,
+        "markeredgewidth": 1.2,
+        **METHOD_STYLES.get(method, {"linestyle": "-", "marker": "o"}),
+    }
+
+
 def save_pdf(fig: plt.Figure, output_dir: Path, filename: str) -> None:
     path = output_dir / filename
     fig.savefig(path, format="pdf", bbox_inches="tight")
@@ -198,10 +242,8 @@ def plot_family(
             ax.plot(
                 mdf["budget"],
                 mdf["certified_percent"],
-                marker="o",
-                linewidth=1.8,
-                markersize=4,
                 label=label,
+                **method_plot_style(method),
             )
 
     ax.set_xlabel("Poisoned shard budget B")
@@ -236,10 +278,8 @@ def plot_all_methods(
         ax.plot(
             group["budget"],
             group["certified_percent"],
-            marker="o",
-            linewidth=1.6,
-            markersize=4,
             label=label,
+            **method_plot_style(method),
         )
 
     ax.set_xlabel("Poisoned shard budget B")
@@ -275,10 +315,8 @@ def plot_runtime(
         ax.plot(
             group["budget"],
             group["time_seconds"],
-            marker="o",
-            linewidth=1.8,
-            markersize=4,
             label=label,
+            **method_plot_style(method),
         )
 
     ax.set_xlabel("Poisoned shard budget B")

@@ -1,0 +1,16 @@
+run_label,method,method_label,num_prompts,min_certified_fraction,mean_certified_fraction,final_budget,final_certified_fraction
+1B full H=15,aggregate_tpa_mcp_validity,Aggregate TPA MCP validity,104,0.6346153846153846,0.920673076923077,249,0.6346153846153846
+1B full H=15,dpa_max_target_token_validity,DPA max-target-token validity,104,0.6346153846153846,0.9270833333333335,249,0.6346153846153846
+1B full H=15,dpa_weakest_token_stability,DPA weakest-token stability,104,0.3365384615384615,0.8581730769230771,249,0.3365384615384615
+1B full H=15,joint_row_column_stability_milp,Joint row-column stability MILP,104,0.3365384615384615,0.8581730769230771,249,0.3365384615384615
+1B full H=15,joint_row_column_validity_milp,Joint row-column validity MILP,104,0.6346153846153846,0.9270833333333335,249,0.6346153846153846
+1B full H=20,aggregate_tpa_mcp_validity,Aggregate TPA MCP validity,77,0.7012987012987013,0.935064935064935,249,0.7012987012987013
+1B full H=20,dpa_max_target_token_validity,DPA max-target-token validity,77,0.7012987012987013,0.9415584415584416,249,0.7012987012987013
+1B full H=20,dpa_weakest_token_stability,DPA weakest-token stability,77,0.1428571428571428,0.7954545454545454,249,0.1428571428571428
+1B full H=20,joint_row_column_stability_milp,Joint row-column stability MILP,77,0.1428571428571428,0.7954545454545454,249,0.1428571428571428
+1B full H=20,joint_row_column_validity_milp,Joint row-column validity MILP,77,0.7012987012987013,0.9415584415584416,249,0.7012987012987013
+1B full H=30,aggregate_tpa_mcp_validity,Aggregate TPA MCP validity,23,0.8260869565217391,0.9818840579710145,249,0.8260869565217391
+1B full H=30,dpa_max_target_token_validity,DPA max-target-token validity,23,0.8260869565217391,0.9855072463768115,249,0.8260869565217391
+1B full H=30,dpa_weakest_token_stability,DPA weakest-token stability,23,0.0869565217391304,0.7717391304347827,249,0.0869565217391304
+1B full H=30,joint_row_column_stability_milp,Joint row-column stability MILP,23,0.0869565217391304,0.7717391304347827,249,0.0869565217391304
+1B full H=30,joint_row_column_validity_milp,Joint row-column validity MILP,23,0.8260869565217391,0.9855072463768115,249,0.8260869565217391
