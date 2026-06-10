@@ -1428,7 +1428,7 @@ CANONICAL_COLORS = {
     "DPA weakest harmful token": "#8c564b",
     "DPA most difficult harmful token": "#e377c2",
     "TPA max-token sequence": "#2ca02c",
-    "TPA max-token phrase baseline": "#2ca02c",
+    "TPA max-token phrase baseline": "#c026d3",
     "Shard-aware weakest-token diagnostic": "#8c564b",
     "Shard-aware independent max-token diagnostic": "#e377c2",
     "Independent shard-aware composition diagnostic": "#7f7f7f",
@@ -2681,7 +2681,12 @@ def _save_line_plot_pdf(
     ax.set_ylabel(y_label)
     ax.set_ylim(bottom=min(0.0, min(all_y)))
     ax.grid(axis="y", color="#e5e7eb")
-    ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5), frameon=False)
+    ax.legend(
+        loc="best",
+        fontsize=12,
+        frameon=True,
+        framealpha=0.9,
+    )
     if stagger_coincident_markers and any(len(indices) > 1 for indices in point_groups.values()):
         fig.text(
             0.99,
