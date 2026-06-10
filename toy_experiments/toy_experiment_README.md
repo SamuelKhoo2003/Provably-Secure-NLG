@@ -23,6 +23,7 @@ toy_experiments/
   milp.py              Shared-shard MILP certificate formulations
   experiments.py       Python CLI and plotting implementation
   csv_io.py            CSV read/write helpers
+  tests/               Solver-free baseline regression tests
   configs/             Benchmark and demo YAML configs
   scripts/             Shell wrappers for common workflows
   outputs/             Generated results and plots
@@ -126,6 +127,11 @@ comparisons.txt
 `comparisons.txt` is generated from existing CSVs only. Plotting does not rerun
 Gurobi or regenerate benchmark data.
 
+Report-facing plots are PDF-only. Legends use 13-point text and are placed
+inside the axes using Matplotlib's least-overlap `best` location. Coincident
+series use different line styles and markers. The TPA max-token phrase baseline
+uses a purple line and matching uncertainty shading.
+
 ## Coupled Generation
 
 Synthetic benchmark grids use coupled generation. For each fixed
@@ -199,6 +205,10 @@ For each numeric metric, aggregate rows contain the seed mean plus `_min`,
 `_max`, `_minus`, and `_plus` columns. The sweep plots use the mean line and the
 available range columns for uncertainty.
 
+The `K`, `N`, and `L` sweep plot sets contain stability, validity, and Gurobi
+runtime scaling PDFs. The degenerate sweep writes a compact CSV and LaTeX table
+instead of the ordinary line-plot set.
+
 ## Validity Demo
 
 The controlled validity demo is configured by:
@@ -236,6 +246,12 @@ validity_demo_parameters.csv
 The parameter files are generated from the actual result CSV so stale or
 overridden runs are visible.
 
+Historical validity-demo CSVs can also be replotted with
+`plot-validity-demo`. Current demos use the Plain DPA, TPA, and shared MILP
+series. Older archived demos that predate the Plain-DPA column retain their
+recorded `Atomic phrase aggregation` series instead of fabricating missing
+data.
+
 ## Smoke Visualization
 
 Run a lightweight visualization smoke check:
@@ -258,18 +274,33 @@ as `VIS_K`, `VIS_N`, `VIS_L`, `VIS_T`, `SEED`, and `VIS_OUT_DIR`.
 The direct entry point is:
 
 ```bash
-python -m toy_experiments.experiments <command>
+.venv/bin/python -m toy_experiments.experiments <command>
 ```
 
 Common commands:
 
 ```bash
-python -m toy_experiments.experiments visualize --save-dir toy_experiments/outputs/smoke
-python -m toy_experiments.experiments benchmark --config toy_experiments/configs/small.yaml --dry-run
-python -m toy_experiments.experiments plot-csv --csv toy_experiments/outputs/small/results/benchmark_results.csv --save-dir toy_experiments/outputs/small/plots
-python -m toy_experiments.experiments plot-sweep --sweep K --csv toy_experiments/outputs/sweep_benchmark/K/results/benchmark_results.csv --save-dir toy_experiments/outputs/sweep_benchmark/K/plots
-python -m toy_experiments.experiments plot-validity-demo --csv toy_experiments/outputs/validity_demo/results/benchmark_results.csv --save-dir toy_experiments/outputs/validity_demo/plots
+.venv/bin/python -m toy_experiments.experiments visualize --save-dir toy_experiments/outputs/smoke
+.venv/bin/python -m toy_experiments.experiments benchmark --config toy_experiments/configs/small.yaml --dry-run
+.venv/bin/python -m toy_experiments.experiments plot-csv --csv toy_experiments/outputs/small/results/benchmark_results.csv --save-dir toy_experiments/outputs/small/plots
+.venv/bin/python -m toy_experiments.experiments plot-sweep --sweep K --csv toy_experiments/outputs/sweep_benchmark/K/results/benchmark_results.csv --save-dir toy_experiments/outputs/sweep_benchmark/K/plots
+.venv/bin/python -m toy_experiments.experiments plot-validity-demo --csv toy_experiments/outputs/validity_demo/results/benchmark_results.csv --save-dir toy_experiments/outputs/validity_demo/plots
 ```
 
 The shell scripts use `toy_experiments/scripts/_python.sh` to choose the Python
 executable. Set `PYTHON_BIN` if you need a specific environment.
+
+## Tests
+
+From the repository root, run:
+
+```bash
+MPLCONFIGDIR=/tmp/provably-secure-mpl \
+XDG_CACHE_HOME=/tmp/provably-secure-cache \
+.venv/bin/python -m unittest discover -v
+```
+
+The toy regression tests verify that the combined baseline summary remains the
+union of its stability and validity families and that the DPA/TPA max-token
+aggregators preserve their report-facing CSV column names. They do not invoke
+Gurobi.

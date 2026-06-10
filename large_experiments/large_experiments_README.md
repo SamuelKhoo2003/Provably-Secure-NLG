@@ -1,380 +1,195 @@
 # Large Experiments
 
-This folder contains the full-scale experiment pipeline for applying the certification framework to vote-vector outputs produced by the VPA tool-calling experiments.
+`large_experiments/` contains the offline full-scale certification pipeline for
+VPA tool-calling vote-vector outputs. It consumes stored JSONL votes, computes
+final-tool DPA/TPA baselines, solves shard-aware joint MILPs with Gurobi, and
+plots completed certification runs.
 
-The large-scale setting uses ensembles of shard-specific language-model adapters. Each shard model generates a tool-call prediction for each prompt. The resulting vote-vector files are then processed offline to compute stability and validity certificates, including DPA and standalone count-based TPA baselines and the row-column MILP certificates developed in this project.
+It does not train poisoned models or rerun language-model generation.
 
-## Purpose
+## Layout
 
-The aim of this folder is to bridge the full VPA model outputs and the certification code used in the toy experiments.
+```text
+large_experiments/
+  scripts/
+    certify_vote_vectors_runner.py   Report-facing certification runner
+    export_vote_vector_grid.py       Optional CSV inspection export
+    plot_certification_curves.py     PDF curve comparison tool
+  tests/                             Solver-free runner and plotter tests
+  vote_vector_utils.py               Shared deterministic vote-count helpers
+  outputs/                           Generated certification and plot artifacts
+```
 
-The full-scale VPA runs produce JSONL files containing shard-level predictions. These files are not poisoned outputs. They are clean ensemble outputs from different training configurations. Certification then asks how many training examples an adversary would need to poison before the clean output could be changed or before an alternative valid tool call could be forced.
+## Input Interface
 
-## Important distinction
+The report-facing runner expects one JSON object per prompt with:
 
-The two 1B configurations are separate clean configurations, not clean versus poisoned models.
+```text
+vote_vector
+token_vote_matrix
+vote_counts
+majority
+```
 
-| Configuration   | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| `1b_full`       | OLMo-2-1B-Instruct with Full LoRA shard adapters   |
+For the current full-scale setup:
+
+- `vote_vector` contains one final tool-call label per shard.
+- `token_vote_matrix` contains one generated token sequence per shard.
+- `vote_counts` must equal `Counter(vote_vector)`.
+- `majority` must equal the deterministic majority of `vote_vector`.
+- The runner expects 500 shards by default.
+- Every shard sequence in one row must have the same raw list length.
+
+The two 1B configurations are independent clean ensembles:
+
+| Configuration | Meaning |
+| --- | --- |
+| `1b_full` | OLMo-2-1B-Instruct with Full LoRA shard adapters |
 | `1b_last3_lora` | OLMo-2-1B-Instruct with Last-3 LoRA shard adapters |
 
-The poisoned behaviour is hypothetical and is analysed by the certificates and MILPs. No poisoned model is trained by this pipeline.
+They are not clean and poisoned versions of the same model. Poisoning is
+hypothetical and is represented only by the certification objectives.
 
-## Expected input artifacts
+## Horizon And Padding Policy
 
-The main input artifacts are VPA vote-vector JSONL files.
+Some shard sequences contain `None` padding after generation terminates. The
+certification runner defines a row's usable sequence length as the shortest
+non-`None` prefix across all shard sequences:
 
-Example paths on Ada:
-
-```bash
-/data/mwicker/VPA/vote_vectors_1b_full_gpu0.jsonl
-/data/mwicker/VPA/vote_vectors_1b_last3_lora_gpu1.jsonl
+```python
+non_none_prefix_lengths = [
+    next((idx for idx, token in enumerate(sequence) if token is None), len(sequence))
+    for sequence in matrix
+]
+usable_sequence_length = min(non_none_prefix_lengths)
 ```
 
-Each JSONL row corresponds to one prompt. A row contains fields such as:
-
-| Field                  | Meaning                                                 |
-| ---------------------- | ------------------------------------------------------- |
-| `vote_vector`          | One final tool-call prediction per shard                |
-| `token_vote_matrix`    | Token-level outputs for each shard                      |
-| `vote_counts`          | Aggregate counts over `vote_vector`                     |
-| `majority`             | Majority tool-call prediction                           |
-| `robustness_radius`    | Stored aggregate robustness radius from the VPA run     |
-| `ground_truth_correct` | Whether the majority tool call matched the ground truth |
-| `majority_is_safe`     | Whether the majority tool call was marked safe          |
-
-The key field for the row-column MILPs is `token_vote_matrix`.
-
-For one prompt, it has shape:
+For horizon `H`, a row is retained only when:
 
 ```text
-K x L_i
+usable_sequence_length >= H
 ```
 
-where `K = 500` is the number of shards and `L_i` is the generated token length for that prompt.
-
-The prompt-token grid used by the MILPs is built by transposing and stacking these matrices:
+Retained rows are truncated to the first `H` real token IDs and transformed
+into:
 
 ```text
 grid[prompt][position][shard] = token_id
 ```
 
-For a fixed horizon `H`, the resulting grid has shape:
+with shape:
 
 ```text
-N_H x H x K
+N_H x H x 500
 ```
 
-where `N_H` is the number of prompts with at least `H` generated tokens.
+The runner does not replace `None` with fake token IDs and does not pad shorter
+generations. It preserves raw-length consistency validation.
 
-## Horizon handling
-
-Generated sequences have different lengths across prompts. For this reason, the pipeline uses fixed token horizons.
-
-For a horizon `H`:
-
-1. Keep only prompts with at least `H` generated tokens.
-2. Truncate each retained prompt to the first `H` positions.
-3. Convert each prompt from `K x H` to `H x K`.
-4. Stack all retained prompts into an `N_H x H x K` grid.
-
-Shorter prompts are not padded, because padding would create artificial token positions that were never generated.
-
-The recommended main horizon is:
+For `vote_vectors_1b_full_gpu0.jsonl`, the observed usable-prefix retention was:
 
 ```text
-H = 20
+H=05: 110/110
+H=10: 109/110
+H=15: 104/110
+H=20: 77/110
+H=30: 23/110
+H=40: 4/110
+H=50: 0/110
+H=60: 0/110
 ```
 
-This keeps all 110 prompts in the current 1B full-scale runs while still covering meaningful tool-call structure.
+`H=20` remains a useful report horizon, but it does not retain all prompts.
+Comparisons across horizons should report their retained prompt counts.
 
-Longer horizons such as `H = 40` and `H = 60` can be used as diagnostic sweeps, but they retain fewer prompts.
+## Full-Scale Comparison
 
-## Exporting the prompt-token grid
+The main comparison deliberately uses different data interfaces for inherited
+baselines and the proposed methods.
 
-The script below exports the full-scale vote-vector JSONL files into CSV files that are easier to inspect and use with the certification code.
-
-```bash
-python large_experiments/scripts/export_vote_vector_grid.py \
-  --input /data/mwicker/VPA/vote_vectors_1b_full_gpu0.jsonl \
-  --name 1b_full \
-  --horizon 20 \
-  --output-dir large_experiments/outputs/vote_vector_grids \
-  --write-shard-grid
-```
-
-For the Last-3 LoRA configuration:
-
-```bash
-python large_experiments/scripts/export_vote_vector_grid.py \
-  --input /data/mwicker/VPA/vote_vectors_1b_last3_lora_gpu1.jsonl \
-  --name 1b_last3_lora \
-  --horizon 20 \
-  --output-dir large_experiments/outputs/vote_vector_grids \
-  --write-shard-grid
-```
-
-The expected output directory is:
-
-```text
-large_experiments/outputs/vote_vector_grids/<config>/H<horizon>/
-```
-
-For example:
-
-```text
-large_experiments/outputs/vote_vector_grids/1b_full/H020/
-```
-
-## Exported CSV files
-
-The grid export produces the following files.
-
-| File                       | Purpose                                                                              |
-| -------------------------- | ------------------------------------------------------------------------------------ |
-| `clean_grid.csv`           | One row per prompt-token cell with the clean majority token and DPA stability radius |
-| `target_grid.csv`          | Representative alternative tool-call target tokens for validity analysis             |
-| `aggregate_tool_votes.csv` | Aggregate tool-call vote counts from `vote_vector`                                   |
-| `shard_votes_long.csv`     | Full shard-aware prompt-token grid in long CSV form                                  |
-| `summary.json`             | Metadata about the export, horizon, retained prompts, and input file                 |
-
-### `clean_grid.csv`
-
-This file contains one row per prompt-token cell.
-
-Important columns:
-
-| Column                 | Meaning                                              |
-| ---------------------- | ---------------------------------------------------- |
-| `prompt_index`         | Index of the retained prompt                         |
-| `original_row_index`   | Original row index in the JSONL file                 |
-| `position`             | Token position                                       |
-| `clean_token_id`       | Majority token at this prompt-token cell             |
-| `clean_votes`          | Number of shards voting for the clean token          |
-| `runner_up_token_id`   | Strongest competing token                            |
-| `runner_up_votes`      | Number of shards voting for the strongest competitor |
-| `dpa_stability_radius` | Token-level DPA stability radius                     |
-
-This file can be used for the optional token-grid weakest-token DPA stability
-diagnostic. It is not the main full-scale stability baseline.
-
-### `target_grid.csv`
-
-This file contains representative target tokens for professor-style MCP validity.
-
-For each prompt, target classes are the observed non-majority tool-call predictions in `vote_vector`. For each target class, the script selects one shard that predicted that target class and uses that shard's generated token sequence as a representative target sequence.
-
-Important columns:
-
-| Column                       | Meaning                                               |
-| ---------------------------- | ----------------------------------------------------- |
-| `target_class`               | Alternative observed tool-call class                  |
-| `representative_shard_index` | Shard used to obtain the target token sequence        |
-| `target_token_id`            | Target token at this position                         |
-| `clean_token_id`             | Clean majority token at this position                 |
-| `active_position`            | Whether the target token differs from the clean token |
-| `dpa_target_radius`          | Token-level DPA target diagnostic radius              |
-
-Validity MILPs should normally use only rows where:
-
-```text
-active_position = 1
-```
-
-Shared prefix tokens should not be treated as adversarial target events, because the adversary does not need to change tokens that already match the target sequence.
-
-### `aggregate_tool_votes.csv`
-
-This file contains the class-level vote counts used for professor-style MCP validity.
-
-It is derived from `vote_vector`, not from `token_vote_matrix`.
-
-This file is used to compute aggregate TPA final-tool validity over alternative
-tool-call classes.
-
-### `shard_votes_long.csv`
-
-This is the full shard-aware prompt-token grid in long form.
-
-Each row corresponds to:
-
-```text
-prompt_index, position, shard_index, token_id
-```
-
-This is the CSV representation of:
-
-```text
-grid[prompt][position][shard] = token_id
-```
-
-This file is used by the row-only, column-only, and joint row-column MILPs.
-
-For `N = 110`, `H = 20`, and `K = 500`, this file contains:
-
-```text
-110 x 20 x 500 = 1,100,000 rows
-```
-
-## Baselines
-
-The large-scale experiment compares inherited final-tool vote-vector baselines
-against proposed shard-aware prompt-token-grid MILPs.
-
-### Stability baselines
-
-The main inherited stability baseline operates on the final tool-call labels in
-`vote_vector`.
-
-The main stability baseline is:
+### Stability
 
 ```text
 DPA final-tool stability
+Joint row-column stability MILP
 ```
 
-For each prompt, count final tool-call votes and compute:
+`dpa_final_tool_stability` uses only final tool-call counts from `vote_vector`.
+For each prompt:
 
 ```text
-radius = floor((winner_votes - runner_up_votes - 1) / 2)
+radius = max(0, floor((winner_votes - runner_up_votes - 1) / 2))
 ```
 
-Negative radii are clamped to zero.
+The token-grid weakest-token DPA curve is optional diagnostic output, not the
+main full-scale stability baseline.
 
-Token-grid weakest-token DPA remains available only as an optional diagnostic.
-
-### Validity baselines
-
-Validity asks whether an adversary can force an alternative valid MCP or tool-call output.
-
-The professor-style full-scale validity baseline is:
+### Validity
 
 ```text
 Aggregate TPA final-tool validity
+Joint row-column validity MILP
 ```
 
-For each prompt:
+`aggregate_tpa_final_tool_validity`:
 
-1. Use `vote_vector` to count tool-call predictions.
-2. Treat observed non-majority tool calls as target classes.
-3. Compute TPA for each target class.
-4. Take the minimum over target classes.
+1. counts final tool-call labels in `vote_vector`;
+2. treats every observed non-majority label as a possible target;
+3. computes standalone count-based TPA for each target;
+4. takes the easiest target attack for the prompt.
 
-The minimum is used because the adversary succeeds if it can force any alternative target class.
+This TPA baseline does not solve an MILP, use shard identities, or enforce one
+shared poisoned-shard allocation. Collective TPA+MSC is not implemented.
 
-This is targeted partition aggregation over final MCP/tool-call label counts
-from `vote_vector`. It is aggregate and count-based: it does not solve an
-MILP, use shard identities, or enforce one shared poisoned-shard allocation.
-The collective TPA+MSC multi-sample MILP is not implemented here. The
-row-column validity MILP is a separate proposed method and must not be labeled
-TPA+MSC.
+The joint validity MILP uses representative target token sequences from shards
+that produced observed non-majority final-tool classes. Shared clean-prefix
+positions are excluded. Every active target position is constrained against
+all observed non-target competitor tokens.
 
-A token-grid DPA target diagnostic is available with
-`--include-token-grid-dpa-validity-diagnostic`.
+The token-grid max-target-token DPA curve is optional diagnostic output, not the
+main full-scale validity baseline.
 
-## Fixed-budget joint MILP curves
+## Fixed-Budget MILPs
 
-The report-facing runner consumes the raw JSONL files directly. It solves the
-fixed-budget adversarial-success view of the same event constraints used by the
-toy row-column certificates:
+The joint methods solve:
 
 ```text
-maximise successful prompts
+maximize successful prompts
 subject to one shared poisoned-shard allocation with sum(a_k) <= B
 ```
 
-Outputs label this objective as `fixed_budget_adversarial_success`. Row-only
-and column-only MILPs are not run by default. `--max-targets-per-prompt` limits
-only the MILP target bank; the validity baselines use every observed
-non-majority target class.
-
-The default `budget_curve_summary.csv` contains only:
+The objective mode is:
 
 ```text
-dpa_final_tool_stability
-aggregate_tpa_final_tool_validity
-joint_row_column_stability_milp
-joint_row_column_validity_milp
+fixed_budget_adversarial_success
 ```
 
-Use `--include-token-grid-dpa-stability-diagnostic` or
-`--include-token-grid-dpa-validity-diagnostic` to add the corresponding
-token-grid DPA diagnostic to the summary.
+Gurobi is always used. The runner prints:
 
-## Recommended workflow
-
-### 1. Inspect the input schema
-
-```bash
-python - <<'PY'
-import json
-from pathlib import Path
-
-path = Path("/data/mwicker/VPA/vote_vectors_1b_full_gpu0.jsonl")
-
-with path.open() as f:
-    row = json.loads(next(f))
-
-for k, v in row.items():
-    if isinstance(v, list):
-        print(f"{k}: list length {len(v)}")
-    elif isinstance(v, dict):
-        print(f"{k}: dict with {len(v)} keys")
-    else:
-        print(f"{k}: {type(v).__name__} = {v}")
-PY
+```text
+[stability] solver=gurobi budget=...
+[validity] solver=gurobi budget=...
 ```
 
-### 2. Check retained prompts by horizon
+For interrupted or time-limited solves, the reported certified fraction uses
+the conservative Gurobi objective bound rather than the incumbent objective.
+
+`--top-competitors` controls stability event generation.
+`--max-targets-per-prompt` limits the validity MILP target bank only; the
+aggregate final-tool TPA baseline still considers every observed non-majority
+final-tool class.
+
+## Running Certification
+
+Use the repository virtual environment explicitly:
 
 ```bash
-python - <<'PY'
-import json
-from pathlib import Path
-
-path = Path("/data/mwicker/VPA/vote_vectors_1b_full_gpu0.jsonl")
-horizons = [1, 5, 10, 20, 30, 40, 50, 60]
-
-lengths = []
-with path.open() as f:
-    for line in f:
-        row = json.loads(line)
-        lens = {len(x) for x in row["token_vote_matrix"]}
-        assert len(lens) == 1
-        lengths.append(next(iter(lens)))
-
-print("num rows", len(lengths))
-for H in horizons:
-    kept = sum(l >= H for l in lengths)
-    print(f"H={H:02d}: kept {kept}/{len(lengths)}")
-PY
-```
-
-### 3. Run a smoke certification
-
-```bash
-python large_experiments/scripts/certify_vote_vectors_runner.py \
+.venv/bin/python large_experiments/scripts/certify_vote_vectors_runner.py \
   --input /data/mwicker/VPA/vote_vectors_1b_full_gpu0.jsonl \
-  --name 1b_full \
-  --horizon 5 \
-  --max-prompts 5 \
-  --budgets 0,1,3 \
-  --top-competitors 1 \
-  --max-targets-per-prompt 1 \
-  --milp-time-limit 120 \
-  --threads 4 \
-  --output-dir large_experiments/outputs/certification
-```
-
-### 4. Run the H=20 curve
-
-```bash
-python large_experiments/scripts/certify_vote_vectors_runner.py \
-  --input /data/mwicker/VPA/vote_vectors_1b_full_gpu0.jsonl \
-  --name 1b_full \
+  --name 1b_full_final_tool_baselines_top3 \
   --horizon 20 \
   --budgets 0,1,3,5,7,9,25,50,100,150,200,249 \
-  --top-competitors 1 \
+  --top-competitors 3 \
   --max-targets-per-prompt 2 \
   --milp-time-limit 600 \
   --mip-gap 0.001 \
@@ -383,12 +198,34 @@ python large_experiments/scripts/certify_vote_vectors_runner.py \
   --output-dir large_experiments/outputs/certification
 ```
 
-Repeat with `vote_vectors_1b_last3_lora_gpu1.jsonl` and a distinct `--name`.
-The configurations are independent clean ensembles; neither is interpreted as
-a poisoned version of the other.
+Useful controls:
 
-Outputs are written under
-`large_experiments/outputs/certification/<name>/H020/`:
+| Flag | Meaning |
+| --- | --- |
+| `--max-prompts N` | Stop after retaining `N` usable prompts |
+| `--skip-stability-milp` | Write baselines and omit stability MILP solves |
+| `--skip-validity-milp` | Write baselines and omit validity MILP solves |
+| `--include-token-grid-dpa-stability-diagnostic` | Include the optional token-grid stability diagnostic |
+| `--include-token-grid-dpa-validity-diagnostic` | Include the optional token-grid validity diagnostic |
+| `--milp-time-limit SECONDS` | Set the Gurobi time limit |
+| `--mip-gap VALUE` | Set the Gurobi relative MIP gap |
+| `--threads N` | Set Gurobi threads; `0` uses automatic mode |
+
+Outputs are written to:
+
+```text
+large_experiments/outputs/certification/<name>/H<horizon>/
+```
+
+When `--max-prompts N` is used, an additional `NNN` directory is added:
+
+```text
+large_experiments/outputs/certification/<name>/H020/N010/
+```
+
+## Certification Outputs
+
+Default output files:
 
 ```text
 dpa_final_tool_stability.csv
@@ -399,44 +236,152 @@ budget_curve_summary.csv
 summary.json
 ```
 
-Optional diagnostic files are:
+MILP CSV files are omitted when their corresponding `--skip-...-milp` flag is
+used.
+
+Optional diagnostic files:
 
 ```text
 dpa_token_grid_weakest_token_stability_diagnostic.csv
 dpa_max_target_token_validity_diagnostic.csv
 ```
 
-## Ada setup
-
-Large experiment outputs and virtual environments should be stored on bitbucket-backed or `/data2` storage rather than in the home directory.
-
-The intended layout is:
+By default, `budget_curve_summary.csv` contains only:
 
 ```text
-Repo:
-  ~/Projects/Provably-Secure-NLG
-
-Large outputs:
-  large_experiments/outputs/
-
-External VPA artifacts:
-  /data/mwicker/VPA/
+dpa_final_tool_stability
+aggregate_tpa_final_tool_validity
+joint_row_column_stability_milp
+joint_row_column_validity_milp
 ```
 
-If using the Ada helper scripts, activate the large-experiments environment before running certification scripts.
+Diagnostic methods are included only when their corresponding flags are passed.
+
+Important `summary.json` fields include:
+
+```text
+solver = gurobi
+objective_mode = fixed_budget_adversarial_success
+horizon_filter_basis = shortest_non_none_prefix_across_shards
+padding_policy = no_padding_none_rows_filtered
+full_scale_baseline_interface = final_tool_vote_vector
+proposed_method_interface = shard_aware_prompt_token_grid
+main_stability_baseline = dpa_final_tool_stability
+main_validity_baseline = aggregate_tpa_final_tool_validity
+validity_constraint = target_ties_or_beats_every_observed_non_target_token
+```
+
+It also records total rows read, rows filtered for horizon, rows truncated to
+the horizon, retained prompts, event counts, solver controls, and diagnostic
+inclusion flags.
+
+## Plotting Certification Curves
+
+Plot one run:
 
 ```bash
-source large_experiments/scripts/activate_ada_large_experiments.sh
+.venv/bin/python large_experiments/scripts/plot_certification_curves.py \
+  --inputs large_experiments/outputs/certification/1b_full_final_tool_baselines_top3/H020 \
+  --labels "1B full H=20" \
+  --output-dir large_experiments/outputs/certification/plots/1b_full_H020_top3 \
+  --title-prefix "1B full H=20" \
+  --filename-prefix "1b_full_H020_top3"
 ```
 
-## Notes
+Compare horizons:
 
-Do not rerun model training or generation when running certification.
+```bash
+.venv/bin/python large_experiments/scripts/plot_certification_curves.py \
+  --inputs \
+    large_experiments/outputs/certification/1b_full_final_tool_baselines_top3/H015 \
+    large_experiments/outputs/certification/1b_full_final_tool_baselines_top3/H020 \
+  --labels "1B full H=15" "1B full H=20" \
+  --output-dir large_experiments/outputs/certification/plots/1b_full_horizon_compare_top3 \
+  --title-prefix "1B full horizon comparison" \
+  --filename-prefix "1b_full_h15_h20_top3"
+```
 
-Do not treat `1b_full` as clean and `1b_last3_lora` as poisoned.
+Add `--milp-only` to show only the joint stability and validity MILPs.
 
-Do not pad shorter generated sequences.
+The plotter writes:
 
-Do not modify the toy validity demo from this pipeline.
+```text
+<prefix>_stability_budget_curve.pdf
+<prefix>_validity_budget_curve.pdf
+<prefix>_all_methods_budget_curve.pdf
+<prefix>_plot_ready_budget_curves.csv
+<prefix>_method_comparison_summary.csv
+```
 
-The full-scale certification pipeline is offline. It consumes stored vote-vector JSONL files and produces certification results.
+There is no runtime plot.
+
+Certified-fraction plots:
+
+- use PDF output only;
+- place 12-point legends dynamically with `loc="best"`;
+- use distinct line styles and markers for overlapping methods;
+- round the dynamic lower y-axis limit down to the nearest 5%;
+- keep the upper y-axis limit fixed at 105%.
+
+The plotter accepts only current method names. Legacy names are not remapped and
+raise a `ValueError`; regenerate old certification runs before using them in the
+current full-scale report comparison.
+
+## Optional CSV Grid Export
+
+`export_vote_vector_grid.py` writes inspection-oriented CSV representations:
+
+```bash
+.venv/bin/python large_experiments/scripts/export_vote_vector_grid.py \
+  --input /path/to/vote_vectors.jsonl \
+  --name 1b_full \
+  --horizon 20 \
+  --output-dir large_experiments/outputs/vote_vector_grids \
+  --write-shard-grid
+```
+
+Outputs:
+
+```text
+clean_grid.csv
+target_grid.csv
+aggregate_tool_votes.csv
+summary.json
+shard_votes_long.csv        # only with --write-shard-grid
+```
+
+This exporter is for inspection. The certification runner is the authoritative
+path for full-scale padded JSONL files because it filters horizons using the
+shortest non-`None` prefix across shards.
+
+## Tests
+
+Run the maintained solver-free tests:
+
+```bash
+MPLCONFIGDIR=/tmp/provably-secure-mpl \
+XDG_CACHE_HOME=/tmp/provably-secure-cache \
+.venv/bin/python -m unittest discover -v
+```
+
+The tests cover:
+
+- shortest non-`None` prefix filtering;
+- final-tool DPA and TPA baselines;
+- default and diagnostic summary method selection;
+- all-competitor validity event construction;
+- conservative solver-bound handling;
+- strict plot method-name validation;
+- filename prefixes and PDF rendering.
+
+They do not run full certification or Gurobi jobs.
+
+## Operational Notes
+
+- Do not rerun model training or generation when only certification is needed.
+- Do not treat `1b_full` as clean and `1b_last3_lora` as poisoned.
+- Do not pad shorter generated sequences.
+- Do not replace `None` padding with artificial token IDs.
+- Do not modify toy validity-demo code from the full-scale pipeline.
+- Do not commit generated certification CSVs or plots unless they are
+  intentionally tracked report artifacts.
