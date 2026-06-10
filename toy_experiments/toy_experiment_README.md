@@ -121,7 +121,7 @@ comparisons.txt
 
 - Shared shard-aware MILP full sequence
 - TPA max-token phrase baseline
-- Plain DPA max-token phrase blocker
+- Plain DPA max token
 
 `comparisons.txt` is generated from existing CSVs only. Plotting does not rerun
 Gurobi or regenerate benchmark data.

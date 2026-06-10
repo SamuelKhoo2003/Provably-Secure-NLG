@@ -1,7 +1,7 @@
 name: validity_demo
 generator: validity_demo
 # Artificial controlled validity-only stress test, not a natural language benchmark.
-# Expected hierarchy: Plain DPA max-token phrase < TPA max-token phrase < shared shard-aware MILP.
+# Expected hierarchy: Plain DPA max token < TPA max-token phrase < shared shard-aware MILP.
 K_values: [20, 24]
 N_values: [1, 2]
 L_values: [2, 3, 4, 5]
