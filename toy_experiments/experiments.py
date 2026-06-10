@@ -59,6 +59,7 @@ class ConfigError(ValueError):
 
 TOY_METHOD_ALIASES = {
     "TPA max-token phrase blocker": "TPA max-token phrase baseline",
+    "TPA max-token sequence": "TPA max-token phrase baseline",
     "TPA multi-sample validity": "TPA max-token phrase baseline",
     "Plain DPA max-token phrase blocker": "Plain DPA max token",
 }
@@ -1436,7 +1437,7 @@ CANONICAL_COLORS = {
 }
 
 REPORT_LEGEND_LOCATION = "best"
-REPORT_LEGEND_FONT_SIZE = 12
+REPORT_LEGEND_FONT_SIZE = 13
 
 MAIN_STABILITY_METRICS = {
     "Shared MILP full matrix": "row_col_stab_qN_rL",
@@ -1454,11 +1455,7 @@ def save_validity_demo_plot(rows: list[dict[str, object]], output_dir: Path, gen
     demo_rows = [row for row in rows if row.get("generator") == generator]
     if not demo_rows:
         return
-    series_specs = [
-        ("Shared shard-aware MILP full sequence", "row_col_val_q1"),
-        ("TPA max-token phrase baseline", "tpa_val_sequence_q1"),
-        ("Plain DPA max token", "plain_dpa_val_sequence_q1"),
-    ]
+    series_specs = _validity_demo_metric_specs(demo_rows)
     series: dict[str, tuple[list[float], list[float]]] = {}
     skipped: list[str] = []
     for label, column in series_specs:
@@ -1574,11 +1571,7 @@ def _validate_validity_demo_plot_rows(rows: list[dict[str, object]], csv_path: P
     infeasible_l = []
     nonoptimal_l = []
     missing_methods: list[str] = []
-    required_metrics = {
-        "Plain DPA max token": "plain_dpa_val_sequence_q1",
-        "TPA max-token phrase baseline": "tpa_val_sequence_q1",
-        "Shared shard-aware MILP full sequence": "row_col_val_q1",
-    }
+    required_metrics = dict(_validity_demo_metric_specs(demo_rows))
     for L in l_values:
         matching = [row for row in demo_rows if row.get("L") == L]
         for label, metric in required_metrics.items():
@@ -1602,6 +1595,16 @@ def _validate_validity_demo_plot_rows(rows: list[dict[str, object]], csv_path: P
         )
 
 
+def _validity_demo_metric_specs(rows: list[dict[str, object]]) -> list[tuple[str, str]]:
+    specs = [
+        ("Shared shard-aware MILP full sequence", "row_col_val_q1"),
+        ("TPA max-token phrase baseline", "tpa_val_sequence_q1"),
+    ]
+    if any(_numeric_value(row.get("plain_dpa_val_sequence_q1")) is not None for row in rows):
+        return [*specs, ("Plain DPA max token", "plain_dpa_val_sequence_q1")]
+    return [*specs, ("Atomic phrase aggregation", "phrase_dpa_val_q1")]
+
+
 def _assert_same_x_values(series: dict[str, tuple[list[float], list[float]]], plot_name: str) -> None:
     expected: list[float] | None = None
     for label, (xs, _ys) in series.items():
@@ -1620,6 +1623,12 @@ def save_validity_demo_budget_curve_plots(
     csv_dir = source_dir if source_dir is not None else output_dir
     budget_rows = _read_optional_csv(csv_dir / "benchmark_budget_curves.csv")
     budget_plot_num_points = _validity_demo_budget_plot_num_points(result_rows or [])
+    methods = {str(row.get("method")) for row in budget_rows}
+    baseline_selection = (
+        ("Plain DPA max token", "Plain DPA max token", "validity_full_harmful_sequence_per_prompt", "radius_derived")
+        if "Plain DPA max token" in methods
+        else ("Atomic phrase aggregation", "Atomic phrase aggregation", "validity_full_harmful_sequence_per_prompt", "radius_derived")
+    )
     return _save_required_certified_fraction_budget_plot(
         budget_rows,
         output_dir / "validity_demo_certified_fraction_by_budget.pdf",
@@ -1627,7 +1636,7 @@ def save_validity_demo_budget_curve_plots(
         [
             ("Shared shard-aware MILP full sequence", "Shared MILP", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
             ("TPA max-token phrase baseline", "TPA max-token phrase baseline", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
-            ("Plain DPA max token", "Plain DPA max token", "validity_full_harmful_sequence_per_prompt", "radius_derived"),
+            baseline_selection,
         ],
         max_points=budget_plot_num_points,
         stagger_coincident_markers=False,
