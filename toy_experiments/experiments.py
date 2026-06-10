@@ -29,14 +29,15 @@ import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
 
 from .baselines import (
-    aggregate_plain_dpa_sequence_baselines,
-    aggregate_tpa_sequence_baselines,
     atomic_phrase_validity_row_budgets as _atomic_phrase_validity_row_budgets,
     cell_stability_budgets as _cell_stability_budgets,
     cell_validity_budgets as _cell_validity_budgets,
     compute_reference_baselines,
-    phd_margin_stability_budgets as _phd_margin_stability_budgets,
+    compute_stability_baselines,
+    compute_validity_baselines,
     plain_dpa_validity_token_budgets as _plain_dpa_validity_token_budgets,
+    row_nanmax_all_known,
+    row_nanmin_or_unknown,
     targeted_validity_token_budgets as _targeted_validity_token_budgets,
 )
 from .csv_io import (
@@ -346,7 +347,6 @@ def benchmark_scale(
                                         budget_curve_rows.extend(
                                             compute_radius_derived_budget_curve_rows(
                                                 data,
-                                                T=T,
                                                 budgets=budgets,
                                                 metadata=metadata,
                                                 make_stability_curves=objective_flags["make_stability_budget_curves"],
@@ -2086,56 +2086,15 @@ def _resolve_objective_flags(
 
 
 def _compute_benchmark_baselines(data: ToyData, make_stability_objectives: bool, make_validity_objectives: bool) -> dict[str, int | float]:
+    """Compute only the baseline families requested by a benchmark config."""
     if make_stability_objectives and make_validity_objectives:
         return compute_reference_baselines(data)
-    rows: dict[str, int | float] = {}
+    summaries: dict[str, int | float] = {}
     if make_validity_objectives:
-        validity_cell_budgets = _cell_validity_budgets(data).astype(float)
-        validity_cell_budgets[validity_cell_budgets > data.val_votes.shape[0]] = np.nan
-        plain_dpa_cell_budgets = _plain_dpa_validity_token_budgets(data)
-        targeted_validity_cell_budgets = _targeted_validity_token_budgets(data)
-        phrase_row_budgets = _atomic_phrase_validity_row_budgets(data)
-        row_validity_weak_radii = _row_nanmin_or_unknown(validity_cell_budgets)
-        row_validity_strong_radii = _row_nanmax_all_known(validity_cell_budgets)
-        independent_validity_row_costs = np.sum(validity_cell_budgets, axis=1)
-        rows.update(
-            {
-                "dpa_val_cell_min": _finite_int_min(validity_cell_budgets),
-                "dpa_val_row_weak_q1": _finite_int_min(row_validity_weak_radii),
-                "dpa_val_row_weak_qN": _finite_int_max(row_validity_weak_radii),
-                "dpa_val_row_strong_q1": _finite_int_min(row_validity_strong_radii),
-                "dpa_val_row_strong_qN": _finite_int_max(row_validity_strong_radii),
-                "raw_dpa_val_min_cell": _finite_int_min(validity_cell_budgets),
-                "plain_dpa_val_cell_min": int(np.min(plain_dpa_cell_budgets)),
-                **aggregate_plain_dpa_sequence_baselines(plain_dpa_cell_budgets),
-                "tpa_val_cell_min": int(np.min(targeted_validity_cell_budgets)),
-                **aggregate_tpa_sequence_baselines(targeted_validity_cell_budgets),
-                "independent_val_sequence_q1": _finite_int_min(independent_validity_row_costs),
-                "independent_val_sequence_qN": _finite_int_sum(independent_validity_row_costs),
-                "independent_val_q1": _finite_int_min(independent_validity_row_costs),
-                "independent_val_qN": _finite_int_sum(independent_validity_row_costs),
-                "phrase_dpa_val_q1": int(np.min(phrase_row_budgets)),
-                "phrase_dpa_val_qN": int(np.max(phrase_row_budgets)),
-                "phrase_independent_val_q1": int(np.min(phrase_row_budgets)),
-                "phrase_independent_val_qN": int(phrase_row_budgets.sum()),
-            }
-        )
+        summaries.update(compute_validity_baselines(data))
     if make_stability_objectives:
-        stability_cell_budgets = _cell_stability_budgets(data)
-        row_stability_radii = stability_cell_budgets.min(axis=1)
-        independent_stability_row_costs = stability_cell_budgets.sum(axis=1)
-        rows.update(
-            {
-                "raw_dpa_stab_min_cell": int(np.min(_phd_margin_stability_budgets(data))),
-                "dpa_stab_cell_min": int(np.min(stability_cell_budgets)),
-                "dpa_stab_row_radius_q1": int(np.min(row_stability_radii)),
-                "dpa_stab_row_radius_qN": int(np.max(row_stability_radii)),
-                "independent_stab_full_row_q1": int(np.min(independent_stability_row_costs)),
-                "independent_stab_full_row_qN": int(independent_stability_row_costs.sum()),
-                "independent_stab_qN_rL": int(independent_stability_row_costs.sum()),
-            }
-        )
-    return rows
+        summaries.update(compute_stability_baselines(data))
+    return summaries
 
 
 def _solve_benchmark_certificates(
@@ -2240,43 +2199,8 @@ def certified_fraction_from_radii(radii: np.ndarray, budgets: Iterable[int]) -> 
     return rows
 
 
-def _row_nanmin_or_unknown(values: np.ndarray) -> np.ndarray:
-    result = np.full(values.shape[0], np.nan, dtype=float)
-    for idx, row in enumerate(values):
-        finite = row[np.isfinite(row)]
-        if finite.size:
-            result[idx] = float(np.min(finite))
-    return result
-
-
-def _row_nanmax_all_known(values: np.ndarray) -> np.ndarray:
-    result = np.full(values.shape[0], np.nan, dtype=float)
-    for idx, row in enumerate(values):
-        if np.all(np.isfinite(row)):
-            result[idx] = float(np.max(row))
-    return result
-
-
-def _finite_int_min(values: np.ndarray) -> int | float:
-    finite = np.asarray(values, dtype=float)
-    finite = finite[np.isfinite(finite)]
-    return int(np.min(finite)) if finite.size else float("nan")
-
-
-def _finite_int_max(values: np.ndarray) -> int | float:
-    finite = np.asarray(values, dtype=float)
-    finite = finite[np.isfinite(finite)]
-    return int(np.max(finite)) if finite.size else float("nan")
-
-
-def _finite_int_sum(values: np.ndarray) -> int | float:
-    finite = np.asarray(values, dtype=float)
-    return int(np.sum(finite)) if np.all(np.isfinite(finite)) else float("nan")
-
-
 def compute_radius_derived_budget_curve_rows(
     data: ToyData,
-    T: int,
     budgets: Iterable[int],
     metadata: dict[str, object],
     make_stability_curves: bool = True,
@@ -2284,7 +2208,6 @@ def compute_radius_derived_budget_curve_rows(
     gurobi_threads: int | None = None,
 ) -> list[dict[str, object]]:
     """Build long-format radius-derived certified-fraction curve rows."""
-    del T
     curves = []
     if make_stability_curves:
         stability_cell_budgets = _cell_stability_budgets(data)
@@ -2327,12 +2250,12 @@ def compute_radius_derived_budget_curve_rows(
                 (
                     "Shard-aware weakest-token diagnostic",
                     "weakest_harmful_token_not_full_sequence_validity",
-                    _row_nanmin_or_unknown(validity_cell_budgets),
+                    row_nanmin_or_unknown(validity_cell_budgets),
                 ),
                 (
                     "Shard-aware independent max-token diagnostic",
                     "most_difficult_harmful_token_not_full_sequence_validity",
-                    _row_nanmax_all_known(validity_cell_budgets),
+                    row_nanmax_all_known(validity_cell_budgets),
                 ),
                 (
                     "TPA max-token phrase baseline",

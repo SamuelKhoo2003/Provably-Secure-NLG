@@ -17,7 +17,7 @@ import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import numpy as np
 
@@ -26,6 +26,11 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from toy_experiments.baselines import targeted_partition_radius
+from large_experiments.vote_vector_utils import (
+    dpa_certified_radius,
+    majority_value,
+    sorted_counter_items,
+)
 
 
 OBJECTIVE_MODE = "fixed_budget_adversarial_success"
@@ -76,27 +81,13 @@ class ValidityEvent:
     competitor_margins_and_damage: tuple[tuple[int, tuple[int, ...]], ...]
 
 
-def sorted_counter_items(counter: Counter[Any]) -> list[tuple[Any, int]]:
-    return sorted(counter.items(), key=lambda item: (-item[1], str(item[0])))
-
-
-def majority_value(values: Iterable[Any]) -> Any:
-    counts = Counter(values)
-    if not counts:
-        raise ValueError("Cannot compute a majority from an empty collection")
-    return sorted_counter_items(counts)[0][0]
-
-
-def dpa_certified_radius(winner_votes: int, competitor_votes: int) -> int:
-    return max(0, (winner_votes - competitor_votes - 1) // 2)
-
-
 def load_prompt_rows(
     path: Path,
     horizon: int,
     max_prompts: int | None,
     expected_num_shards: int = EXPECTED_NUM_SHARDS,
 ) -> tuple[list[PromptRow], LoadReport]:
+    """Load validated prompts whose shortest non-padding prefix reaches the horizon."""
     if horizon < 1:
         raise ValueError("--horizon must be positive")
     if max_prompts is not None and max_prompts < 1:
@@ -192,6 +183,7 @@ def load_prompt_rows(
 
 
 def build_grid(rows: list[PromptRow], horizon: int) -> np.ndarray:
+    """Build an ``(prompt, position, shard)`` integer token grid."""
     if not rows:
         raise ValueError(f"No prompts retained for horizon {horizon}")
     grids = []
@@ -207,6 +199,7 @@ def build_grid(rows: list[PromptRow], horizon: int) -> np.ndarray:
 
 
 def clean_token_grid(grid: np.ndarray) -> np.ndarray:
+    """Compute deterministic majority token IDs for every prompt-position cell."""
     n, horizon, _ = grid.shape
     clean = np.empty((n, horizon), dtype=np.int64)
     for prompt_index in range(n):
@@ -218,6 +211,7 @@ def clean_token_grid(grid: np.ndarray) -> np.ndarray:
 
 
 def observed_target_classes(row: PromptRow) -> list[str]:
+    """Return observed non-majority final-tool classes in deterministic rank order."""
     counts = Counter(row.vote_vector)
     return [
         str(target)
@@ -231,6 +225,7 @@ def build_validity_targets(
     grid: np.ndarray,
     max_targets_per_prompt: int | None,
 ) -> list[ValidityTarget]:
+    """Construct representative token-sequence targets from final-tool alternatives."""
     if max_targets_per_prompt is not None and max_targets_per_prompt < 1:
         raise ValueError("--max-targets-per-prompt must be positive")
     clean = clean_token_grid(grid)
@@ -330,6 +325,7 @@ def compute_dpa_target_radii(
     grid: np.ndarray,
     targets: list[ValidityTarget],
 ) -> list[float]:
+    """Compute the optional max-target-token DPA validity diagnostic."""
     target_radii_by_prompt: dict[int, list[int]] = defaultdict(list)
     for target in targets:
         token_radii = []
@@ -360,6 +356,7 @@ def baseline_curve_rows(
     radii: list[float],
     budgets: list[int],
 ) -> list[dict[str, Any]]:
+    """Convert per-prompt safe radii into long-format certified-fraction rows."""
     return [
         {
             "budget": budget,
@@ -377,6 +374,7 @@ def build_stability_events(
     grid: np.ndarray,
     top_competitors: int,
 ) -> list[StabilityEvent]:
+    """Build token-grid stability events and per-shard damage coefficients."""
     if top_competitors < 1:
         raise ValueError("--top-competitors must be positive")
     events: list[StabilityEvent] = []
@@ -414,6 +412,7 @@ def build_validity_events(
     grid: np.ndarray,
     targets: list[ValidityTarget],
 ) -> list[ValidityEvent]:
+    """Build validity events with constraints for every observed competitor token."""
     events: list[ValidityEvent] = []
     num_shards = grid.shape[2]
     for target_index, target in enumerate(targets):
@@ -470,6 +469,7 @@ def configure_gurobi_model(
     threads: int,
     quiet: bool,
 ) -> tuple[Any, Any, Any]:
+    """Create a configured Gurobi model for one fixed-budget solve."""
     gp, GRB = require_gurobi()
     model = gp.Model(name)
     model.Params.OutputFlag = 0 if quiet else 1
@@ -528,6 +528,7 @@ def common_milp_row(
     top_competitors: int,
     max_targets_per_prompt: int | None,
 ) -> dict[str, Any]:
+    """Build shared conservative summary fields for a fixed-budget MILP row."""
     failed_bound = conservative_failed_bound(n, objective_bound)
     return {
         "budget": budget,
@@ -561,6 +562,7 @@ def solve_stability_gurobi(
     budget: int,
     args: argparse.Namespace,
 ) -> dict[str, Any]:
+    """Maximize prompts destabilized by one shared poisoned-shard allocation."""
     n, horizon, num_shards = grid.shape
     model, gp, GRB = configure_gurobi_model(
         "fixed_budget_joint_row_column_stability",
@@ -620,6 +622,7 @@ def solve_validity_gurobi(
     budget: int,
     args: argparse.Namespace,
 ) -> dict[str, Any]:
+    """Maximize harmful targets reached by one shared poisoned-shard allocation."""
     n, horizon, num_shards = grid.shape
     model, gp, GRB = configure_gurobi_model(
         "fixed_budget_joint_row_column_validity",
@@ -682,6 +685,7 @@ def solve_validity_gurobi(
 
 
 def parse_budgets(raw: str) -> list[int]:
+    """Parse a comma-separated non-negative budget list."""
     budgets = sorted({int(value.strip()) for value in raw.split(",") if value.strip()})
     if not budgets or budgets[0] < 0:
         raise ValueError("--budgets must contain non-negative integers")
@@ -689,6 +693,7 @@ def parse_budgets(raw: str) -> list[int]:
 
 
 def write_rows(path: Path, rows: list[dict[str, Any]]) -> None:
+    """Write heterogeneous dictionaries using first-seen CSV column order."""
     if not rows:
         path.write_text("")
         return
@@ -707,6 +712,7 @@ def summary_curve_rows(
     baseline_groups: list[list[dict[str, Any]]],
     milp_groups: list[list[dict[str, Any]]],
 ) -> list[dict[str, Any]]:
+    """Merge radius-derived baselines and fixed-budget MILP rows for plotting."""
     rows: list[dict[str, Any]] = []
     for group in baseline_groups:
         for row in group:

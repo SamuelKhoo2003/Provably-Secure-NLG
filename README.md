@@ -24,3 +24,11 @@ The main large-experiment external baselines use final tool-call vote vectors:
 **DPA final-tool stability** and **aggregate TPA final-tool validity**. The
 proposed joint MILPs use the shard-aware prompt-token grid. Token-grid DPA
 curves are optional diagnostics rather than main full-scale baselines.
+
+## Tests
+
+Run the maintained solver-free and utility tests from the repository root:
+
+```bash
+.venv/bin/python -m unittest discover -v
+```

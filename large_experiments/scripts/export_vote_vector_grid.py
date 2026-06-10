@@ -16,26 +16,34 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from large_experiments.vote_vector_utils import (
+    dpa_certified_radius,
+    sorted_counter_items,
+)
+
 
 def dpa_radius_from_counts(counts: Counter[int]) -> int:
-    top = counts.most_common(2)
+    """Compute conservative DPA stability from the two largest token counts."""
+    top = sorted_counter_items(counts)[:2]
     if not top:
         return 0
 
     winner_votes = top[0][1]
     runner_up_votes = top[1][1] if len(top) > 1 else 0
-    return max(0, (winner_votes - runner_up_votes - 1) // 2)
-
-
-def sorted_counter_items(counter: Counter[Any]) -> list[tuple[Any, int]]:
-    return sorted(counter.items(), key=lambda kv: (-kv[1], str(kv[0])))
+    return dpa_certified_radius(winner_votes, runner_up_votes)
 
 
 def load_rows(path: Path) -> list[dict[str, Any]]:
+    """Load JSONL rows and validate the stored final-tool vote metadata."""
     rows: list[dict[str, Any]] = []
 
     with path.open() as f:
@@ -223,10 +231,7 @@ def export_target_grid(rows: list[dict[str, Any]], horizon: int, out_path: Path)
 
 
 def export_aggregate_tool_votes(rows: list[dict[str, Any]], out_path: Path) -> None:
-    """
-    One row per observed tool-call class per prompt.
-    This is the class-level vote vector view used for professor-style MCP validity.
-    """
+    """Write one row per observed final-tool class and prompt."""
     with out_path.open("w", newline="") as f:
         writer = csv.DictWriter(
             f,
@@ -318,6 +323,7 @@ def export_summary(
     input_path: Path,
     config_name: str,
 ) -> None:
+    """Write high-level dimensions and filtering metadata for an export."""
     lengths = [row["_token_len"] for row in rows_all]
 
     summary = {

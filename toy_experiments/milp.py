@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
-from typing import Any
 
 import gurobipy as gp
 import numpy as np
@@ -27,22 +26,6 @@ class CertificateResult:
     mip_gap: float | None = None
     lower_bound: float | None = None
     upper_bound: float | None = None
-
-    def as_dict(self) -> dict[str, Any]:
-        return {
-            "name": self.name,
-            "B_star": self.B_star,
-            "a": self.selected_poisoned_shards,
-            "z": self.attacked_cells,
-            "status": self.status,
-            "status_name": self.status_name,
-            "objective": self.objective,
-            "y_row": self.y_row,
-            "is_optimal": self.is_optimal,
-            "mip_gap": self.mip_gap,
-            "lower_bound": self.lower_bound,
-            "upper_bound": self.upper_bound,
-        }
 
 
 def solve_structured_stability(

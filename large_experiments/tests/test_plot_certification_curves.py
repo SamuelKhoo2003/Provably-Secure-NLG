@@ -7,6 +7,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import pandas as pd
+
 
 RUNNER_PATH = (
     Path(__file__).resolve().parents[1]
@@ -94,6 +96,32 @@ class PlotCertificationCurvesTests(unittest.TestCase):
                 ),
             ):
                 self.plotter.load_run(run_dir, None)
+
+    def test_shared_curve_renderer_writes_pdf(self) -> None:
+        frame = pd.DataFrame(
+            {
+                "budget": [0, 1],
+                "method": [
+                    "dpa_final_tool_stability",
+                    "dpa_final_tool_stability",
+                ],
+                "run_label": ["test", "test"],
+                "certified_percent": [100.0, 50.0],
+            }
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            output_dir = Path(directory)
+            self.plotter.plot_certified_fraction_curves(
+                frame,
+                output_dir=output_dir,
+                filename="curve.pdf",
+                filename_prefix="test",
+                title="Test curve",
+                figsize=(4.0, 3.0),
+            )
+            output_path = output_dir / "test_curve.pdf"
+            self.assertTrue(output_path.exists())
+            self.assertGreater(output_path.stat().st_size, 0)
 
 
 if __name__ == "__main__":

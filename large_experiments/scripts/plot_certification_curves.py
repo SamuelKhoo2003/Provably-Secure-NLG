@@ -155,6 +155,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_summary(path: Path) -> dict[str, Any]:
+    """Load optional run metadata from ``summary.json``."""
     summary_path = path / "summary.json"
     if not summary_path.exists():
         return {}
@@ -163,6 +164,7 @@ def load_summary(path: Path) -> dict[str, Any]:
 
 
 def default_label(path: Path, summary: dict[str, Any]) -> str:
+    """Build a concise display label from a result path and its metadata."""
     name = summary.get("name", path.parent.name)
     horizon = summary.get("horizon")
     prompts = summary.get("num_prompts")
@@ -174,6 +176,7 @@ def default_label(path: Path, summary: dict[str, Any]) -> str:
 
 
 def load_run(path: Path, label: str | None) -> pd.DataFrame:
+    """Load and validate one certification run for plotting."""
     csv_path = path / "budget_curve_summary.csv"
     if not csv_path.exists():
         raise FileNotFoundError(f"Missing {csv_path}")
@@ -256,6 +259,7 @@ def method_plot_style(method: str) -> dict[str, Any]:
 
 
 def dynamic_certified_fraction_ylim(values_percent: pd.Series) -> tuple[float, float]:
+    """Return a five-point-rounded lower bound and a fixed 105% upper bound."""
     finite_values = [
         float(value)
         for value in values_percent
@@ -278,9 +282,50 @@ def save_pdf(
     filename: str,
     filename_prefix: str,
 ) -> None:
+    """Save a figure as a prefixed PDF inside the selected output directory."""
     path = output_dir / prefixed_filename(filename, filename_prefix)
     fig.savefig(path, format="pdf", bbox_inches="tight")
     print(f"Wrote {path}")
+
+
+def plot_certified_fraction_curves(
+    df: pd.DataFrame,
+    *,
+    output_dir: Path,
+    filename: str,
+    filename_prefix: str,
+    title: str,
+    figsize: tuple[float, float],
+) -> None:
+    """Render and save certified-fraction curves for the supplied rows."""
+    fig, ax = plt.subplots(figsize=figsize)
+    methods = sorted(df["method"].unique(), key=method_sort_key)
+    run_labels = list(dict.fromkeys(df["run_label"].tolist()))
+
+    for run_label in run_labels:
+        run_df = df[df["run_label"].eq(run_label)]
+        for method in methods:
+            method_df = run_df[run_df["method"].eq(method)].sort_values("budget")
+            if method_df.empty:
+                continue
+            method_label = METHOD_LABELS[method]
+            label = method_label if len(run_labels) == 1 else f"{run_label} · {method_label}"
+            ax.plot(
+                method_df["budget"],
+                method_df["certified_percent"],
+                label=label,
+                **method_plot_style(method),
+            )
+
+    ax.set_xlabel("Poisoned shard budget B")
+    ax.set_ylabel("Certified fraction (%)")
+    ax.set_ylim(*dynamic_certified_fraction_ylim(df["certified_percent"]))
+    ax.grid(True, alpha=0.3)
+    ax.set_title(title)
+    ax.legend(loc="best", fontsize=LEGEND_FONT_SIZE)
+    fig.tight_layout()
+    save_pdf(fig, output_dir, filename, filename_prefix)
+    plt.close(fig)
 
 
 def plot_family(
@@ -296,43 +341,14 @@ def plot_family(
         print(f"No rows for {family}, skipping")
         return
 
-    fig, ax = plt.subplots(figsize=(8.5, 5.0))
-
-    methods = sorted(subset["method"].unique(), key=method_sort_key)
-    run_labels = list(dict.fromkeys(subset["run_label"].tolist()))
-
-    for run_label in run_labels:
-        run_df = subset[subset["run_label"].eq(run_label)]
-        for method in methods:
-            mdf = run_df[run_df["method"].eq(method)].sort_values("budget")
-            if mdf.empty:
-                continue
-            if len(run_labels) == 1:
-                label = METHOD_LABELS.get(method, method)
-            else:
-                label = f"{run_label} · {METHOD_LABELS.get(method, method)}"
-            ax.plot(
-                mdf["budget"],
-                mdf["certified_percent"],
-                label=label,
-                **method_plot_style(method),
-            )
-
-    ax.set_xlabel("Poisoned shard budget B")
-    ax.set_ylabel("Certified fraction (%)")
-    ax.set_ylim(*dynamic_certified_fraction_ylim(subset["certified_percent"]))
-    ax.grid(True, alpha=0.3)
-    ax.set_title(f"{title_prefix} {family} budget curve")
-    ax.legend(loc="best", fontsize=LEGEND_FONT_SIZE)
-    fig.tight_layout()
-
-    save_pdf(
-        fig,
-        output_dir,
-        f"{family}_budget_curve.pdf",
-        filename_prefix,
+    plot_certified_fraction_curves(
+        subset,
+        output_dir=output_dir,
+        filename=f"{family}_budget_curve.pdf",
+        filename_prefix=filename_prefix,
+        title=f"{title_prefix} {family} budget curve",
+        figsize=(8.5, 5.0),
     )
-    plt.close(fig)
 
 
 def plot_all_methods(
@@ -346,35 +362,14 @@ def plot_all_methods(
         print("No plot-ready rows, skipping combined plot")
         return
 
-    fig, ax = plt.subplots(figsize=(9.5, 5.6))
-
-    for (run_label, method), group in subset.groupby(["run_label", "method"], sort=False):
-        group = group.sort_values("budget")
-        label = METHOD_LABELS.get(method, method)
-        if subset["run_label"].nunique() > 1:
-            label = f"{run_label} · {label}"
-        ax.plot(
-            group["budget"],
-            group["certified_percent"],
-            label=label,
-            **method_plot_style(method),
-        )
-
-    ax.set_xlabel("Poisoned shard budget B")
-    ax.set_ylabel("Certified fraction (%)")
-    ax.set_ylim(*dynamic_certified_fraction_ylim(subset["certified_percent"]))
-    ax.grid(True, alpha=0.3)
-    ax.set_title(f"{title_prefix} all methods")
-    ax.legend(loc="best", fontsize=LEGEND_FONT_SIZE)
-    fig.tight_layout()
-
-    save_pdf(
-        fig,
-        output_dir,
-        "all_methods_budget_curve.pdf",
-        filename_prefix,
+    plot_certified_fraction_curves(
+        subset,
+        output_dir=output_dir,
+        filename="all_methods_budget_curve.pdf",
+        filename_prefix=filename_prefix,
+        title=f"{title_prefix} all methods",
+        figsize=(9.5, 5.6),
     )
-    plt.close(fig)
 
 
 def write_report(
