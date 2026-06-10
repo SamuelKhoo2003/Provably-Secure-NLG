@@ -248,9 +248,7 @@ overridden runs are visible.
 
 Historical validity-demo CSVs can also be replotted with
 `plot-validity-demo`. Current demos use the Plain DPA, TPA, and shared MILP
-series. Older archived demos that predate the Plain-DPA column retain their
-recorded `Atomic phrase aggregation` series instead of fabricating missing
-data.
+series.
 
 ## Smoke Visualization
 
