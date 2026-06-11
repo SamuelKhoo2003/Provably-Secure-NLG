@@ -621,6 +621,17 @@ SWEEP_VALIDITY_METRICS = {
     "Shared MILP validity": "row_col_val_qN",
 }
 
+SWEEP_KEYS = (
+    "K",
+    "N",
+    "L",
+    "T",
+    "delta_stab",
+    "delta_val",
+    "target_bias",
+    "degenerate",
+)
+
 
 def plot_sweep_csv(csv_path: str, sweep: str, save_dir: str | None = None) -> list[dict[str, object]]:
     """Render a synthetic scaling sweep from an existing benchmark CSV."""
@@ -631,9 +642,9 @@ def plot_sweep_csv(csv_path: str, sweep: str, save_dir: str | None = None) -> li
     if not rows:
         raise SystemExit(f"Sweep CSV is empty: {path}")
 
-    sweep_key = sweep.upper() if sweep.lower() != "degenerate" else "degenerate"
-    if sweep_key not in {"K", "N", "L", "degenerate"}:
-        raise SystemExit(f"Unknown sweep {sweep!r}; expected K, N, L, or degenerate")
+    sweep_key = sweep.upper() if sweep.upper() in {"K", "N", "L", "T"} else sweep.lower()
+    if sweep_key not in SWEEP_KEYS:
+        raise SystemExit(f"Unknown sweep {sweep!r}; expected one of {', '.join(SWEEP_KEYS)}")
 
     seed_values = sorted(
         {
@@ -682,7 +693,7 @@ def plot_sweep_csv(csv_path: str, sweep: str, save_dir: str | None = None) -> li
                 continue
             _save_line_plot(
                 output_dir / filename,
-                f"{plot_kind.capitalize()} scaling with {sweep_key}",
+                f"{plot_kind.capitalize()} scaling with {_axis_label(sweep_key)}",
                 _axis_label(sweep_key),
                 y_label,
                 series,
@@ -775,6 +786,11 @@ def _write_sweep_audit(
         for label, metric in requested_metrics.items()
         if not any(_numeric_value(row.get(metric)) is not None for row in rows)
     ]
+    vocabulary_status = (
+        "varied as expected"
+        if sweep == "T"
+        else ("fixed" if len(unique_values["T"]) == 1 else "unexpectedly varied")
+    )
 
     lines = [
         "# Sweep benchmark audit",
@@ -783,7 +799,7 @@ def _write_sweep_audit(
         f"- Sweep: `{sweep}`",
         f"- Rows: {len(rows)}",
         f"- Expected varied parameter(s): {', '.join(sorted(expected_varied))}",
-        f"- Fixed vocabulary size `T`: {'yes' if len(unique_values['T']) == 1 else 'NO'}",
+        f"- Vocabulary size `T`: {vocabulary_status}",
         "",
         "## Parameter values",
         "",
@@ -2478,9 +2494,15 @@ def _mean_series_by_axis(rows: list[dict[str, object]], axis_name: str, metric: 
 
 
 def _axis_label(axis_name: str) -> str:
-    if axis_name == "L":
-        return "sequence length L"
-    return axis_name
+    return {
+        "K": "number of shards K",
+        "N": "number of prompts N",
+        "L": "sequence length L",
+        "T": "vocabulary size T",
+        "delta_stab": "stability disagreement probability delta_stab",
+        "delta_val": "validity disagreement probability delta_val",
+        "target_bias": "target bias",
+    }.get(axis_name, axis_name)
 
 
 def _numeric_value(value: object) -> float | None:
@@ -3060,7 +3082,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--save-dir", default=None)
     parser.add_argument("--csv", default="toy_experiments/outputs/medium/results/benchmark_results.csv")
-    parser.add_argument("--sweep", choices=["K", "N", "L", "degenerate"], default=None)
+    parser.add_argument("--sweep", choices=SWEEP_KEYS, default=None)
     parser.add_argument("--make-plots", action="store_true", help="Also render benchmark plots after running Gurobi.")
     parser.add_argument("--config", default=None, help="YAML benchmark config. Required for benchmark runs.")
     parser.add_argument("--dry-run", action="store_true", help="Validate config and print solve estimates without running Gurobi.")
@@ -3138,7 +3160,7 @@ def main() -> None:
         plot_validity_demo_csv(args.csv, save_dir=args.save_dir)
     elif args.command == "plot-sweep":
         if args.sweep is None:
-            raise SystemExit("plot-sweep requires --sweep K|N|L|degenerate")
+            raise SystemExit(f"plot-sweep requires --sweep {'|'.join(SWEEP_KEYS)}")
         plot_sweep_csv(args.csv, sweep=args.sweep, save_dir=args.save_dir)
     else:
         raise ValueError(f"Unknown command: {args.command}")

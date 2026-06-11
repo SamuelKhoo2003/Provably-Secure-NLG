@@ -20,10 +20,10 @@ case "$MODE" in
 esac
 
 case "$SWEEP" in
-  all) sweeps=(K N L degenerate) ;;
-  K|N|L|degenerate) sweeps=("$SWEEP") ;;
+  all) sweeps=(K N L T delta_stab delta_val target_bias degenerate) ;;
+  K|N|L|T|delta_stab|delta_val|target_bias|degenerate) sweeps=("$SWEEP") ;;
   *)
-    echo "ERROR: SWEEP must be K, N, L, degenerate, or all." >&2
+    echo "ERROR: SWEEP must be K, N, L, T, delta_stab, delta_val, target_bias, degenerate, or all." >&2
     exit 1
     ;;
 esac

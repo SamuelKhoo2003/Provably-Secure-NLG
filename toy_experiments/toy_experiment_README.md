@@ -176,9 +176,11 @@ Useful variants:
 MODE=dry-run ./toy_experiments/scripts/sweep_benchmark.sh
 MODE=data SWEEP=K ./toy_experiments/scripts/sweep_benchmark.sh
 MODE=plot SWEEP=L ./toy_experiments/scripts/sweep_benchmark.sh
+MODE=all SWEEP=delta_stab ./toy_experiments/scripts/sweep_benchmark.sh
 ```
 
-Supported `SWEEP` values are `K`, `N`, `L`, `degenerate`, and `all`.
+Supported `SWEEP` values are `K`, `N`, `L`, `T`, `delta_stab`, `delta_val`,
+`target_bias`, `degenerate`, and `all`.
 Supported `MODE` values are `dry-run`, `data`, `plot`, and `all`.
 
 The sweep configs use five seeds:
@@ -205,9 +207,10 @@ For each numeric metric, aggregate rows contain the seed mean plus `_min`,
 `_max`, `_minus`, and `_plus` columns. The sweep plots use the mean line and the
 available range columns for uncertainty.
 
-The `K`, `N`, and `L` sweep plot sets contain stability, validity, and Gurobi
-runtime scaling PDFs. The degenerate sweep writes a compact CSV and LaTeX table
-instead of the ordinary line-plot set.
+The `K`, `N`, `L`, `T`, `delta_stab`, `delta_val`, and `target_bias` sweep plot
+sets contain stability, validity, and Gurobi runtime scaling PDFs. The
+degenerate sweep writes a compact CSV and LaTeX table instead of the ordinary
+line-plot set.
 
 ## Validity Demo
 
